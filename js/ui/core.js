@@ -553,6 +553,8 @@
 
   function render(state) {
     if (!rootEl) return;
+    // Durante o tutorial a tela mostra um projeto de exemplo; o do jogador volta no fim.
+    if (MS.tutorial && MS.tutorial.active && state === MS.store.state) return;
     try { document.title = t('app.name'); document.documentElement.lang = MS.i18n.locale(); } catch (e) { /* sem document */ }
     // Cadeia de efeitos: compara com o projeto anterior (mesmo cenário).
     var prev = ui.local.prevState;

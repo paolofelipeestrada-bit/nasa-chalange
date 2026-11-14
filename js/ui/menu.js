@@ -50,9 +50,11 @@
     var playSub = p.any
       ? t('menu.continueSub', { phase: L(p.info.current.title), n: state.attempt, mission: L(h.scenario(state).title) })
       : t('menu.soloSub');
+    var tutBtn = MS.tutorial ? bigButton('menu-tutorial', h.icon('book', { size: 26 }), t('menu.tutorial') + (p.any ? '' : ' · ' + t('menu.tutorialNew')), t('menu.tutorialSub'), 'tut') : '';
     var btns = bigButton('menu-play', h.icon(p.any ? 'rocket' : 'dir', { size: 26 }), p.any ? t('menu.continue') : t('menu.solo'), playSub, 'primary') +
+      (p.any ? '' : tutBtn) +
       bigButton('menu-team', h.icon('team', { size: 26 }), room.inRoom ? t('menu.teamIn', { code: room.code }) : t('menu.team'), t('menu.teamSub'), 'team') +
-      (MS.tutorial ? bigButton('menu-tutorial', h.icon('book', { size: 26 }), t('menu.tutorial'), t('menu.tutorialSub'), 'tut') : '');
+      (p.any ? tutBtn : '');
     var small = (p.any ? '<button type="button" class="btn small" data-action="menu-new">' + h.icon('restart', { size: 16 }) + h.esc(t('menu.new')) + '</button>' : '') +
       '<button type="button" class="btn small' + (local.menuHow ? ' on' : '') + '" data-action="menu-how" aria-expanded="' + !!local.menuHow + '">' + h.icon('info', { size: 16 }) + h.esc(t('menu.how')) + '</button>' +
       '<button type="button" class="btn small" data-action="menu-about">' + h.icon('eye', { size: 16 }) + h.esc(t('ui.about')) + '</button>';

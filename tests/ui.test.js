@@ -44,6 +44,31 @@
     } finally { local.menuOpen = was; }
   });
 
+  test('tutorial: todo passo tem texto nos 3 idiomas e o alvo existe na tela de exemplo', function () {
+    var steps = MS.data.tutorial.steps, phase = 'need', demo = 'empty';
+    assert(steps.length >= 5, 'poucos passos');
+    steps.forEach(function (st, i) {
+      ['en', 'pt', 'es'].forEach(function (l) { assert(st.title[l] && st.text[l], 'passo ' + (i + 1) + ' sem texto em ' + l); });
+      if (st.phase) { phase = st.phase; demo = st.demo || 'empty'; }
+      if (!st.target) return;
+      var box = document.createElement('div');
+      box.innerHTML = MS.ui.renderHTML(MS.tutorial.demoState(demo, phase));
+      assert(box.querySelector(st.target), 'passo ' + (i + 1) + ': alvo "' + st.target + '" não existe na fase ' + phase);
+    });
+  });
+
+  test('tutorial: o projeto de exemplo não mexe no projeto do jogador', function () {
+    MS.store.init({ storage: null, render: function () {} });
+    var before = JSON.stringify(MS.store.state);
+    var full = MS.tutorial.demoState('full', 'design');
+    var sc = MS.data.scenarios[full.scenarioId];
+    sc.slots.forEach(function (slot) { assert(sc.slots && full.design[slot.id], 'exemplo sem ' + slot.id); });
+    assert.equal(full.phase, 'design');
+    var concept = MS.tutorial.demoState('concept', 'concept');
+    sc.slots.forEach(function (slot) { assert.equal(!!concept.design[slot.id], slot.phase === 'concept', slot.id); });
+    assert.equal(JSON.stringify(MS.store.state), before);
+  });
+
   test('fluxo completo por cliques até o relatório e de volta ao Design', function () {
     var el = document.createElement('div');
     MS.ui.mount(el);
