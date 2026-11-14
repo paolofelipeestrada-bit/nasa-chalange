@@ -444,6 +444,9 @@
 
     if (r.capacity <= 0) {
       r.explanation = `${d.label}: ${u(r.demand)}, mas a capacidade é zero.`;
+    } else if (r.status === 'fail') {
+      var over = r.usage >= 2 ? `${fmt(r.usage, 1)} vezes a capacidade` : `${pct(r.usage - 1)} acima da capacidade`;
+      r.explanation = `${d.label}: ${u(r.demand)} de ${withUnit(r.capacity, r.unit, c.decimals)} — ${over}.`;
     } else {
       r.explanation = `${d.label}: ${u(r.demand)} de ${withUnit(r.capacity, r.unit, c.decimals)} — folga de ${pct(r.margin)}` +
         (rec > 0 ? ` (recomendado ≥ ${pct(rec)}).` : '.') +
