@@ -45,17 +45,19 @@
     },
 
     // --------------------------------------------------------- Lançadores
-    // orbits: órbitas que o lançador alcança.
+    // orbits: órbitas que o lançador alcança. site: base (usada no 3D).
     // maxMass_kg e cost_k por formato; formato ausente = não aceito.
     launchers: {
       rideshare_sso: {
         name: 'Carona para SSO (rideshare)',
         description: 'Vai com dezenas de outros satélites num foguete que segue para a órbita heliossíncrona.',
+        site: { name: 'Vandenberg (EUA)', latitude_deg: 34.7, longitude_deg: -120.6 },
         orbits: ['sso500'], maxMass_kg: { '3U': 4.0, '6U': 8.0 }, cost_k: { '3U': 170, '6U': 300 }
       },
       iss_cargo: {
         name: 'Carga para a ISS',
         description: 'Sobe numa nave de carga e é ejetado da estação espacial. Só alcança a órbita da ISS.',
+        site: { name: 'Cabo Canaveral (EUA)', latitude_deg: 28.5, longitude_deg: -80.6 },
         orbits: ['iss400'], maxMass_kg: { '3U': 4.0, '6U': 8.0 }, cost_k: { '3U': 110, '6U': 190 }
       }
     },
@@ -65,12 +67,12 @@
       gs_polar: {
         name: 'Estação polar (78° N)',
         description: 'Antena alugada perto do Polo Norte: vê quase todas as órbitas polares. Contrato de 1 ano.',
-        latitude_deg: 78, minElevation_deg: 10, bands: ['UHF', 'S', 'X'], cost_k: 110
+        latitude_deg: 78, longitude_deg: 15.4, minElevation_deg: 10, bands: ['UHF', 'S', 'X'], cost_k: 110
       },
       gs_national: {
         name: 'Estação nacional (15° S)',
         description: 'Antena própria no Brasil Central: barata, mas vê poucas passagens por dia.',
-        latitude_deg: -15, minElevation_deg: 10, bands: ['UHF', 'S'], cost_k: 25
+        latitude_deg: -15, longitude_deg: -56, minElevation_deg: 10, bands: ['UHF', 'S'], cost_k: 25
       }
     },
 

@@ -683,7 +683,7 @@
     var log = [], aborted = null, factor = 1;
     seq.forEach(function (step) {
       var ev = step.ev, risk = step.risk;
-      var base = { id: ev.id, when: ev.when || '', title: ev.title, random: !!risk };
+      var base = { id: ev.id, when: ev.when || '', title: ev.title, random: !!risk, fx: ev.fx || null };
       if (aborted) {
         log.push(Object.assign(base, { status: 'skipped', text: `Não aconteceu: a missão terminou em "${aborted.title}".`, causes: [] }));
         return;

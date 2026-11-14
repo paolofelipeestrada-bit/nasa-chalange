@@ -62,7 +62,8 @@
       var summary = o ? '<div class="alert s-' + m.status + '"><strong>' +
         (m.aborted ? 'Missão perdida.' : 'Mapas entregues: ' + U.fmt(o.maps, 1) + ' de ' + U.fmt(o.target, 0) + '.') +
         '</strong> ' + h.esc(o.explanation) + '</div>' : '';
-      return '<div class="card"><h2>Linha do tempo da missão</h2><ol class="timeline">' + events + '</ol></div>' + summary;
+      return '<div class="card viz-card"><div data-viz="mission"></div></div>' +
+        '<div class="card"><h2>Linha do tempo da missão</h2><ol class="timeline">' + events + '</ol></div>' + summary;
     }
   });
 

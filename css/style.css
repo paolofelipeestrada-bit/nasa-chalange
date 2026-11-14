@@ -100,6 +100,30 @@ tfoot td { font-weight: 600; border-bottom: 0; }
 .timeline .when { color: var(--muted); font-size: 13px; }
 @media (max-width: 560px) { .timeline li { grid-template-columns: 1fr; gap: 2px; } }
 
+/* Visual 3D (Implement): fundo escuro de propósito, nos dois temas */
+.viz-card { padding: 0; overflow: hidden; }
+.viz3d { position: relative; height: 480px; background: #04060c; color: #e6e9ef; }
+.viz3d canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.viz-hud { position: absolute; pointer-events: none; text-shadow: 0 1px 3px #000; }
+.viz-top { top: 12px; left: 14px; right: 40%; }
+.viz-when { font-size: 12px; color: #9aa3b2; text-transform: uppercase; letter-spacing: .04em; }
+.viz-title { font-size: 18px; font-weight: 700; }
+.viz-text { font-size: 13px; max-width: 460px; }
+.viz-flags { top: 12px; right: 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.viz-flags span { background: rgba(10, 14, 24, .75); border: 1px solid #2d3440; border-radius: 99px; padding: 2px 10px; font-size: 12px; }
+.viz-legend { position: absolute; left: 14px; bottom: 52px; display: flex; gap: 12px; font-size: 11px; color: #9aa3b2; pointer-events: none; flex-wrap: wrap; }
+.viz-legend span::before { content: ""; display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: middle; }
+.lg-aoi::before { background: #ffd54a; } .lg-cov::before { background: #5cf2a0; } .lg-con::before { background: #4cff7a; }
+.viz-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; align-items: center; padding: 8px 10px; background: rgba(10, 14, 24, .8); flex-wrap: wrap; }
+.viz-bar .btn { background: #1b2029; border-color: #2d3440; color: #e6e9ef; padding: 4px 10px; }
+.viz-progress { flex: 1; min-width: 80px; height: 4px; background: #2d3440; border-radius: 2px; overflow: hidden; }
+.viz-progress span { display: block; height: 100%; width: 0; background: #7aa2ff; }
+@media (max-width: 560px) {
+  .viz3d { height: 380px; }
+  .viz-top { right: 14px; } .viz-flags { top: auto; bottom: 84px; } .viz-legend { display: none; }
+  .viz-text { font-size: 12px; }
+}
+
 /* Relatório */
 .score { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .score .big { font-size: 44px; font-weight: 700; line-height: 1; }

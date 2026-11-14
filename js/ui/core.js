@@ -192,6 +192,7 @@
   function render(state) {
     if (!rootEl) return;
     rootEl.innerHTML = renderHTML(state);
+    if (MS.viz && MS.viz.attachAll) MS.viz.attachAll(rootEl, state); // visual 3D (se a tela tiver um)
     if (state.phase !== lastPhase) {
       root.scrollTo(0, 0);
       lastPhase = state.phase;

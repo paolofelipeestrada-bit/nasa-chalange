@@ -18,6 +18,8 @@ js/sim.js             motor puro: MS.sim.run(state) → resultados + explicaçõ
 js/state.js           estado único + ações + localStorage (MS.store)
 js/ui/core.js         render(), cliques (data-action) e peças reutilizáveis
 js/ui/screen*.js      uma tela por fase, registrada com MS.ui.register(id, tela)
+js/viz/schedule.js    roteiro da animação 3D (puro, testado)
+js/viz/mission3d.js   visual 3D da missão (Three.js via CDN; sem internet o jogo funciona sem o 3D)
 js/main.js            liga interface e estado
 tests.html, tests/    testes do motor, do estado e das telas
 ```
@@ -34,6 +36,7 @@ e progresso; resultados são sempre recalculados.
 | Requisito | `scenarios.js` → `requirements` (métricas em `MS.sim.metricDefs`) |
 | Evento da missão | `scenarios.js` → `events` (condição: `check`, `requirement` ou `metric`) |
 | Imprevisto (evento aleatório) | `scenarios.js` → `randomEvents` (chance, `appliesIf`, `mitigatedBy`, `effect`, `after`). Sorteio pela semente `state.seed`: mesma semente, mesmos imprevistos |
+| Efeito visual de um evento no 3D | campo `fx` do evento em `scenarios.js` (lista em `MS.vizSchedule.FX`); efeito novo de verdade: `update()` em `js/viz/mission3d.js` |
 | Linha do plano de verificação | `scenarios.js` → `verification` |
 | Cenário | copiar o bloco `eo_cubesat` em `scenarios.js` e trocar o id |
 | Fase | `phases.js` + uma tela nova com `MS.ui.register('id', { render })` num arquivo em `js/ui/` (e a tag `<script>` no `index.html`) |
