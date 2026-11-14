@@ -74,6 +74,10 @@ between players).
 
 - **DONKI — Space Weather Database Of Notifications, Knowledge, Information** (NASA CCMC): real storms,
   flares and solar particle events of 2019–2020 and 2024–2025. https://ccmc.gsfc.nasa.gov/DONKI/
+- **NASA mission-viz** (web-based space mission visualization): the Earth image in `X3Dom/EarthImage.jpg`
+  became a 1° land/ocean/desert/ice map (`js/data/earthmask.js`) that paints the low-poly planet with the
+  real continents, so the satellite really photographs the Amazon. Its orbit propagator is our reference
+  for drawing orbits. https://github.com/nasa/mission-viz
 
 ## What we simplified
 
@@ -115,6 +119,9 @@ js/data/spaceweather.js  real NASA DONKI events (2019–2020, 2024–2025)
 js/state.js           single state + actions + localStorage (MS.store)
 js/ui/core.js         header, steps, resource panel, previews, reusable pieces, clicks (data-action)
 js/ui/screen*.js      one screen per phase, registered with MS.ui.register(id, screen)
+js/viz/looks.js       3D look of each catalog item, derived from its data (pure, tested)
+js/viz/parts3d.js     low-poly 3D parts built in code (cards, hangar, mission view)
+js/viz/earth.js       reads the 1° Earth map (pure, tested); data in js/data/earthmask.js
 js/viz/schedule.js    3D animation script (pure, tested)
 js/viz/mission3d.js   3D mission view (Three.js)
 js/net/team.js        team mode rules: roles and permissions (pure, tested)
@@ -141,6 +148,8 @@ results are always recomputed. The language belongs to each player and is not pa
 | Help text of a phase | `phases.js` → `guide`, `tips`, `nasa` |
 | Glossary term | `glossary.js`; in data texts use `[[key]]` or `[[key\|text]]` |
 | Team role | `scenarios.js` → `team.roles` |
+| 3D look of an item | derived from its data in `js/viz/looks.js`; override with a `look: {...}` field on the catalog item |
+| New kind of 3D model | a builder in `BUILDERS` in `js/viz/parts3d.js` + its name in `MS.looks.KINDS` |
 | New physics, metric or check type | `sim.js` (`METRICS` + `computeMetrics`, `CHECKS` + `computeChecks`) |
 
 After changing data, run `tests.html`: the validation test points to missing fields or wrong ids,

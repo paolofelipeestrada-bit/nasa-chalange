@@ -92,6 +92,7 @@
         cons: T('More expensive and one more month of waiting.', 'Mais caro e um mês a mais de espera.', 'Más caro y un mes más de espera.'),
         source: T('Orbital transfer vehicles ("space tugs") already deliver rideshare satellites to custom orbits.', 'Veículos de transferência orbital ("rebocadores") já levam satélites de carona a órbitas sob medida.', 'Los vehículos de transferencia orbital ("remolcadores") ya llevan satélites compartidos a órbitas a medida.'),
         site: { name: T('Vandenberg (USA)', 'Vandenberg (EUA)', 'Vandenberg (EE. UU.)'), latitude_deg: 34.7, longitude_deg: -120.6 },
+        look: { tug: true }, // 3D: foguete + rebocador (js/viz/looks.js)
         orbits: ['sso600'], maxMass_kg: { '3U': 4.0, '6U': 8.0 }, cost_k: { '3U': 250, '6U': 400 }, waitMonths: 4
       },
       iss_cargo: {
@@ -103,6 +104,7 @@
         cons: T('Only goes to the Space Station orbit.', 'Só vai para a órbita da ISS.', 'Solo va a la órbita de la ISS.'),
         source: T('NASA\'s CubeSat Launch Initiative releases CubeSats from the ISS (CubeSat 101).', 'O programa de CubeSats da NASA ejeta CubeSats a partir da ISS (CubeSat 101).', 'El programa de CubeSats de la NASA libera CubeSats desde la ISS (CubeSat 101).'),
         site: { name: T('Cape Canaveral (USA)', 'Cabo Canaveral (EUA)', 'Cabo Cañaveral (EE. UU.)'), latitude_deg: 28.5, longitude_deg: -80.6 },
+        look: { upper: 'capsule' }, // 3D: nave de carga no topo do foguete
         orbits: ['iss400'], maxMass_kg: { '3U': 4.0, '6U': 8.0 }, cost_k: { '3U': 110, '6U': 190 }, waitMonths: 2
       }
     },

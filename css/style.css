@@ -183,6 +183,15 @@ main { max-width: 1140px; margin: 0 auto; padding: 22px 16px 110px; }
 .option:disabled { cursor: not-allowed; opacity: .55; }
 .option.selected:disabled { opacity: .85; }
 .option-name { font-weight: 700; font-size: 15px; padding-right: 76px; }
+/* Imagem 3D da peça: "palco" escuro de hangar, igual nos dois temas */
+.option-thumb { display: block; margin: -14px -14px 2px; height: 132px; border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0; overflow: hidden;
+  background: radial-gradient(120% 95% at 50% 18%, #33467a 0%, #18223d 55%, #0b1121 100%); position: relative; }
+.option-thumb::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
+  background: repeating-linear-gradient(90deg, rgba(140, 170, 255, .10) 0 1px, transparent 1px 22px), linear-gradient(180deg, transparent, rgba(124, 156, 255, .10)); pointer-events: none; }
+.option-thumb img { position: relative; z-index: 1; display: block; width: 100%; height: 100%; object-fit: contain; transition: transform .25s; }
+.option:hover:not(:disabled) .option-thumb img, .option.selected .option-thumb img { transform: scale(1.06); }
+.option.selected .option-thumb { margin: -13px -13px 2px; box-shadow: inset 0 0 0 2px var(--accent); }
+.option.has-thumb .option-name { padding-right: 0; }
 .option-desc { color: var(--muted); font-size: 13px; }
 .pc { display: grid; gap: 3px; font-size: 13px; }
 .pc span { display: flex; gap: 6px; }

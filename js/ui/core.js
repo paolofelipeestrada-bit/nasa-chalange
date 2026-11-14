@@ -141,8 +141,11 @@
           esc(L(owner.role.name) + ': ' + (owner.member ? owner.member.name : t('ui.free'))) + '</span>' : '';
       var cards = slot.options.map(function (id) {
         var it = cat[slot.source][id], sel = cur === id;
-        return '<button type="button" class="option' + (sel ? ' selected' : '') + '" aria-pressed="' + sel + '" data-chosen="' + esc(t('ui.chosen')) + '"' + (locked ? ' disabled' : '') +
+        // Imagem 3D da peça (js/viz/parts3d.js); sem Three.js fica sem imagem.
+        var pic = MS.parts3d && MS.parts3d.thumb ? MS.parts3d.thumb(slot.source, id) : '';
+        return '<button type="button" class="option' + (sel ? ' selected' : '') + (pic ? ' has-thumb' : '') + '" aria-pressed="' + sel + '" data-chosen="' + esc(t('ui.chosen')) + '"' + (locked ? ' disabled' : '') +
           ' data-action="select" data-slot="' + esc(slot.id) + '" data-option="' + esc(id) + '">' +
+          (pic ? '<span class="option-thumb"><img src="' + esc(pic) + '" alt="" draggable="false"></span>' : '') +
           '<span class="option-name">' + esc(L(it.name)) + '</span>' +
           '<span class="option-desc">' + esc(L(it.description) || '') + '</span>' +
           (it.pros || it.cons ? '<span class="pc">' + (it.pros ? '<span class="pro"><span><b>' + esc(t('ui.pro')) + '</b> ' + esc(L(it.pros)) + '</span></span>' : '') +
