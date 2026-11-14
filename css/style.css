@@ -177,8 +177,12 @@ main { max-width: 1240px; margin: 0 auto; padding: 22px 16px 110px; }
 .alert.s-warn { background: var(--warn-soft); border-color: var(--warn); }
 .alert.s-ok { background: var(--ok-soft); border-color: var(--ok); }
 .cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px; align-items: start; }
-.cols .side { position: sticky; top: 12px; }
-@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .cols .side { position: static; } }
+/* Coluna da direita grudada logo abaixo do painel de recursos; se for mais
+   alta que a tela, rola por dentro e o hangar 3D fica sempre à vista. */
+.cols .side { position: sticky; top: calc(var(--stick-h, 0px) + 12px); max-height: calc(100vh - var(--stick-h, 0px) - 90px); /* 90px = barra fixa de baixo + folga */
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 0 4px 2px 0; margin-right: -4px; }
+.cols .side .hangar-card { position: sticky; top: 0; z-index: 3; box-shadow: 0 6px 14px rgba(0, 0, 0, .18); }
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .cols .side { position: static; max-height: none; overflow: visible; padding: 0; margin: 0; } .cols .side .hangar-card { position: static; } }
 
 /* Resumo (chips de status) */
 .summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
@@ -431,7 +435,7 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 
 /* Hangar 3D (coluna direita do Conceito e do Projeto): sempre escuro */
 .hangar-card { padding: 0; overflow: hidden; border-color: #2a3a66; }
-.hangar3d { position: relative; height: 300px; background: radial-gradient(120% 95% at 50% 18%, #1d2c58 0%, #0d1530 60%, #080e22 100%); color: #e6e9ef; }
+.hangar3d { position: relative; height: min(300px, 40vh); background: radial-gradient(120% 95% at 50% 18%, #1d2c58 0%, #0d1530 60%, #080e22 100%); color: #e6e9ef; }
 .hangar3d canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 .hangar3d canvas:active { cursor: grabbing; }
 .hg-label { position: absolute; left: 12px; top: 10px; right: 12px; pointer-events: none; text-shadow: 0 1px 3px #000; display: flex; flex-direction: column; gap: 1px; }
@@ -477,9 +481,16 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 .ck-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .ck-head h2 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
 .ck-count { font-size: 13px; font-weight: 700; color: var(--muted); }
-.ck-center, .ck-side { position: sticky; top: 12px; }
+/* Colunas grudadas logo abaixo do painel de recursos (--stick-h vem do
+   core.js); se forem mais altas que a tela, rolam por dentro e o hangar
+   3D continua à vista enquanto a lista de peças desce. */
+.ck-right { display: contents; }
+.ck-center, .ck-side, .ck-right { --ck-top: calc(var(--stick-h, 0px) + 12px); }
+.ck-center, .ck-side { position: sticky; top: var(--ck-top); max-height: calc(100vh - var(--stick-h, 0px) - 90px);
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.ck-center .hangar-card, .ck-right .hangar-card { position: sticky; top: 0; z-index: 3; }
 .ck-center .hangar-card { margin-bottom: 16px; }
-.ck-center .hangar3d { height: 340px; }
+.ck-center .hangar3d { height: min(340px, 42vh); }
 .ck-empty { margin: 4px 0 0; }
 .cascade.ripple { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
 
@@ -526,14 +537,16 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 .ck-mel[open] summary { margin-bottom: 10px; }
 @media (max-width: 1180px) {
   .cockpit { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
-  .ck-side { grid-column: 2; position: static; }
-  .ck-center { position: static; }
-  .ck-parts { grid-row: span 2; }
+  .ck-right { display: block; grid-column: 2; position: sticky; top: var(--ck-top); max-height: calc(100vh - var(--stick-h, 0px) - 90px);
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .ck-side, .ck-center { position: static; max-height: none; overflow: visible; }
 }
 @media (max-width: 860px) {
   .cockpit { grid-template-columns: 1fr; }
+  .ck-right { display: contents; }
   .ck-side, .ck-parts { grid-column: auto; grid-row: auto; }
   .ck-center { order: -1; }
+  .ck-center .hangar-card { position: static; }
 }
 .guide-more { margin-top: 2px; font-size: 15px; }
 .guide-more summary { font-weight: 600; }

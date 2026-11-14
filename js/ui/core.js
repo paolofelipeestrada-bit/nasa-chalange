@@ -542,7 +542,11 @@
   // sempre vê massa, energia, orçamento, dados, comunicação e tempo.
   function stickHud() {
     var top = rootEl && rootEl.querySelector('.top'), hw = top && top.querySelector('.hud-wrap');
-    if (hw) top.style.top = -Math.max(0, hw.offsetTop - 6) + 'px';
+    if (!hw) return;
+    var hide = Math.max(0, hw.offsetTop - 6);
+    top.style.top = -hide + 'px';
+    // Altura que fica grudada: a coluna da direita (hangar 3D) gruda logo abaixo.
+    try { document.documentElement.style.setProperty('--stick-h', (top.offsetHeight - hide) + 'px'); } catch (e) { /* sem document */ }
   }
 
   function render(state) {
