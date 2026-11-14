@@ -54,7 +54,7 @@
       var checks = result.checks.filter(function (c) { return c.id === 'pointing' || c.id === 'band' || c.id === 'launch'; });
       return summary(state, result) +
         '<div class="cols"><div>' + h.choices(state, 'design') + '</div>' +
-        '<aside class="side"><div class="card"><h2>' + h.esc(t('scr.design.resources')) + '</h2><p class="section-note">' + h.esc(t('scr.design.resourcesNote')) + '</p>' + h.resourcePanel(result) + '</div>' +
+        '<aside class="side">' + '<div class="card hangar-card"><div data-viz="hangar"></div></div>' + '<div class="card"><h2>' + h.esc(t('scr.design.resources')) + '</h2><p class="section-note">' + h.esc(t('scr.design.resourcesNote')) + '</p>' + h.resourcePanel(result) + '</div>' +
         '<div class="card"><h2>' + h.esc(t('scr.design.reqs')) + '</h2><p class="section-note">' + h.esc(t('scr.design.reqsNote')) + '</p>' + h.statusRows(result.requirements, { prefixId: true }) + '</div>' +
         '<div class="card"><h2>' + h.esc(t('scr.compat')) + '</h2>' + h.statusRows(checks) + '</div></aside></div>' +
         '<div class="card"><h2>' + h.term('mel', t('mel.title')) + '</h2>' +

@@ -189,6 +189,8 @@
 
     // Interface
     'ui.tip': 'Tip:', 'ui.howCalc': 'See the math', 'ui.seeMath': 'See the math', 'ui.why': 'Why', 'ui.close': 'Close', 'ui.free': 'open',
+    'hangar.title': 'Hangar', 'hangar.drag': 'Drag to turn · scroll to zoom', 'hangar.preview': 'Preview', 'hangar.empty': 'Pick the parts: the satellite is assembled here.',
+    'hangar.pad': 'On the launch pad', 'hangar.orbitView': 'Orbit around Earth', 'hangar.ghost': 'no structure chosen yet',
     'ui.pro': 'Upside:', 'ui.con': 'Watch out:', 'ui.source': 'Source:', 'ui.chosen': 'chosen', 'ui.chooseOne': 'choose an option', 'ui.none': 'none',
     'ui.legendOk': 'with', 'ui.legendMargin': 'margin', 'ui.legendWarn': 'at the limit', 'ui.legendFail': 'does not fit', 'ui.legendMark': 'recommended limit',
     'ui.cascade': 'Your last choice', 'ui.language': 'Language', 'ui.attempt': 'Attempt {n}', 'ui.team': 'Team', 'ui.playTeam': 'Play as a team',

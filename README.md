@@ -121,6 +121,8 @@ js/ui/core.js         header, steps, resource panel, previews, reusable pieces, 
 js/ui/screen*.js      one screen per phase, registered with MS.ui.register(id, screen)
 js/viz/looks.js       3D look of each catalog item, derived from its data (pure, tested)
 js/viz/parts3d.js     low-poly 3D parts built in code (cards, hangar, mission view)
+js/viz/hangar3d.js    3D hangar in the right column: the satellite assembled from the chosen parts
+                      (Design) or the rocket on the pad / orbit / ground station (Concept)
 js/viz/earth.js       reads the 1° Earth map (pure, tested); data in js/data/earthmask.js
 js/viz/schedule.js    3D animation script (pure, tested)
 js/viz/mission3d.js   3D mission view (Three.js)

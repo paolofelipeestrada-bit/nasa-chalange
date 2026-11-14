@@ -177,6 +177,8 @@
     'hud.time': 'Tempo', 'hud.time.what': 'Meses até o lançamento (construir, testar, esperar o foguete) contra o prazo do cliente.',
 
     'ui.tip': 'Dica:', 'ui.howCalc': 'Ver a conta', 'ui.seeMath': 'Ver a conta', 'ui.why': 'Por quê', 'ui.close': 'Fechar', 'ui.free': 'livre',
+    'hangar.title': 'Hangar', 'hangar.drag': 'Arraste para girar · role para dar zoom', 'hangar.preview': 'Prévia', 'hangar.empty': 'Escolha as peças: o satélite é montado aqui.',
+    'hangar.pad': 'Na plataforma de lançamento', 'hangar.orbitView': 'Órbita em volta da Terra', 'hangar.ghost': 'estrutura ainda não escolhida',
     'ui.pro': 'Vantagem:', 'ui.con': 'Cuidado:', 'ui.source': 'Fonte:', 'ui.chosen': 'escolhido', 'ui.chooseOne': 'escolha uma opção', 'ui.none': 'nenhuma',
     'ui.legendOk': 'com', 'ui.legendMargin': 'folga', 'ui.legendWarn': 'no limite', 'ui.legendFail': 'não cabe', 'ui.legendMark': 'limite recomendado',
     'ui.cascade': 'Sua última escolha', 'ui.language': 'Idioma', 'ui.attempt': 'Tentativa {n}', 'ui.team': 'Equipe', 'ui.playTeam': 'Jogar em equipe',

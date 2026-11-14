@@ -276,6 +276,7 @@
   function previewOption(slot, option) {
     var state = MS.store.state;
     if (!rootEl || !state || state.design[slot] === option) { clearPreview(); return; }
+    if (MS.hangar) MS.hangar.preview(slot, option); // a peça aparece em amarelo no hangar
     var base = MS.sim.run(state);
     var cand = MS.sim.run(Object.assign({}, state, { design: Object.assign({}, state.design, (function () { var o = {}; o[slot] = option; return o; })()) }));
     HUD.forEach(function (card) {
@@ -292,6 +293,7 @@
   }
   function clearPreview() {
     if (!rootEl) return;
+    if (MS.hangar) MS.hangar.preview(null);
     var cards = rootEl.querySelectorAll('.hud-card');
     for (var i = 0; i < cards.length; i++) {
       cards[i].classList.remove('pv', 'pv-ok', 'pv-warn', 'pv-fail', 'pv-pending');
@@ -509,6 +511,7 @@
     rootEl.innerHTML = renderHTML(state);
     stickHud();
     if (MS.viz && MS.viz.attachAll) MS.viz.attachAll(rootEl, state); // visual 3D (se a tela tiver um)
+    if (MS.hangar) MS.hangar.attach(rootEl, state); // hangar 3D da coluna direita
     if (state.phase !== lastPhase) {
       root.scrollTo(0, 0);
       lastPhase = state.phase;

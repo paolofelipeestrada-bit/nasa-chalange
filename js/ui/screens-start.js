@@ -56,7 +56,7 @@
     render: function (state, result) {
       var checks = result.checks.filter(function (c) { return c.id === 'launch' || c.id === 'contact'; });
       return '<div class="cols"><div>' + h.choices(state, 'concept') + '</div>' +
-        '<aside class="side"><div class="card"><h2>' + h.esc(t('scr.concept.defines')) + '</h2>' +
+        '<aside class="side">' + '<div class="card hangar-card"><div data-viz="hangar"></div></div>' + '<div class="card"><h2>' + h.esc(t('scr.concept.defines')) + '</h2>' +
         '<p class="section-note">' + h.esc(t('scr.concept.note')) + '</p>' +
         h.metricRows(result, ['altitude_km', 'period_min', 'eclipse_pct', 'lifetime_years', 'passesPerDay', 'contactMinPerDay', 'launchWait_months']) +
         '</div><div class="card"><h2>' + h.esc(t('scr.compat')) + '</h2><p class="section-note">' + h.esc(t('scr.compatNote')) + '</p>' + h.statusRows(checks) + '</div></aside></div>';
