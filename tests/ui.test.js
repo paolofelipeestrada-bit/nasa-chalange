@@ -47,7 +47,15 @@
     assert.equal(MS.store.state.phase, 'design');
     ['payload', 'structure', 'power', 'adcs', 'comms', 'obc'].forEach(pick);
     T.assert.includes(el.innerHTML, 'MEL');
-    click('[data-action="next"]'); click('[data-action="next"]'); click('[data-action="next"]');
+    click('[data-action="next"]'); click('[data-action="next"]');
+    assert.equal(MS.store.state.phase, 'implement');
+    // Missão no tempo: primeiro a data de lançamento, depois as decisões.
+    assert(el.querySelector('[data-action="next"]').disabled, 'sem data de lançamento não deveria avançar');
+    click('[data-action="period"][data-id="y2019"]');
+    assert(el.querySelector('[data-action="decide"]'), 'deveria pedir uma decisão');
+    click('[data-action="decide"][data-id="storm"][data-choice="radiation"]');
+    assert(!el.querySelector('[data-action="decide"]'), 'a decisão deveria sumir depois de respondida');
+    click('[data-action="next"]');
     assert.equal(MS.store.state.phase, 'report');
     T.assert.includes(el.textContent, 'Missão exemplar');
     click('[data-action="retry"]');

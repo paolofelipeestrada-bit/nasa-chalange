@@ -53,7 +53,8 @@
     var design = {};
     sc.slots.forEach(function (slot) { design[slot.id] = null; });
     var first = flow().phases[0].id;
-    return { version: VERSION, scenarioId: sid, phase: first, reached: first, attempt: 1, seed: newSeed(), design: design };
+    // period: janela de lançamento (clima espacial real); decisions: escolhas durante a missão
+    return { version: VERSION, scenarioId: sid, phase: first, reached: first, attempt: 1, seed: newSeed(), design: design, period: null, decisions: {} };
   }
 
   // Escolhas que faltam para sair da fase indicada (inclui fases anteriores).
@@ -99,7 +100,22 @@
     if (ids.indexOf(raw.reached) !== -1) s.reached = raw.reached;
     if (typeof raw.attempt === 'number' && raw.attempt >= 1) s.attempt = Math.floor(raw.attempt);
     if (typeof raw.seed === 'number' && isFinite(raw.seed)) s.seed = raw.seed >>> 0;
+    if (validPeriod(raw.period)) s.period = raw.period;
+    if (raw.decisions && typeof raw.decisions === 'object') {
+      Object.keys(raw.decisions).forEach(function (k) {
+        if (validDecision(k, raw.decisions[k])) s.decisions[k] = raw.decisions[k];
+      });
+    }
     return clampPhases(s);
+  }
+
+  function validPeriod(p) {
+    var sw = data().spaceWeather;
+    return typeof p === 'string' && !!(sw && sw.periods && sw.periods[p]);
+  }
+  function validDecision(id, opt) {
+    var o = MS.life && MS.life.OPTIONS[id];
+    return !!o && o.indexOf(opt) !== -1;
   }
 
   // --------------------------------------------------------------- Ações
@@ -113,6 +129,7 @@
     }
     var s = draft();
     s.design[slotId] = optionId == null ? null : optionId;
+    s.decisions = {};    // outro satélite: a missão (e suas decisões) recomeça
     s.reached = s.phase; // projeto mudou: as fases seguintes precisam ser refeitas
     commit(clampPhases(s));
   }
@@ -121,14 +138,44 @@
   function setLauncher(id) { select('launcher', id); }
   function setGroundStation(id) { select('groundStation', id); }
 
+  // Escolher a janela de lançamento (clima espacial real daquele período).
+  function setPeriod(periodId) {
+    if (periodId != null && !validPeriod(periodId)) throw new Error('Janela de lançamento desconhecida: ' + periodId);
+    var s = draft();
+    s.period = periodId == null ? null : periodId;
+    s.decisions = {};
+    commit(s);
+  }
+
+  // Decisão durante a missão; vale como regra até o fim da missão.
+  function decide(id, option) {
+    if (!validDecision(id, option)) throw new Error('Decisão inválida: ' + id + '=' + option);
+    var s = draft();
+    s.decisions[id] = option;
+    commit(s);
+  }
+
+  // A fase da missão só termina com a janela escolhida e sem decisão pendente.
+  var T = MS.i18n ? MS.i18n.T : function (en) { return en; };
+  var LABEL_PERIOD = T('Launch window', 'Janela de lançamento', 'Ventana de lanzamiento');
+  var LABEL_DECISION = T('Mission decision', 'Decisão da missão', 'Decisión de la misión');
+  function missionMissing(s) {
+    if (s.phase !== 'implement' || missingUpTo(s, s.phase).length) return [];
+    if (!s.period) return [LABEL_PERIOD];
+    if (MS.sim) {
+      try { if (MS.sim.run(s).mission.status === 'decide') return [LABEL_DECISION]; } catch (e) { /* sem motor */ }
+    }
+    return [];
+  }
+
   // Pode avançar? Diz também o que falta escolher.
   function canAdvance(s) {
     s = s || store.state;
     var ids = phaseIds(), i = ids.indexOf(s.phase);
-    var missing = missingUpTo(s, s.phase);
+    var missing = missingUpTo(s, s.phase).map(function (slot) { return slot.label; }).concat(missionMissing(s));
     return {
       ok: missing.length === 0 && i < ids.length - 1,
-      missing: missing.map(function (slot) { return slot.label; }),
+      missing: missing,
       isLast: i === ids.length - 1
     };
   }
@@ -167,6 +214,7 @@
     var s = draft();
     s.attempt += 1;
     s.seed = newSeed(); // imprevistos novos a cada tentativa
+    s.decisions = {};
     s.phase = flow().retryPhase || phaseIds()[0];
     s.reached = s.phase;
     commit(clampPhases(s));
@@ -269,6 +317,7 @@
     setOrbit: setOrbit, setLauncher: setLauncher, setGroundStation: setGroundStation,
     nextPhase: nextPhase, prevPhase: prevPhase, goToPhase: goToPhase,
     retry: retry, reset: reset, setSeed: setSeed, setScenario: setScenario,
+    setPeriod: setPeriod, decide: decide,
     // multiplayer
     onChange: onChange, load: loadRemote, setPersistence: setPersistence,
     // consultas

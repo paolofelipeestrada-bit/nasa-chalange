@@ -111,6 +111,11 @@
     assert.equal(store.state.phase, 'design');
     assert.equal(store.nextPhase(), false, 'design incompleto');
     chooseDesign();
+    while (store.nextPhase()) { /* avança até a fase da missão */ }
+    assert.equal(store.state.phase, 'implement', 'a missão espera a data de lançamento');
+    store.setPeriod('y2019');
+    assert.equal(store.nextPhase(), false, 'e espera a decisão do alerta');
+    store.decide('storm', 'safe');
     while (store.nextPhase()) { /* avança até a última fase */ }
     assert.equal(store.state.phase, 'report');
     assert.equal(store.canAdvance().isLast, true);
