@@ -467,7 +467,8 @@
     var lock = phaseLock(state);
     var right = can.isLast
       ? '<button type="button" class="btn primary" data-action="retry"' + (lock ? ' disabled' : '') + '>' + esc(t('ui.retry')) + '</button>'
-      : '<button type="button" class="btn primary" data-action="next"' + (can.ok && !lock ? '' : ' disabled') + '>' +
+      : '<button type="button" class="btn primary' + (screen && screen.nextClass ? ' ' + screen.nextClass : '') + '" data-action="next"' + (can.ok && !lock ? '' : ' disabled') + '>' +
+        (screen && screen.nextClass === 'launch' ? icon('rocket', { size: 20 }) : '') +
         esc(screen && screen.nextLabel ? t(screen.nextLabel) : t('ui.advanceTo', { name: L(next.short) })) + ' →</button>';
     var missing = can.missing.length ? t('ui.stillToChoose', { list: can.missing.map(L).join(', ') }) : '';
     if (lock) missing = lock + (missing ? ' ' + missing : '');
@@ -517,6 +518,7 @@
     retry: function () { dispatch('retry'); },
     period: function (d) { dispatch('setPeriod', [d.id]); },
     decide: function (d) { dispatch('decide', [d.id, d.choice]); },
+    predict: function (d) { dispatch('setPrediction', [MS.store.state && MS.store.state.prediction === d.id ? null : d.id]); },
     lang: function (d) { MS.i18n.setLang(d.lang); ui.local.cascade = null; rerender(); },
     hud: function (d) { ui.local.hudOpen = ui.local.hudOpen === d.hud ? null : d.hud; rerender(); },
     glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; rerender(); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },

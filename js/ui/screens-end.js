@@ -22,9 +22,33 @@
       '<ul class="rows">' + rows + '</ul></div>';
   }
 
+  // Voto da equipe: cada conselheiro vota pela própria meta (MS.advice).
+  function goNoGo(state, result, title) {
+    var list = MS.advice.crew(state, result), tl = MS.advice.tally(list);
+    var line = tl.open ? t('gonogo.open') : tl.unanimous ? t('gonogo.all') : t('gonogo.some', { nogo: tl.nogo, n: list.length });
+    var st = tl.open ? 'pending' : tl.unanimous ? 'ok' : 'warn';
+    return '<div class="ck-panel gonogo"><div class="ck-head"><h2>' + h.icon('team', { size: 16 }) + h.esc(title || t('gonogo.title')) + '</h2>' +
+      '<span class="gng-count">' + h.icon('ok', { size: 14, stroke: 3 }) + tl.go + ' · ' + h.icon('fail', { size: 14, stroke: 2.6 }) + tl.nogo + '</span></div>' +
+      (title ? '' : '<p class="section-note">' + h.esc(t('gonogo.note')) + '</p>') +
+      '<div class="alert s-' + st + '">' + h.stateTag(st, line) + '</div>' + h.crewList(list, { votes: true }) + '</div>';
+  }
+
+  // "Prever antes de lançar": o palpite fica no state e volta no relatório.
+  function predictPanel(state, lock) {
+    var opts = MS.store.PREDICTIONS.map(function (id) {
+      var on = state.prediction === id;
+      return '<button type="button" class="pred-opt' + (on ? ' on' : '') + '" data-action="predict" data-id="' + id + '" aria-pressed="' + on + '"' + (lock ? ' disabled' : '') + '>' +
+        (on ? h.icon('ok', { size: 16, stroke: 3 }) : '') + h.esc(t('pred.' + id)) + '</button>';
+    }).join('');
+    return '<div class="ck-panel predict"><div class="ck-head"><h2>' + h.icon('eye', { size: 16 }) + h.esc(t('pred.title')) + '</h2></div>' +
+      '<p class="pred-q">' + h.esc(t('pred.q')) + '</p><div class="pred-opts" role="group" aria-label="' + h.esc(t('pred.title')) + '">' + opts + '</div>' +
+      '<p class="section-note">' + h.esc(t('pred.note')) + '</p></div>';
+  }
+
   // ------------------------------------------------------ Build & Verify
   ui.register('build', {
     nextLabel: 'scr.build.next',
+    nextClass: 'launch',
     render: function (state, result) {
       var v = result.verification, fails = count(v, 'fail'), warns = count(v, 'warn');
       var alert = fails
@@ -41,7 +65,9 @@
           '<p class="small muted">' + h.esc(t('build.method', { m: x.method })) + ' — ' + h.esc(x.description) + '</p>' +
           '<ul class="rows">' + items + '</ul></div>';
       }).join('');
-      return alert + rows + riskCard(result);
+      var lock = ui.phaseLock ? ui.phaseLock(state) : null;
+      return '<div class="launch-deck">' + goNoGo(state, result) + predictPanel(state, !!lock) + '</div>' +
+        alert + '<div class="verif-grid">' + rows + '</div>' + riskCard(result);
     }
   });
 
@@ -98,6 +124,55 @@
       '<p class="small muted">' + h.esc(t('life.rep.compare')) + '</p></div>' + ui.life.chart(life, result.metrics.altitude_km.value);
   }
 
+  // Palpite × resultado (prever antes de lançar).
+  function predictionCard(state, result) {
+    var f = MS.advice.dataFraction(result);
+    if (f == null) return '';
+    if (!state.prediction) return '<div class="ck-panel"><div class="ck-head"><h2>' + h.icon('eye', { size: 16 }) + h.esc(t('rep.pred.title')) + '</h2></div><p class="section-note">' + h.esc(t('rep.pred.none')) + '</p></div>';
+    var hit = MS.advice.bucket(f) === state.prediction;
+    return '<div class="ck-panel pred-result ' + (hit ? 's-ok' : 's-warn') + '"><div class="ck-head"><h2>' + h.icon('eye', { size: 16 }) + h.esc(t('rep.pred.title')) + '</h2></div>' +
+      '<div class="pred-vs"><div><span class="eyebrow">' + h.esc(t('rep.pred.result')) + '</span><b>' + h.esc(U.pct(f)) + '</b></div>' +
+      '<div><span class="eyebrow">' + h.esc(t('rep.pred.you')) + '</span><b>' + h.esc(t('pred.' + state.prediction)) + '</b></div></div>' +
+      '<p>' + h.esc(t('rep.pred.line', { g: t('pred.' + state.prediction), pct: U.pct(f) })) + '</p>' +
+      '<p>' + h.stateTag(hit ? 'ok' : 'warn', t(hit ? 'rep.pred.hit' : 'rep.pred.miss')) + '</p></div>';
+  }
+
+  // Tentativa anterior lado a lado: o que mudou e o que isso causou.
+  function compareCard(state, result) {
+    var prev = MS.advice.previous(state);
+    if (!prev) return '';
+    var pr = prev.result, ch = MS.advice.changes(prev.state, state);
+    function row(label, a, b, better) {
+      var cls = a === b ? '' : better ? ' up' : ' down';
+      return '<tr><td>' + h.esc(label) + '</td><td class="num">' + h.esc(a) + '</td><td class="num cmp-now' + cls + '">' + h.esc(b) + '</td></tr>';
+    }
+    var fa = MS.advice.dataFraction(pr), fb = MS.advice.dataFraction(result);
+    var sa = pr.score.total, sb = result.score.total;
+    var ca = pr.metrics.cost_k.value, cb = result.metrics.cost_k.value, ma = pr.metrics.mass_kg.value, mb = result.metrics.mass_kg.value;
+    var rows = row(t('rep.cmp.score'), sa == null ? '—' : String(sa), sb == null ? '—' : String(sb), sb > sa) +
+      row(t('rep.cmp.data'), fa == null ? '—' : U.pct(fa), fb == null ? '—' : U.pct(fb), fb > fa) +
+      row(t('rep.cmp.cost'), h.value(pr.metrics.cost_k), h.value(result.metrics.cost_k), cb < ca) +
+      row(t('rep.cmp.mass'), h.value(pr.metrics.mass_kg), h.value(result.metrics.mass_kg), mb < ma);
+    var changed = ch.length
+      ? '<ul class="cmp-changes">' + ch.map(function (c) { return '<li><b>' + h.esc(c.label) + ':</b> ' + h.esc(c.from) + ' ' + h.icon('arrow', { size: 14 }) + ' ' + h.esc(c.to) + '</li>'; }).join('') + '</ul>'
+      : '<p class="section-note">' + h.esc(t('rep.cmp.nothing')) + '</p>';
+    return '<div class="ck-panel compare"><div class="ck-head"><h2>' + h.icon('restart', { size: 16 }) + h.esc(t('rep.cmp.title', { n: prev.attempt.attempt })) + '</h2></div>' +
+      '<h3>' + h.esc(t('rep.cmp.changed')) + '</h3>' + changed +
+      '<div class="table-wrap"><table><thead><tr><th></th><th class="num">' + h.esc(t('rep.cmp.then', { n: prev.attempt.attempt })) + '</th><th class="num">' + h.esc(t('rep.cmp.now')) + '</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+  }
+
+  // Cartas de aprendizado (leis de Senge) desbloqueadas pelo que aconteceu.
+  function cardsCard(state, result) {
+    var list = MS.advice.cards(state, result, MS.advice.previous(state));
+    return '<div class="ck-panel"><div class="ck-head"><h2>' + h.icon('card', { size: 16 }) + h.esc(t('cards.title')) + '</h2></div>' +
+      '<p class="section-note">' + h.esc(t('cards.note')) + '</p><div class="lcards">' + list.map(function (c, i) {
+        return c.unlocked
+          ? '<div class="lcard on"><span class="lc-n pixel">' + '#' + (i + 1) + '</span><b class="lc-law">' + h.esc(t('card.' + c.id + '.law')) + '</b>' +
+            '<p>' + h.esc(c.why) + '</p><span class="lc-by">' + h.esc(t('cards.by')) + '</span></div>'
+          : '<div class="lcard"><span class="lc-q pixel" aria-hidden="true">?</span><b>' + h.esc(t('cards.locked')) + '</b><p class="small muted">' + h.esc(t('cards.lockedHint')) + '</p></div>';
+      }).join('') + '</div></div>';
+  }
+
   ui.register('report', {
     render: function (state, result) {
       var s = result.score;
@@ -123,6 +198,8 @@
         '<span>' + s.total + '</span></div><div><div class="small muted">' + h.esc(t('rep.of', { max: s.max })) + '</div><h2 style="margin:2px 0 0">' + h.esc(s.grade || '') + '</h2></div></div>' +
         '<p class="small muted">' + h.esc(t('rep.line', { n: state.attempt, cost: h.value(cost), sched: h.value(result.metrics.schedule_months) })) + ' ' +
         h.esc(result.mission.explanation) + '</p></div>' +
+        '<div class="report-deck">' + predictionCard(state, result) + compareCard(state, result) + '</div>' +
+        cardsCard(state, result) + '<div class="report-crew">' + goNoGo(state, result, t('rep.crew.title')) + '</div>' +
         whyList(result) + lifeReport(result) +
         '<div class="card"><h2>' + h.esc(t('rep.score')) + '</h2><div class="table-wrap"><table><tbody>' + parts + '</tbody></table></div></div>' +
         '<div class="card"><h2>' + h.esc(t('scr.design.reqs')) + '</h2>' + h.statusRows(result.requirements, { prefixId: true }) + '</div>' + luck +

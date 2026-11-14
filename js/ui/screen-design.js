@@ -68,15 +68,18 @@
     var done = tabs.reduce(function (n, x) { return n + x.done; }, 0);
     var bar = '<div class="ck-tabs" role="tablist" aria-label="' + h.esc(t('ck.parts')) + '">' + tabs.map(function (tb) {
       var on = tb.key === cur, full = tb.done === tb.slots.length;
-      return '<button type="button" role="tab" class="ck-tab r-' + tb.key + (on ? ' on' : '') + '" aria-selected="' + on + '" data-action="tab" data-tab="' + tb.key + '">' +
+      return '<button type="button" role="tab" class="ck-tab r-' + tb.key + (on ? ' on' : '') + '" aria-selected="' + on + '" aria-controls="tp-' + tb.key + '" data-action="tab" data-tab="' + tb.key + '">' +
         h.icon(tb.key, { size: 18 }) + '<span>' + h.esc(t('ck.tab.' + tb.key)) + '</span>' +
         '<span class="ck-tab-n' + (full ? ' full' : '') + '">' + (full ? h.icon('ok', { size: 13, stroke: 3 }) : tb.done + '/' + tb.slots.length) + '</span></button>';
     }).join('') + '</div>';
-    var active = tabs.filter(function (x) { return x.key === cur; })[0];
+    // Todos os painéis ficam na página (teclado, testes); só o da aba aberta aparece.
+    var panels = tabs.map(function (tb) {
+      return '<div class="ck-tabpanel" role="tabpanel" id="tp-' + tb.key + '"' + (tb.key === cur ? '' : ' hidden') + '>' + h.choices(state, 'design', tb.slots) + '</div>';
+    }).join('');
     return '<section class="ck-panel ck-parts"><div class="ck-head"><h2>' + h.esc(t('ck.parts')) + '</h2>' +
       '<span class="ck-count">' + h.esc(t('ck.chosen', { n: done, total: all })) + '</span></div>' +
       '<p class="section-note">' + h.esc(t('ck.partsNote')) + '</p>' + bar +
-      '<div class="ck-tabpanel" role="tabpanel">' + (active ? h.choices(state, 'design', active.slots) : '') + '</div></section>';
+      panels + '</section>';
   }
 
   // Centro: satélite montado + cadeia de efeitos da última troca.

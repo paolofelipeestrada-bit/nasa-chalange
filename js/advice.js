@@ -110,5 +110,62 @@
     return { go: go, nogo: nogo, open: list.length - go - nogo, unanimous: go === list.length };
   }
 
-  MS.advice = { crew: crew, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE };
+  // ------------------------------------------- Prever antes de lançar
+  // Palpite = faixa de quanto dos dados chega à Terra (state.prediction).
+  function dataFraction(result) {
+    var life = result.life;
+    return life && !life.pending && life.totals ? life.totals.dataFraction : null;
+  }
+  function bucket(f) { return f == null ? null : f < 0.5 ? 'lt50' : f < 0.9 ? 'mid' : f < 0.995 ? 'most' : 'all'; }
+
+  // ------------------------------------------- Tentativa anterior
+  // Recalcula a tentativa guardada (o state só tem as escolhas).
+  function attemptState(state, a) {
+    return Object.assign({}, state, { design: a.design, period: a.period, decisions: a.decisions || {}, seed: a.seed, prediction: a.prediction, attempt: a.attempt });
+  }
+  function previous(state) {
+    var list = state.attempts || [];
+    if (!list.length) return null;
+    var a = list[list.length - 1], st = attemptState(state, a);
+    try { return { attempt: a, state: st, result: MS.sim.run(st) }; } catch (e) { return null; }
+  }
+  // O que mudou entre duas tentativas: slots trocados.
+  function changes(prevState, state) {
+    var sc = MS.data.scenarios[state.scenarioId];
+    return sc.slots.filter(function (s) { return prevState.design[s.id] !== state.design[s.id]; }).map(function (s) {
+      var cat = MS.data.catalog[s.source] || {};
+      var name = function (id) { return id && cat[id] ? MS.i18n.L(cat[id].name) : '—'; };
+      return { slot: s.id, label: MS.i18n.L(s.label), from: name(prevState.design[s.id]), to: name(state.design[s.id]) };
+    });
+  }
+
+  // ------------------------------------------- Cartas de aprendizado
+  // Leis de Peter Senge (A Quinta Disciplina), desbloqueadas pelo que o
+  // jogador viveu nesta tentativa. O nome da lei só aparece no relatório.
+  var CARDS = ['yesterday', 'delay', 'small', 'easy'];
+  function cards(state, result, prev) {
+    var out = {};
+    var life = result.life, tl = life && !life.pending ? life.totals : null;
+    // 1. Os problemas de hoje vêm das soluções de ontem: uma falha em órbita com causa no projeto
+    var traced = (result.mission.events || []).filter(function (e) { return (e.status === 'fail' || e.status === 'warn') && e.causes && e.causes.length; })[0];
+    if (traced) out.yesterday = t('card.yesterday.why', { what: traced.title, cause: traced.causes[0] });
+    else if (tl && (tl.end === 'reentry' || tl.end === 'battery')) out.yesterday = t('card.yesterday.life.' + tl.end);
+    // 2. Causa e efeito não estão próximos no tempo: tudo verde no solo, problema meses depois em órbita
+    var groundOk = !result.verification.some(function (v) { return v.status === 'fail'; });
+    if (groundOk && tl && (tl.dataFraction < 0.95 || life.tally.resets > 0 || tl.end !== 'complete')) {
+      out.delay = t('card.delay.why', { lost: U().pct(1 - tl.dataFraction), resets: life.tally.resets });
+    }
+    if (prev) {
+      var ch = changes(prev.state, state);
+      var a = prev.result.score.total, b = result.score.total;
+      // 3. Pequenas mudanças podem produzir grandes resultados
+      if (ch.length === 1 && a != null && b != null && b - a >= 15) out.small = t('card.small.why', { slot: ch[0].label, a: a, b: b });
+      // 4. O caminho fácil leva de volta ao mesmo lugar
+      if (!ch.length && a != null && b != null && b <= a) out.easy = t('card.easy.why', { n: prev.attempt.attempt });
+    }
+    return CARDS.map(function (id) { return { id: id, unlocked: !!out[id], why: out[id] || '' }; });
+  }
+
+  MS.advice = { crew: crew, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE,
+                dataFraction: dataFraction, bucket: bucket, previous: previous, changes: changes, cards: cards, CARDS: CARDS };
 })(globalThis);

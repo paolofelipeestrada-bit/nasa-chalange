@@ -558,3 +558,43 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 .cascade.ripple .cz-arrow { align-self: center; transform: rotate(90deg); line-height: 1; }
 .cascade.ripple .cz { justify-content: space-between; flex-wrap: wrap; border-radius: 12px; padding: 6px 10px; }
 .pc > span > span { display: inline; }
+
+/* ------------------------------------------------ Verificar e lançar */
+.launch-deck, .report-deck { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.report-deck:empty { display: none; }
+.gonogo .alert { margin: 6px 0 10px; }
+.gng-count { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: 14px; color: var(--muted); }
+.gng-count .ico:first-child { color: var(--ok); } .gng-count .ico:last-child { color: var(--fail); }
+.predict { border-color: rgba(127, 178, 255, .55); box-shadow: 0 0 0 3px rgba(76, 195, 255, .1), var(--shadow); }
+.pred-q { font-size: 18px; font-weight: 600; margin: 4px 0 12px; }
+.pred-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.pred-opt { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 52px; border-radius: 12px; cursor: pointer;
+  background: var(--surface-2); border: 1.5px solid var(--line); color: var(--text); font-size: 16px; font-weight: 700; }
+.pred-opt:hover:not(:disabled) { border-color: var(--accent); }
+.pred-opt.on { background: var(--go); border: 2px solid var(--go-border); color: #fff; box-shadow: 0 0 0 4px rgba(76, 195, 255, .16); }
+.verif-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 0 16px; }
+.verif-grid .card h3 { font-size: 16px; }
+.pred-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 10px; }
+.pred-vs > div { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; }
+.pred-vs b { font-size: 24px; font-family: var(--font-title); }
+.pred-result.s-ok { border-color: rgba(74, 222, 128, .55); } .pred-result.s-warn { border-color: rgba(255, 194, 71, .6); }
+.compare h3 { font-size: 15px; margin: 6px 0 4px; }
+.cmp-changes { margin: 0 0 10px; padding-left: 18px; }
+.cmp-changes .ico { color: var(--warn); }
+.cmp-now { font-weight: 700; }
+.cmp-now.up { color: var(--ok); } .cmp-now.down { color: var(--fail); }
+
+/* Cartas de aprendizado (leis de Senge) */
+.lcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.lcard { min-height: 190px; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
+  background: repeating-linear-gradient(135deg, #121e3e 0 10px, #142247 10px 20px); border: 1.5px dashed #4b6296; color: var(--muted); }
+.lcard .lc-q { font-size: 44px; line-height: 1; color: #4b6296; }
+.lcard.on { background: linear-gradient(160deg, #2a1f5c 0%, #172a5c 100%); border: 2px solid var(--sci); color: var(--text);
+  box-shadow: 0 0 0 4px rgba(183, 148, 255, .14), 0 0 24px rgba(183, 148, 255, .25); animation: card-in .5s ease both; }
+.lc-n { font-size: 12px; color: var(--sci); letter-spacing: .12em; }
+.lc-law { font-size: 18px; line-height: 1.25; }
+.lcard p { margin: 0; font-size: 14.5px; }
+.lc-by { margin-top: auto; font-size: 12px; color: var(--faint); font-style: italic; }
+@keyframes card-in { from { opacity: 0; transform: rotateY(70deg) scale(.95); } to { opacity: 1; transform: none; } }
+@media (max-width: 860px) { .launch-deck, .report-deck { grid-template-columns: 1fr; } .verif-grid { grid-template-columns: 1fr; } }
+.report-crew .crew { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
