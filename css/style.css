@@ -365,3 +365,31 @@ tfoot td { font-weight: 700; border-bottom: 0; }
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
   .option:hover:not(:disabled), .scen:hover:not(:disabled), .hud-card.pv { transform: none; }
 }
+
+/* ------------------------------------------------ Missão no tempo */
+.decision { border: 2px solid var(--warn); background: color-mix(in srgb, var(--warn-soft) 55%, var(--surface)); }
+.decision-head { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.decision-head h2 { margin: 0; }
+.decision-ic { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--warn); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 18px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+.choice { text-align: left; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; box-shadow: var(--shadow); transition: border-color .15s, transform .15s; }
+.choice:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
+.choice:disabled { opacity: .55; cursor: not-allowed; }
+.choice-title { font-weight: 700; }
+.choice-text { font-size: 13px; color: var(--muted); }
+.src-link { font-size: 12px; color: var(--accent); white-space: nowrap; }
+.life-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.life-chart { width: 100%; height: auto; display: block; max-width: 420px; }
+.lc-title { font-size: 12px; font-weight: 600; fill: var(--text); }
+.lc-axis { font-size: 10.5px; fill: var(--muted); }
+.lc-box { fill: var(--surface-2); stroke: var(--line); }
+.lc-ref { stroke: var(--muted); stroke-dasharray: 4 3; opacity: .7; }
+.lc-mark { stroke: var(--fail); stroke-width: 1; opacity: .45; }
+.lc-mlabel { font-size: 9.5px; fill: var(--fail); }
+.lc-line { fill: none; stroke-width: 2; stroke: var(--accent); }
+.lc-dot { fill: var(--accent); }
+.lc-mem, .lc-dot.lc-mem { stroke: var(--warn); } .lc-dot.lc-mem { fill: var(--warn); }
+.lc-pow { stroke: var(--ok); } .lc-dot.lc-pow { fill: var(--ok); }
+.d-bad { color: var(--fail); } .d-good { color: var(--ok); }
+.d-bad .src-link, .d-good .src-link { color: var(--accent); }

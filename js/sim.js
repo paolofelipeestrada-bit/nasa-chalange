@@ -670,7 +670,9 @@
   // está protegido e (com semente) se aconteceu nesta tentativa.
   function computeRisks(ctx, env, seed) {
     var hasSeed = isNum(seed);
-    return (ctx.scenario.randomEvents || []).map(function (re) {
+    return (ctx.scenario.randomEvents || []).filter(function (re) {
+      return !(ctx.lifeMode && re.fx === 'storm'); // clima espacial real substitui o sorteio
+    }).map(function (re) {
       var applies = (re.appliesIf || []).map(function (c) { return evalCondition(c, env); });
       var doesApply = applies.every(function (x) { return x.status === 'ok'; });
       var mit = (re.mitigatedBy || []).map(function (c) { return evalCondition(c, env); });
@@ -759,22 +761,39 @@
       }));
     });
 
+    var life = env.life;
+    if (life && life.pending && !aborted) {
+      return { status: 'decide', aborted: null, decision: life.pending, events: log, outcome: null, explanation: t('eng.decide') };
+    }
+    if (life && !aborted && life.totals.end !== 'complete') {
+      log.push({ id: 'LIFE', when: '', title: t('life.end.' + life.totals.end), random: false, fx: null, status: 'fail',
+        text: t('life.endText.' + life.totals.end, { day: life.totals.opDays }), causes: [] });
+    }
+
     // Resultado: mapas úteis entregues no período de operação.
     var planned = isNum(p.plannedDuration_years) ? p.plannedDuration_years : 1;
     var days = Math.min(planned, metrics.lifetime_years.value) * 365;
     var revisit = metrics.revisit_days.value;
     var data = metrics.dataPerDay_Gbit.value, cap = metrics.downlink_Gbit_day.value;
     var dataFraction = data > 0 ? Math.min(1, cap / data) : 1;
-    var possible = isFinite(revisit) && revisit > 0 ? days / revisit : 0;
+    if (life) {
+      days = life.totals.opDays;
+      dataFraction = life.totals.dataFraction;
+      factor *= life.totals.quality;
+    }
+    var imgDays = life ? life.totals.imagingDays : days;
+    var possible = isFinite(revisit) && revisit > 0 ? imgDays / revisit : 0;
     var maps = aborted ? 0 : possible * dataFraction * factor;
     var target = (isNum(p.targetMapsPerYear) ? p.targetMapsPerYear : 12) * planned;
     var value = target > 0 ? Math.min(1, maps / target) : 0;
     var outcome = {
-      days: days, dataFraction: dataFraction, opsFactor: factor,
+      days: days, imagingDays: imgDays, dataFraction: dataFraction, opsFactor: factor,
       maps: maps, target: target, value: value,
       explanation: aborted
         ? t('eng.outcomeAborted', { title: L(aborted.title) })
-        : t('eng.outcome', { days: fmt(days, 0), rev: fmt(revisit, 1), data: pct(dataFraction), ops: pct(factor), maps: fmt(maps, 1), target: fmt(target, 0) })
+        : life
+          ? t('eng.outcomeLife', { img: fmt(imgDays, 0), rev: fmt(revisit, 1), data: pct(dataFraction), ops: pct(factor), maps: fmt(maps, 1), target: fmt(target, 0) })
+          : t('eng.outcome', { days: fmt(days, 0), rev: fmt(revisit, 1), data: pct(dataFraction), ops: pct(factor), maps: fmt(maps, 1), target: fmt(target, 0) })
     };
     return {
       status: aborted ? 'fail' : value >= 1 - 1e-9 ? 'ok' : value > 0 ? 'warn' : 'fail',
@@ -786,7 +805,7 @@
   // ------------------------------------------------------------ Pontuação
   function computeScore(sc, reqs, resources, mission) {
     var w = Object.assign({ requirements: 40, mission: 40, budget: 10, margins: 10 }, sc.scoring || {});
-    if (mission.status === 'pending') return { status: 'pending', total: null, max: null, parts: [], grade: null };
+    if (mission.status === 'pending' || mission.status === 'decide') return { status: 'pending', total: null, max: null, parts: [], grade: null };
     var totalW = 0, okW = 0, okN = 0;
     reqs.forEach(function (r) { totalW += r.weight; if (r.status === 'ok') { okW += r.weight; okN++; } });
     var cost = resources.filter(function (r) { return r.id === 'cost'; })[0];
@@ -816,7 +835,7 @@
   }
 
   // Lições: dicas das falhas (requisitos, verificações, imprevistos sofridos).
-  function collectLessons(reqs, checks, risks) {
+  function collectLessons(reqs, checks, risks, life) {
     var out = [], seen = {};
     function add(source, text) {
       if (text && !seen[text]) { seen[text] = true; out.push({ source: source, text: text }); }
@@ -825,6 +844,13 @@
     checks.forEach(function (c) { if (c.status === 'fail') add(c.id, c.hint); });
     (risks || []).forEach(function (r) { if (r.occurs && !r.mitigated) add(r.id, L(r.def.lesson)); });
     checks.forEach(function (c) { if (c.status === 'warn') add(c.id, c.hint); });
+    if (life && !life.pending) {
+      var tl = life.totals, ty = life.tally;
+      if (tl.end === 'reentry') add('LIFE', t('life.lesson.reentry'));
+      if (tl.end === 'battery') add('LIFE', t('life.lesson.battery'));
+      if (ty.resets > 0) add('LIFE', t('life.lesson.resets', { n: ty.resets }));
+      if (tl.lost > 0.01 * Math.max(tl.generated, 1e-9)) add('LIFE', t('life.lesson.lost', { pct: pct(tl.lost / Math.max(tl.generated, 1e-9)) }));
+    }
     return out;
   }
 
@@ -838,7 +864,9 @@
     var r = resolveSelection(state.design, sc, catalog);
     var slotLabel = {};
     sc.slots.forEach(function (s) { slotLabel[s.id] = L(s.label); });
-    var ctx = { scenario: sc, catalog: catalog, sel: r.sel, missing: r.missing, slotLabel: slotLabel };
+    var sw = data.spaceWeather && data.spaceWeather.periods;
+    var period = state && state.period && sw ? sw[state.period] : null;
+    var ctx = { scenario: sc, catalog: catalog, sel: r.sel, missing: r.missing, slotLabel: slotLabel, lifeMode: !!period };
 
     var mel = buildMEL(ctx);
     var metrics = computeMetrics(ctx, mel);
@@ -856,6 +884,19 @@
         return item ? L(item.name) : id;
       }
     };
+    // Missão no tempo (js/life.js): só com o projeto completo e a janela de lançamento escolhida.
+    var life = null;
+    if (period && !r.missing.length && MS.life) {
+      var mv = function (k) { return metrics[k].value; };
+      life = MS.life.simulate({
+        periodId: state.period, period: period, decisions: state.decisions || {},
+        h0: mv('altitude_km'), lifeYears: mv('lifetime_years'),
+        plannedDays: (isNum(sc.params && sc.params.plannedDuration_years) ? sc.params.plannedDuration_years : 1) * 365,
+        dataPerDay: mv('dataPerDay_Gbit'), downlinkPerDay: mv('downlink_Gbit_day'), storage: mv('storage_Gbit'),
+        powerGen: mv('powerGen_W'), powerUse: mv('powerUse_W')
+      });
+    }
+    env.life = life;
     // Sem semente (state.seed), os imprevistos aparecem como riscos mas não são sorteados.
     var seed = state && isNum(state.seed) ? state.seed >>> 0 : null;
     var risks = computeRisks(ctx, env, seed);
@@ -871,8 +912,8 @@
       mel: mel, metrics: metrics, resources: resources, checks: checks,
       requirements: requirements, verification: verification,
       risks: risks.map(function (x) { var o = Object.assign({}, x); delete o.def; delete o.mitigationResults; return o; }),
-      mission: mission, score: score,
-      lessons: collectLessons(requirements, checks, risks)
+      mission: mission, score: score, life: life, period: state && state.period || null,
+      lessons: collectLessons(requirements, checks, risks, life)
     };
   }
 

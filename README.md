@@ -33,6 +33,22 @@ After each choice, a short "chain of effects" line shows what that choice change
 Each customer needs a different satellite: every scenario has at least two different winning
 designs (checked by an automatic test), so players have to trade off rather than find one answer.
 
+### A living mission with real space weather
+
+In step 6 the player picks a launch date: **March 2019** (quiet Sun) or **March 2024** (solar maximum).
+The mission then runs day by day for one year through the space weather NASA actually recorded in that
+period (NASA DONKI, stored in `js/data/spaceweather.js`, so it works offline and without an API key):
+
+- Real geomagnetic storms heat and swell the upper air: more drag, the orbit drops faster
+  (and faster the lower it gets).
+- Real solar particle events can reset the on-board computer and wear the solar panels.
+- On-board memory fills with photos and empties during ground-station passes.
+- When mission control gets an alert, or memory or power runs short, the mission pauses and the player
+  decides; the answer becomes the rule for the rest of the year.
+
+The same design can succeed in 2019 and struggle in 2024. Charts and a mission diary (with links to each
+real NASA event) show cause and effect over time.
+
 ### Team mode
 "Play as a team" at the top. One person creates a room and shares the 6-letter code; the others
 join with it. Each player takes a role (Mission manager, Payload scientist, Spacecraft engineer,
@@ -53,6 +69,11 @@ between players).
   https://science.nasa.gov/mission/webb/game-build-it-yourself/
 - **GMAT — General Mission Analysis Tool** (NASA): reference for the orbital mechanics
   (period, shadow, ground-station contacts). https://software.nasa.gov/software/GSC-19468-1
+
+### Optional NASA data we also use
+
+- **DONKI — Space Weather Database Of Notifications, Knowledge, Information** (NASA CCMC): real storms,
+  flares and solar particle events of 2019–2020 and 2024–2025. https://ccmc.gsfc.nasa.gov/DONKI/
 
 ## What we simplified
 
@@ -89,6 +110,8 @@ js/data/catalog.js    orbits, launchers, ground stations and components
 js/data/scenarios.js  customers (scenarios): need, choices, requirements, verification, events, roles
 js/data/glossary.js   glossary terms (tips on dotted words)
 js/sim.js             pure engine: MS.sim.run(state) → metrics, checks, requirements, mission, score
+js/life.js            pure day-by-day mission: altitude, memory, panels, battery + real space weather + decisions
+js/data/spaceweather.js  real NASA DONKI events (2019–2020, 2024–2025)
 js/state.js           single state + actions + localStorage (MS.store)
 js/ui/core.js         header, steps, resource panel, previews, reusable pieces, clicks (data-action)
 js/ui/screen*.js      one screen per phase, registered with MS.ui.register(id, screen)
@@ -97,6 +120,7 @@ js/viz/mission3d.js   3D mission view (Three.js)
 js/net/team.js        team mode rules: roles and permissions (pure, tested)
 js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state
 js/ui/team-panel.js   team panel and notifications
+js/ui/mission-life.js launch date, decision cards, day-by-day charts and mission diary
 js/main.js            connects interface and state
 ```
 

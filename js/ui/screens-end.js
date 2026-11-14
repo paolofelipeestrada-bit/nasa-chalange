@@ -49,7 +49,16 @@
   ui.register('implement', {
     nextLabel: 'scr.implement.next',
     render: function (state, result) {
-      var m = result.mission;
+      var m = result.mission, life = result.life, lock = ui.phaseLock ? ui.phaseLock(state) : null;
+      var alt0 = result.metrics.altitude_km.value;
+      // 1. Data de lançamento (clima espacial real) antes de tudo.
+      var hasLife = !!(MS.life && MS.data.spaceWeather);
+      if (hasLife && !state.period) return ui.life.periodPicker(state, !!lock);
+      // 2. Missão parada esperando uma decisão do jogador.
+      if (m.status === 'decide') {
+        return '<div class="alert s-warn">' + h.esc(t('life.stopped', { day: m.decision.day + 1, total: life.days })) + '</div>' +
+          ui.life.decision(m.decision, !!lock) + ui.life.chart(life, alt0) + ui.life.diary(life) + ui.life.periodPicker(state, !!lock);
+      }
       var events = m.events.map(function (e) {
         var causes = e.causes && e.causes.length ? h.explain(e.causes.join(' '), t('impl.cause')) : '';
         return '<li><div class="when">' + h.esc(e.when) + '</div><div><div class="row-head"><span>' +
@@ -60,8 +69,10 @@
       var summary = o ? '<div class="alert s-' + m.status + '"><strong>' +
         h.esc(m.aborted ? t('impl.lost') : t('impl.maps', { maps: U.fmt(o.maps, 1), target: U.fmt(o.target, 0) })) +
         '</strong> ' + h.esc(o.explanation) + '</div>' : '';
-      return '<div class="card viz-card"><div data-viz="mission"></div></div>' +
-        '<div class="card"><h2>' + h.esc(t('impl.timeline')) + '</h2><ol class="timeline">' + events + '</ol></div>' + summary;
+      return '<div class="card viz-card"><div data-viz="mission"></div></div>' + summary +
+        (life ? ui.life.chart(life, alt0) + ui.life.diary(life) : '') +
+        '<div class="card"><h2>' + h.esc(t('impl.timeline')) + '</h2><ol class="timeline">' + events + '</ol></div>' +
+        (hasLife ? ui.life.periodPicker(state, !!lock) : '');
     }
   });
 
@@ -75,6 +86,16 @@
       }
     });
     return out.length ? '<div class="card"><h2>' + h.esc(t('rep.whyTitle')) + '</h2><ul class="why">' + out.join('') + '</ul></div>' : '';
+  }
+
+  // A missão no tempo, resumida: gráficos + números + o ano escolhido.
+  function lifeReport(result) {
+    var life = result.life;
+    if (!life) return '';
+    var per = MS.data.spaceWeather.periods[life.periodId];
+    return '<div class="card"><h2>' + h.esc(t('life.rep.title', { name: MS.i18n.L(per.name) })) + '</h2>' +
+      '<p>' + h.esc(ui.life.stats(life)) + '</p>' +
+      '<p class="small muted">' + h.esc(t('life.rep.compare')) + '</p></div>' + ui.life.chart(life, result.metrics.altitude_km.value);
   }
 
   ui.register('report', {
@@ -102,7 +123,7 @@
         '<span>' + s.total + '</span></div><div><div class="small muted">' + h.esc(t('rep.of', { max: s.max })) + '</div><h2 style="margin:2px 0 0">' + h.esc(s.grade || '') + '</h2></div></div>' +
         '<p class="small muted">' + h.esc(t('rep.line', { n: state.attempt, cost: h.value(cost), sched: h.value(result.metrics.schedule_months) })) + ' ' +
         h.esc(result.mission.explanation) + '</p></div>' +
-        whyList(result) +
+        whyList(result) + lifeReport(result) +
         '<div class="card"><h2>' + h.esc(t('rep.score')) + '</h2><div class="table-wrap"><table><tbody>' + parts + '</tbody></table></div></div>' +
         '<div class="card"><h2>' + h.esc(t('scr.design.reqs')) + '</h2>' + h.statusRows(result.requirements, { prefixId: true }) + '</div>' + luck +
         '<div class="card"><h2>' + h.esc(t('rep.lessons')) + '</h2>' + lessons +

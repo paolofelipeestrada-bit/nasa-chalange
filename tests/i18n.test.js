@@ -59,7 +59,7 @@
       payload: 'cam_mid', structure: 'struct_3u', power: 'eps_deploy',
       adcs: 'adcs_wheels', comms: 'com_sband', obc: 'obc_basic'
     };
-    var keyLike = /\b(ui|scr|eng|net|hud|rep|risk|mel|build|team|viz|impl|sum|about|chk|res|spec|st|x|p|s|m|u)\.[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)?\b/;
+    var keyLike = /\b(ui|scr|eng|net|hud|rep|risk|mel|build|team|viz|impl|sum|about|chk|res|spec|st|x|p|s|m|u|life)\.[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)?\b/;
     LANGS.forEach(function (l) {
       withLang(l, function () {
         Object.keys(MS.data.scenarios).forEach(function (sid) {
@@ -75,6 +75,19 @@
               assert(!raw || /\d/.test(raw[0].charAt(raw[0].indexOf('.') + 1)), l + '/' + sid + '/' + p.id + ': chave crua ' + (raw && raw[0]));
               assert(html.indexOf('[object Object]') === -1, l + '/' + sid + '/' + p.id + ': [object Object]');
             });
+            // Missão no tempo: decisão pendente e missão completa.
+            if (design === GOOD) {
+              [{}, { storm: 'keep', memory: 'overwrite', power: 'reduce' }].forEach(function (decisions) {
+                ['implement', 'report'].forEach(function (ph) {
+                  var b2 = MS.store.createState();
+                  var s2 = Object.assign(b2, { scenarioId: sid, phase: ph, reached: ph, period: 'y2024', decisions: decisions, design: Object.assign({}, b2.design, GOOD) });
+                  var text2 = MS.ui.renderHTML(s2).replace(/<[^>]*>/g, ' ');
+                  var left2 = text2.match(/\{[a-zA-Z]+\}/), raw2 = text2.match(keyLike);
+                  assert(!left2, l + '/' + sid + '/' + ph + ' (missão): marcador sobrando ' + (left2 && left2[0]));
+                  assert(!raw2 || /\d/.test(raw2[0].charAt(raw2[0].indexOf('.') + 1)), l + '/' + sid + '/' + ph + ' (missão): chave crua ' + (raw2 && raw2[0]));
+                });
+              });
+            }
           });
         });
       });

@@ -459,6 +459,8 @@
     prev: function () { dispatch('prevPhase'); },
     goto: function (d) { dispatch('goToPhase', [d.phase]); },
     retry: function () { dispatch('retry'); },
+    period: function (d) { dispatch('setPeriod', [d.id]); },
+    decide: function (d) { dispatch('decide', [d.id, d.choice]); },
     lang: function (d) { MS.i18n.setLang(d.lang); ui.local.cascade = null; rerender(); },
     hud: function (d) { ui.local.hudOpen = ui.local.hudOpen === d.hud ? null : d.hud; rerender(); },
     glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; rerender(); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },
@@ -471,7 +473,7 @@
 
   var rootEl = null, lastPhase = null;
   // Guarda qual botão estava em foco para devolver o foco depois de redesenhar.
-  var FOCUS_KEYS = ['action', 'slot', 'option', 'phase', 'hud', 'lang', 'id', 'role'];
+  var FOCUS_KEYS = ['action', 'slot', 'option', 'phase', 'hud', 'lang', 'id', 'role', 'choice'];
   function focusKey() {
     var a = root.document && root.document.activeElement;
     if (!a || !a.dataset || !a.dataset.action || !rootEl || !rootEl.contains(a)) return null;
@@ -541,7 +543,7 @@
     render: render, renderHTML: renderHTML, mount: mount, actions: ACTIONS,
     register: function (id, screen) { screens[id] = screen; },
     screens: screens, hudCards: HUD,
-    dispatch: dispatch, roomInfo: roomInfo, preview: previewOption, clearPreview: clearPreview,
+    dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,
     h: { esc: esc, badge: badge, value: value, explain: explain, specs: specs, scenario: scenario,
          term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
          choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel }
