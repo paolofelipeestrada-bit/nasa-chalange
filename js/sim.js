@@ -952,6 +952,20 @@
       }
       var eventIds = (sc.events || []).map(function (e) { return e.id; });
 
+      if (sc.team) {
+        var owned = {};
+        (sc.team.roles || []).forEach(function (role) {
+          var w = `${where}, papel ${role.id}`;
+          if (!role.id || !role.name) err(`${w}: falta "id" ou "name".`);
+          (role.slots || []).forEach(function (sid) {
+            if (slotIds.indexOf(sid) === -1) err(`${w}: escolha "${sid}" não existe.`);
+            if (owned[sid]) err(`${w}: escolha "${sid}" já pertence ao papel ${owned[sid]}.`);
+            owned[sid] = role.id;
+          });
+        });
+        if (!isNum(sc.team.maxPlayers) || sc.team.maxPlayers < 2) err(`${where}: team.maxPlayers deve ser 2 ou mais.`);
+      }
+
       (sc.randomEvents || []).forEach(function (re) {
         var w = `${where}, imprevisto ${re.id}`;
         if (!re.id) err(`${where}: imprevisto sem id.`);

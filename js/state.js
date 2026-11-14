@@ -21,7 +21,7 @@
   var STORAGE_KEY = 'missionSim.state';
   var VERSION = 1; // mude quando o formato do state mudar (progresso antigo é descartado)
 
-  var store = { state: null, render: function () {}, storage: null };
+  var store = { state: null, render: function () {}, storage: null, persist: true, listeners: [] };
 
   function data() { return MS.data; }
   function flow() { return data().flow; }
@@ -187,7 +187,7 @@
 
   // -------------------------------------------------------- Persistência
   function save() {
-    if (!store.storage) return;
+    if (!store.storage || !store.persist) return;
     try { store.storage.setItem(STORAGE_KEY, JSON.stringify(store.state)); }
     catch (e) { /* armazenamento bloqueado ou cheio: segue sem salvar */ }
   }
@@ -206,7 +206,24 @@
     store.state = deepFreeze(next);
     save();
     store.render(store.state);
+    store.listeners.forEach(function (fn) { try { fn(store.state); } catch (e) { if (root.console) console.error(e); } });
   }
+
+  // ------------------------------------------------- Multiplayer (sala)
+  // Avisa a cada mudança de state (o anfitrião usa para mandar à sala).
+  function onChange(fn) {
+    store.listeners.push(fn);
+    return function () { store.listeners = store.listeners.filter(function (f) { return f !== fn; }); };
+  }
+  // Substitui o state por um recebido (convidado recebendo do anfitrião).
+  function loadRemote(raw) {
+    var s = sanitize(raw);
+    if (!s) return false;
+    commit(s);
+    return true;
+  }
+  // Liga/desliga salvar no localStorage (convidados não sobrescrevem o jogo solo).
+  function setPersistence(on) { store.persist = !!on; }
 
   // Inicializa: carrega o progresso salvo (ou cria um novo) e chama render.
   //   opts.render      função chamada após cada mudança: render(state)
@@ -235,6 +252,8 @@
     setOrbit: setOrbit, setLauncher: setLauncher, setGroundStation: setGroundStation,
     nextPhase: nextPhase, prevPhase: prevPhase, goToPhase: goToPhase,
     retry: retry, reset: reset, setSeed: setSeed,
+    // multiplayer
+    onChange: onChange, load: loadRemote, setPersistence: setPersistence,
     // consultas
     canAdvance: canAdvance, phaseInfo: phaseInfo,
     // usados pelos testes

@@ -58,6 +58,25 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 100px; }
 .specs { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; font-size: 13px; margin: 0; }
 .specs dt { color: var(--muted); } .specs dd { margin: 0; }
 
+.option:disabled { cursor: not-allowed; opacity: .55; }
+.option.selected:disabled { opacity: .85; }
+.owner { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+.owner.mine { color: var(--accent); }
+
+/* Equipe (multiplayer) */
+.team .code { font-family: ui-monospace, Consolas, monospace; letter-spacing: .12em; color: var(--accent); }
+.team.compact { padding: 10px 16px; }
+.team.compact h2 { font-size: 16px; margin: 0; }
+.team-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.team-form label { display: flex; flex-direction: column; font-size: 13px; color: var(--muted); gap: 2px; }
+.team-form input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 10px; min-width: 150px; }
+.roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 10px 0 14px; }
+.role { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.role.mine { border-color: var(--accent); background: var(--accent-soft); }
+.people { margin: 0; padding-left: 18px; }
+#toasts { position: fixed; right: 16px; bottom: 70px; display: flex; flex-direction: column; gap: 8px; z-index: 50; max-width: min(360px, calc(100vw - 32px)); }
+.toast { background: var(--text); color: var(--bg); padding: 8px 12px; border-radius: var(--radius); font-size: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+
 /* Status */
 .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
 .badge.s-ok { background: var(--ok-soft); color: var(--ok); }

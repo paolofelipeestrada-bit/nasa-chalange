@@ -231,6 +231,22 @@
       }
     ],
 
+    // Modo equipe (multiplayer cooperativo): cada papel cuida de algumas escolhas.
+    //   slots       escolhas que só quem tem o papel pode mudar
+    //   canAdvance  quem tem este papel conduz as fases (avançar, voltar, simular de novo)
+    // Papel sem dono: qualquer um da sala pode mexer nas escolhas dele.
+    team: {
+      maxPlayers: 4,
+      roles: [
+        { id: 'manager', name: 'Gerente de missão', canAdvance: true, slots: ['orbit', 'launcher', 'groundStation'],
+          description: 'Define o conceito (órbita, lançador e estação) e conduz a equipe pelas fases.' },
+        { id: 'payload', name: 'Carga útil e dados', slots: ['payload', 'comms', 'obc'],
+          description: 'Escolhe o instrumento, o rádio e o computador: tudo o que gera e envia as imagens.' },
+        { id: 'bus', name: 'Plataforma', slots: ['structure', 'power', 'adcs'],
+          description: 'Cuida da estrutura, da energia e do apontamento: o satélite que carrega o instrumento.' }
+      ]
+    },
+
     // Pontuação (0–100): requisitos + resultado da missão + orçamento + margens.
     scoring: { requirements: 40, mission: 40, budget: 10, margins: 10 },
     grades: [

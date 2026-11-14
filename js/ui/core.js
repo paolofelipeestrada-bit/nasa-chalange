@@ -78,22 +78,38 @@
     return '<dl class="specs">' + rows + '</dl>';
   }
 
+  // Sala multiplayer ativa? (null = jogando sozinho)
+  function roomInfo() { return MS.net && MS.net.active() ? MS.net.info() : null; }
+  // Na sala, só quem conduz as fases pode navegar. Devolve o motivo ou ''.
+  function phaseLock(state) {
+    var room = roomInfo();
+    if (!room) return '';
+    var c = MS.team.can(scenario(state), room.members, room.me, 'nextPhase', []);
+    return c.ok ? '' : c.reason;
+  }
+
   // ---------------------------------------------------------- Componentes
   // Cartões de escolha para todos os slots da fase indicada (vem dos dados).
   function choices(state, phaseId) {
     var cat = MS.data.catalog;
     var structId = state.design.structure;
     var ff = structId && cat.components[structId] ? cat.components[structId].formFactor : null;
-    return scenario(state).slots.filter(function (s) { return s.phase === phaseId; }).map(function (slot) {
+    var room = roomInfo(), sc = scenario(state);
+    return sc.slots.filter(function (s) { return s.phase === phaseId; }).map(function (slot) {
       var cur = state.design[slot.id];
+      var owner = room ? MS.team.slotOwner(sc, room.members, slot.id) : null;
+      var locked = room && !MS.team.can(sc, room.members, room.me, 'select', [slot.id]).ok;
+      var ownerTag = owner && owner.role
+        ? ' <span class="owner' + (owner.member && owner.member.id === room.me ? ' mine' : '') + '">' +
+          esc(owner.role.name + ': ' + (owner.member ? owner.member.name : 'livre')) + '</span>' : '';
       var cards = slot.options.map(function (id) {
         var it = cat[slot.source][id], sel = cur === id;
-        return '<button type="button" class="option' + (sel ? ' selected' : '') + '" aria-pressed="' + sel + '"' +
+        return '<button type="button" class="option' + (sel ? ' selected' : '') + '" aria-pressed="' + sel + '"' + (locked ? ' disabled' : '') +
           ' data-action="select" data-slot="' + esc(slot.id) + '" data-option="' + esc(id) + '">' +
           '<span class="option-name">' + esc(it.name) + '</span>' +
           '<span class="option-desc">' + esc(it.description || '') + '</span>' + specs(it, ff) + '</button>';
       }).join('');
-      return '<section class="slot"><h3>' + esc(slot.label) + (cur ? '' : ' <span class="muted small">— escolha uma opção</span>') +
+      return '<section class="slot"><h3>' + esc(slot.label) + ownerTag + (cur ? '' : ' <span class="muted small">— escolha uma opção</span>') +
         '</h3><div class="options">' + cards + '</div></section>';
     }).join('');
   }
@@ -132,28 +148,32 @@
 
   // ------------------------------------------------------- Moldura da tela
   function header(state, info) {
+    var lock = phaseLock(state), room = MS.net ? MS.net.info() : { inRoom: false };
     var steps = info.phases.map(function (p, i) {
       var cls = i === info.index ? 'current' : i < info.index ? 'done' : '';
       return '<li><button type="button" class="' + cls + '" data-action="goto" data-phase="' + esc(p.id) + '"' +
-        (i > info.reachedIndex ? ' disabled' : '') + (i === info.index ? ' aria-current="step"' : '') + '>' +
+        (i > info.reachedIndex || (lock && i !== info.index) ? ' disabled' : '') + (i === info.index ? ' aria-current="step"' : '') + '>' +
         (i + 1) + '. ' + esc(p.title) + '</button></li>';
     }).join('');
     return '<header class="top"><div class="brand"><strong>' + esc(scenario(state).title) + '</strong>' +
       '<span class="muted small">Tentativa ' + state.attempt +
-      ' · <button type="button" class="btn small" data-action="reset">Recomeçar</button></span></div>' +
+      ' · <button type="button" class="btn small" data-action="team-toggle">' + (room.inRoom ? 'Equipe · ' + esc(room.code) : 'Jogar em equipe') + '</button>' +
+      ' <button type="button" class="btn small" data-action="reset"' + (lock ? ' disabled' : '') + '>Recomeçar</button></span></div>' +
       '<nav class="steps" aria-label="Fases"><ol>' + steps + '</ol></nav></header>';
   }
 
   function footer(state, info, screen) {
     var can = MS.store.canAdvance(state);
     var next = info.phases[info.index + 1];
+    var lock = phaseLock(state);
     var right = can.isLast
-      ? '<button type="button" class="btn primary" data-action="retry">Ajustar e simular de novo</button>'
-      : '<button type="button" class="btn primary" data-action="next"' + (can.ok ? '' : ' disabled') + '>' +
+      ? '<button type="button" class="btn primary" data-action="retry"' + (lock ? ' disabled' : '') + '>Ajustar e simular de novo</button>'
+      : '<button type="button" class="btn primary" data-action="next"' + (can.ok && !lock ? '' : ' disabled') + '>' +
         esc(screen && screen.nextLabel ? screen.nextLabel : 'Avançar: ' + next.title) + ' →</button>';
     var missing = can.missing.length ? 'Falta escolher: ' + can.missing.join(', ') : '';
+    if (lock) missing = lock + (missing ? ' ' + missing + '.' : '');
     return '<footer class="nav"><div class="nav-inner">' +
-      '<button type="button" class="btn" data-action="prev"' + (info.index === 0 ? ' disabled' : '') + '>← Voltar</button>' +
+      '<button type="button" class="btn" data-action="prev"' + (info.index === 0 || lock ? ' disabled' : '') + '>← Voltar</button>' +
       '<span class="missing">' + esc(missing) + '</span>' + right + '</div></footer>';
   }
 
@@ -173,19 +193,27 @@
     var warn = problems.length
       ? '<div class="alert s-fail"><strong>Problemas nos dados:</strong><ul>' +
         problems.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul></div>' : '';
-    return header(state, info) + '<main>' + warn +
+    return header(state, info) + '<main>' + warn + (ui.teamPanel ? ui.teamPanel(state) : '') +
       '<div class="phase-head"><h1>' + esc(info.current.title) + '</h1><p class="muted">' + esc(info.current.subtitle || '') + '</p></div>' +
       body + '</main>' + footer(state, info, screen);
   }
 
   // --------------------------------------------------------------- Ações
+  // Com sala ativa, a ação vai para o anfitrião (MS.net); sozinho, direto ao store.
+  function dispatch(name, args) {
+    if (MS.net && MS.net.active()) return MS.net.dispatch(name, args);
+    return MS.store[name].apply(null, args || []);
+  }
   var ACTIONS = {
-    select: function (d) { MS.store.select(d.slot, d.option); },
-    next: function () { MS.store.nextPhase(); },
-    prev: function () { MS.store.prevPhase(); },
-    goto: function (d) { MS.store.goToPhase(d.phase); },
-    retry: function () { MS.store.retry(); },
-    reset: function () { if (root.confirm('Apagar todas as escolhas e começar do zero?')) MS.store.reset(); }
+    select: function (d) { dispatch('select', [d.slot, d.option]); },
+    next: function () { dispatch('nextPhase'); },
+    prev: function () { dispatch('prevPhase'); },
+    goto: function (d) { dispatch('goToPhase', [d.phase]); },
+    retry: function () { dispatch('retry'); },
+    reset: function () {
+      var msg = roomInfo() ? 'Apagar as escolhas da equipe inteira e começar do zero?' : 'Apagar todas as escolhas e começar do zero?';
+      if (root.confirm(msg)) dispatch('reset');
+    }
   };
 
   var rootEl = null, lastPhase = null;
@@ -213,6 +241,7 @@
     render: render, renderHTML: renderHTML, mount: mount, actions: ACTIONS,
     register: function (id, screen) { screens[id] = screen; },
     screens: screens,
+    dispatch: dispatch, roomInfo: roomInfo,
     h: { esc: esc, badge: badge, value: value, explain: explain, specs: specs, scenario: scenario,
          choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel }
   });
