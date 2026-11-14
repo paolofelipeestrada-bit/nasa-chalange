@@ -112,6 +112,7 @@ js/data/catalog.js    orbits, launchers, ground stations and components
 js/data/scenarios.js  customers (scenarios): need, choices, requirements, verification, events, roles
 js/data/glossary.js   glossary terms (tips on dotted words)
 js/data/tutorial.js   steps of the optional guided tour (target on screen + text)
+js/data/shouts.js     team shouts: ask a role for a missing part, resource warnings, quick lines, "everyone ready?"
 js/sim.js             pure engine: MS.sim.run(state) → metrics, checks, requirements, mission, score
 js/advice.js          pure crew advice: each role judges the design by its own goal (Go/No-Go),
                       prediction buckets, previous-attempt comparison and learning cards
@@ -131,8 +132,10 @@ js/viz/orbit.js       Keplerian orbit propagator, after NASA mission-viz's Orbit
 js/viz/mission3d.js   3D mission view (Three.js): staged launch, the player's satellite, flight telemetry,
                       1×/5×/20× time warp, fullscreen and a trajectory colored by orbit status
 js/net/team.js        team mode rules: roles and permissions (pure, tested)
-js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state
+js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state; relays shouts and the ready check
+js/net/shouts.js      shout rules: which shouts make sense now, text in each player's language, validation (pure, tested)
 js/ui/team-panel.js   team panel and notifications
+js/ui/shouts-ui.js    Shout button, big alert with sound and screen shake, ready check bar
 js/ui/menu.js         start menu (play solo / team / tutorial / how it works) with a light 3D Earth behind it
 js/ui/tutorial.js     guided tour: spotlight + bubble over an example design (the player's design is untouched)
 js/ui/mission-life.js launch date, decision cards, day-by-day charts and mission diary

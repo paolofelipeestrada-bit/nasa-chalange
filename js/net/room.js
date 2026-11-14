@@ -12,6 +12,9 @@
  *   MS.net.dispatch(ação, args)   usado pela interface no lugar do store
  *   MS.net.active() · info()      para as telas
  *   MS.net.onUpdate               chamado quando sala/membros/status mudam
+ *   MS.net.shout(grito)           grito rápido para a equipe ({ t: 'shout' }); não mexe no state
+ *   MS.net.askReady() · answerReady(sim)   "todos prontos?" ({ t: 'ready' })
+ *   MS.net.onShout(msg) · onReady(ready)   avisos para a tela (js/ui/shouts-ui.js)
  * ===================================================================== */
 (function (root) {
   'use strict';
@@ -23,7 +26,7 @@
   var R = null;     // sessão atual da sala (null = jogando sozinho)
   var lastError = '';
 
-  var net = MS.net = { onUpdate: null, onToast: null };
+  var net = MS.net = { onUpdate: null, onToast: null, onShout: null, onReady: null };
 
   function notify() { if (net.onUpdate) net.onUpdate(); }
   function toast(msg) { if (net.onToast) net.onToast(msg); }
@@ -102,7 +105,39 @@
     }
     if (!R.conns[id]) return; // não se apresentou
     if (msg.t === 'roles') { applyRoles(id, msg.roles); return; }
+    if (msg.t === 'shout') { relayShout(id, msg.s); return; }
+    if (msg.t === 'ready-ask') { startReady(id); return; }
+    if (msg.t === 'ready-ans') { setReady(id, msg.ok); return; }
     if (msg.t === 'action') applyAction(id, msg.name, msg.args);
+  }
+
+  // Grito: o anfitrião confere (frase conhecida, 1 a cada 2 s) e repassa a todos.
+  function relayShout(id, raw) {
+    var sh = MS.shouts ? MS.shouts.clean(scenario(), raw) : null, now = Date.now();
+    R.lastShout = R.lastShout || {};
+    if (!sh || !MS.shouts.allow(R.lastShout[id], now)) return false;
+    R.lastShout[id] = now;
+    var msg = { t: 'shout', s: sh, by: nameOf(id), byId: id };
+    broadcast(msg);
+    if (id !== 'host' && net.onShout) net.onShout(msg);
+    return true;
+  }
+
+  // "Todos prontos?": rodada nova; quem pergunta já conta como pronto.
+  function startReady(id) {
+    R.ready = { round: (R.ready ? R.ready.round : 0) + 1, by: nameOf(id), byId: id, phase: MS.store.state.phase, answers: {} };
+    R.ready.answers[id] = true;
+    sendReady();
+  }
+  function setReady(id, ok) {
+    if (!R.ready) return;
+    R.ready.answers[id] = !!ok;
+    sendReady();
+  }
+  function sendReady() {
+    broadcast({ t: 'ready', ready: R.ready });
+    if (net.onReady) net.onReady(R.ready);
+    notify();
   }
 
   function applyRoles(id, roleIds) {
@@ -141,6 +176,10 @@
   // A cada mudança no anfitrião, a sala recebe o state novo.
   MS.store.onChange(function (state) {
     if (!R || !R.isHost) return;
+    if (R.ready && R.ready.phase !== state.phase) { // mudou de fase: a rodada acabou
+      R.ready = null; broadcast({ t: 'ready', ready: null });
+      setTimeout(notify, 0); // redesenha depois deste render (que ainda via a rodada)
+    }
     var p = R.pending;
     broadcast({ t: 'state', state: state, by: p ? p.by : R.myName, byId: p ? p.byId : 'host', what: p ? p.what : null,
       action: p ? p.action : null, args: p ? p.args : null });
@@ -188,6 +227,12 @@
         var what = msg.action ? team.describe(scenario(), msg.action, msg.args || []) : msg.what;
         toast(msg.by + ' ' + what + '.');
       }
+    } else if (msg.t === 'shout') {
+      if (msg.byId !== R.me && net.onShout) net.onShout(msg);
+    } else if (msg.t === 'ready') {
+      R.ready = msg.ready || null;
+      if (net.onReady) net.onReady(R.ready);
+      notify();
     } else if (msg.t === 'denied') {
       toast(msg.reason);
     } else if (msg.t === 'full') {
@@ -223,6 +268,28 @@
     send(R.conn, { t: 'action', name: name, args: args });
   }
 
+  // Grito rápido. Devolve true se saiu (false: sem sala ou rápido demais).
+  function shout(sh) {
+    if (!R || R.status !== 'online' || !MS.shouts) return false;
+    if (R.isHost) return relayShout('host', sh);
+    var now = Date.now();
+    if (!MS.shouts.clean(scenario(), sh) || !MS.shouts.allow(R.myLastShout, now)) return false;
+    R.myLastShout = now;
+    send(R.conn, { t: 'shout', s: sh });
+    return true;
+  }
+  function askReady() {
+    if (!R || R.status !== 'online') return;
+    if (R.isHost) startReady('host'); else send(R.conn, { t: 'ready-ask' });
+  }
+  function answerReady(ok) {
+    if (!R || R.status !== 'online') return;
+    if (R.isHost) setReady('host', ok); else send(R.conn, { t: 'ready-ans', ok: !!ok });
+  }
+
+  net.shout = shout;
+  net.askReady = askReady;
+  net.answerReady = answerReady;
   net.host = host;
   net.join = join;
   net.leave = leave;
@@ -234,7 +301,7 @@
     if (!R) return { inRoom: false, error: lastError };
     return {
       inRoom: true, isHost: R.isHost, code: R.code, me: R.me, myName: R.myName,
-      status: R.status, members: R.members, error: lastError
+      status: R.status, members: R.members, error: lastError, ready: R.ready || null
     };
   };
 })(globalThis);
