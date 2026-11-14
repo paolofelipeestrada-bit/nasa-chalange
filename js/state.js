@@ -8,8 +8,10 @@
  *   - Resultados NÃO ficam no state: a tela chama MS.sim.run(state).
  *
  * Formato:
- *   { version, scenarioId, phase, reached, attempt,
+ *   { version, scenarioId, phase, reached, attempt, seed,
  *     design: { orbit, launcher, groundStation, payload, structure, ... } }
+ *   seed = semente dos imprevistos (muda a cada tentativa; no multiplayer
+ *          a sala inteira usa a mesma)
  *   phase = fase atual · reached = fase mais avançada já liberada
  * ===================================================================== */
 (function (root) {
@@ -27,6 +29,14 @@
   function scenarioOf(s) { return data().scenarios[s.scenarioId]; }
   function findSlot(sc, id) { return sc.slots.filter(function (s) { return s.id === id; })[0] || null; }
 
+  function newSeed() {
+    try {
+      var a = new Uint32Array(1);
+      root.crypto.getRandomValues(a);
+      return a[0];
+    } catch (e) { return Math.floor(Math.random() * 4294967296) >>> 0; }
+  }
+
   function draft() { return JSON.parse(JSON.stringify(store.state)); }
   function deepFreeze(o) {
     Object.keys(o).forEach(function (k) {
@@ -43,7 +53,7 @@
     var design = {};
     sc.slots.forEach(function (slot) { design[slot.id] = null; });
     var first = flow().phases[0].id;
-    return { version: VERSION, scenarioId: sid, phase: first, reached: first, attempt: 1, design: design };
+    return { version: VERSION, scenarioId: sid, phase: first, reached: first, attempt: 1, seed: newSeed(), design: design };
   }
 
   // Escolhas que faltam para sair da fase indicada (inclui fases anteriores).
@@ -88,6 +98,7 @@
     if (ids.indexOf(raw.phase) !== -1) s.phase = raw.phase;
     if (ids.indexOf(raw.reached) !== -1) s.reached = raw.reached;
     if (typeof raw.attempt === 'number' && raw.attempt >= 1) s.attempt = Math.floor(raw.attempt);
+    if (typeof raw.seed === 'number' && isFinite(raw.seed)) s.seed = raw.seed >>> 0;
     return clampPhases(s);
   }
 
@@ -155,9 +166,18 @@
   function retry() {
     var s = draft();
     s.attempt += 1;
+    s.seed = newSeed(); // imprevistos novos a cada tentativa
     s.phase = flow().retryPhase || phaseIds()[0];
     s.reached = s.phase;
     commit(clampPhases(s));
+  }
+
+  // Define a semente dos imprevistos (multiplayer: a sala usa a mesma).
+  function setSeed(seed) {
+    if (typeof seed !== 'number' || !isFinite(seed)) throw new Error('Semente inválida.');
+    var s = draft();
+    s.seed = seed >>> 0;
+    commit(s);
   }
 
   // Começar do zero (opcionalmente em outro cenário).
@@ -214,7 +234,7 @@
     select: select, selectComponent: selectComponent,
     setOrbit: setOrbit, setLauncher: setLauncher, setGroundStation: setGroundStation,
     nextPhase: nextPhase, prevPhase: prevPhase, goToPhase: goToPhase,
-    retry: retry, reset: reset,
+    retry: retry, reset: reset, setSeed: setSeed,
     // consultas
     canAdvance: canAdvance, phaseInfo: phaseInfo,
     // usados pelos testes

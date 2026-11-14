@@ -562,57 +562,160 @@
   }
 
   // ---------------------------------------------------- Missão (Implement)
-  function evalCondition(c, metrics, R, C) {
+  // Condições usadas em eventos e imprevistos:
+  //   { check }  { requirement }  { metric, op, value|ref }
+  //   { slot, is }               escolha feita (is: id ou lista de ids)
+  //   { margin, op, value }      folga de um recurso (0,25 = 25%)
+  function evalCondition(c, env) {
     if (c.check) {
-      var k = C[c.check];
+      var k = env.C[c.check];
       if (!k) return { status: 'fail', explanation: `Verificação desconhecida: ${c.check}.` };
       return { status: k.status === 'warn' ? 'ok' : k.status, explanation: `${k.label}: ${k.explanation}` };
     }
     if (c.requirement) {
-      var r = R[c.requirement];
+      var r = env.R[c.requirement];
       if (!r) return { status: 'fail', explanation: `Requisito desconhecido: ${c.requirement}.` };
       return { status: r.status, explanation: `${r.id} ${r.title}: ${r.explanation}` };
     }
-    if (c.metric) return compareMetric(c, metrics);
+    if (c.metric) return compareMetric(c, env.metrics);
+    if (c.slot) {
+      var item = env.sel[c.slot], want = [].concat(c.is || []);
+      var label = env.slotLabel[c.slot] || c.slot;
+      if (!item) return { status: 'pending', explanation: `${label}: ainda não escolhido.` };
+      var okSlot = want.indexOf(item.id) !== -1;
+      return {
+        status: okSlot ? 'ok' : 'fail',
+        explanation: `${label}: "${item.name}"` + (okSlot ? '.' : ` — precisaria ser ${want.map(function (id) {
+          return '"' + env.optionName(c.slot, id) + '"';
+        }).join(' ou ')}.`)
+      };
+    }
+    if (c.margin) {
+      var res = env.res[c.margin];
+      if (!res) return { status: 'fail', explanation: `Recurso desconhecido: ${c.margin}.` };
+      if (!isNum(res.margin)) return { status: 'pending', explanation: res.explanation };
+      var okM = OPS[c.op] ? OPS[c.op](res.margin, c.value) : false;
+      return {
+        status: okM ? 'ok' : 'fail',
+        explanation: `Folga de ${res.label.toLowerCase()}: ${pct(res.margin)} (precisa ${OP_TEXT[c.op] || c.op} ${pct(c.value)}).`
+      };
+    }
     return { status: 'ok', explanation: '' };
   }
 
-  function runMission(ctx, metrics, reqs, checks) {
-    var sc = ctx.scenario, p = sc.params || {};
+  // ------------------------------------------------ Imprevistos e riscos
+  // Sorteio determinístico: mesma semente + mesmo id = mesmo resultado.
+  // Cada imprevisto usa o próprio id, então acrescentar um não muda os outros.
+  function hashStr(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function roll(seed, id) {
+    var a = (seed ^ hashStr(String(id))) >>> 0;
+    a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  function effectText(eff) {
+    if (eff === 'abort') return 'a missão termina';
+    if (eff && typeof eff === 'object' && isNum(eff.degrade)) {
+      return eff.degrade === 0 ? 'nenhum mapa útil' : `o resultado cai para ${pct(eff.degrade)}`;
+    }
+    return 'sem efeito no resultado';
+  }
+
+  // Registro de riscos: para cada imprevisto, se se aplica, se o projeto
+  // está protegido e (com semente) se aconteceu nesta tentativa.
+  function computeRisks(ctx, env, seed) {
+    var hasSeed = isNum(seed);
+    return (ctx.scenario.randomEvents || []).map(function (re) {
+      var applies = (re.appliesIf || []).map(function (c) { return evalCondition(c, env); });
+      var doesApply = applies.every(function (x) { return x.status === 'ok'; });
+      var mit = (re.mitigatedBy || []).map(function (c) { return evalCondition(c, env); });
+      var mitigated = mit.length > 0 && mit.every(function (x) { return x.status === 'ok'; });
+      var r = hasSeed ? roll(seed, re.id) : null;
+      var occurs = doesApply && hasSeed && r < re.chance;
+      var status = !doesApply ? 'na' : mitigated ? 'ok' : 'warn';
+      var why = !doesApply
+        ? 'Não se aplica a este projeto: ' + applies.filter(function (x) { return x.status !== 'ok'; })
+            .map(function (x) { return x.explanation; }).join(' ')
+        : mitigated
+          ? 'Projeto protegido: ' + mit.map(function (x) { return x.explanation; }).join(' ')
+          : mit.length
+            ? 'Projeto exposto: ' + mit.filter(function (x) { return x.status !== 'ok'; }).map(function (x) { return x.explanation; }).join(' ')
+            : 'Não há como evitar: só dá para ter sorte ou absorver o impacto.';
+      return {
+        id: re.id, title: re.title, when: re.when || '', after: re.after || null,
+        description: re.description || '', chance: re.chance,
+        applies: doesApply, mitigated: mitigated, occurs: occurs, roll: r, status: status,
+        impact: mitigated ? 'nenhum (mitigado)' : effectText(re.effect),
+        explanation: why, def: re, mitigationResults: mit
+      };
+    });
+  }
+
+  function runMission(ctx, env, risks) {
+    var sc = ctx.scenario, p = sc.params || {}, metrics = env.metrics;
     var events = sc.events || [];
     if (ctx.missing.length) {
       return {
         status: 'pending', aborted: null, outcome: null,
         explanation: 'Complete todas as escolhas para simular a missão.',
         events: events.map(function (ev) {
-          return { id: ev.id, when: ev.when || '', title: ev.title, status: 'pending', text: '', causes: [] };
+          return { id: ev.id, when: ev.when || '', title: ev.title, status: 'pending', text: '', causes: [], random: false };
         })
       };
     }
-    var R = indexBy(reqs, 'id'), C = indexBy(checks, 'id');
-    var log = [], aborted = null, factor = 1;
 
+    // Sequência: eventos planejados + imprevistos sorteados logo depois do
+    // evento indicado em "after" (sem "after": no fim).
+    var occurring = risks.filter(function (r) { return r.occurs; });
+    var seq = [];
     events.forEach(function (ev) {
-      var base = { id: ev.id, when: ev.when || '', title: ev.title };
+      seq.push({ ev: ev, risk: null });
+      occurring.filter(function (r) { return r.after === ev.id; }).forEach(function (r) { seq.push({ ev: r.def, risk: r }); });
+    });
+    occurring.filter(function (r) { return !r.after || !events.some(function (e) { return e.id === r.after; }); })
+      .forEach(function (r) { seq.push({ ev: r.def, risk: r }); });
+
+    var log = [], aborted = null, factor = 1;
+    seq.forEach(function (step) {
+      var ev = step.ev, risk = step.risk;
+      var base = { id: ev.id, when: ev.when || '', title: ev.title, random: !!risk };
       if (aborted) {
         log.push(Object.assign(base, { status: 'skipped', text: `Não aconteceu: a missão terminou em "${aborted.title}".`, causes: [] }));
         return;
       }
-      var failed = (ev.conditions || [])
-        .map(function (c) { return evalCondition(c, metrics, R, C); })
-        .filter(function (r) { return r.status !== 'ok'; });
+      var failed, success, failure, eff;
+      if (risk) {
+        failed = risk.mitigated ? [] : (risk.mitigationResults.filter(function (x) { return x.status !== 'ok'; }).length
+          ? risk.mitigationResults.filter(function (x) { return x.status !== 'ok'; })
+          : [{ explanation: 'Não havia como evitar este imprevisto.' }]);
+        success = ev.mitigatedText || ev.text;
+        failure = ev.text;
+        eff = ev.effect || 'none';
+      } else {
+        failed = (ev.conditions || [])
+          .map(function (c) { return evalCondition(c, env); })
+          .filter(function (r) { return r.status !== 'ok'; });
+        success = ev.success;
+        failure = ev.failure;
+        eff = ev.onFail || 'abort';
+      }
       if (!failed.length) {
-        log.push(Object.assign(base, { status: 'ok', text: fill(ev.success, metrics), causes: [] }));
+        log.push(Object.assign(base, { status: 'ok', text: fill(success, metrics), causes: [] }));
         return;
       }
-      var eff = ev.onFail || 'abort', status = 'warn';
+      var status = 'warn';
       if (eff === 'abort') { aborted = ev; status = 'fail'; }
       else if (typeof eff === 'object' && isNum(eff.degrade)) {
         factor *= eff.degrade;
         if (eff.degrade === 0) status = 'fail';
       }
       log.push(Object.assign(base, {
-        status: status, effect: eff, text: fill(ev.failure, metrics),
+        status: status, effect: eff, text: fill(failure, metrics),
         causes: failed.map(function (r) { return r.explanation; })
       }));
     });
@@ -673,14 +776,15 @@
     return { status: 'ok', total: total, max: max, parts: parts, grade: grade ? grade.label : null };
   }
 
-  // Lições: dicas das falhas (primeiro requisitos, depois verificações).
-  function collectLessons(reqs, checks) {
+  // Lições: dicas das falhas (requisitos, verificações, imprevistos sofridos).
+  function collectLessons(reqs, checks, risks) {
     var out = [], seen = {};
     function add(source, text) {
       if (text && !seen[text]) { seen[text] = true; out.push({ source: source, text: text }); }
     }
     reqs.forEach(function (r) { if (r.status === 'fail') add(r.id, r.hint); });
     checks.forEach(function (c) { if (c.status === 'fail') add(c.id, c.hint); });
+    (risks || []).forEach(function (r) { if (r.occurs && !r.mitigated) add(r.id, r.def.lesson); });
     checks.forEach(function (c) { if (c.status === 'warn') add(c.id, c.hint); });
     return out;
   }
@@ -704,18 +808,32 @@
     var checks = computeChecks(ctx, metrics, resources);
     var requirements = evaluateRequirements(sc, metrics);
     var verification = evaluateVerification(sc, requirements, checks);
-    var mission = runMission(ctx, metrics, requirements, checks);
+    var env = {
+      metrics: metrics, sel: r.sel, slotLabel: slotLabel,
+      R: indexBy(requirements, 'id'), C: indexBy(checks, 'id'), res: indexBy(resources, 'id'),
+      optionName: function (slotId, id) {
+        var slot = sc.slots.filter(function (s) { return s.id === slotId; })[0];
+        var item = slot && (catalog[slot.source] || {})[id];
+        return item ? item.name : id;
+      }
+    };
+    // Sem semente (state.seed), os imprevistos aparecem como riscos mas não são sorteados.
+    var seed = state && isNum(state.seed) ? state.seed >>> 0 : null;
+    var risks = computeRisks(ctx, env, seed);
+    var mission = runMission(ctx, env, risks);
     var score = computeScore(sc, requirements, resources, mission);
 
     return {
       scenarioId: sc.id,
+      seed: seed,
       complete: r.missing.length === 0,
       missing: r.missing.map(function (id) { return { slot: id, label: slotLabel[id] }; }),
       selection: r.sel,
       mel: mel, metrics: metrics, resources: resources, checks: checks,
       requirements: requirements, verification: verification,
+      risks: risks.map(function (x) { var o = Object.assign({}, x); delete o.def; delete o.mitigationResults; return o; }),
       mission: mission, score: score,
-      lessons: collectLessons(requirements, checks)
+      lessons: collectLessons(requirements, checks, risks)
     };
   }
 
@@ -809,19 +927,55 @@
         (v.checks || []).forEach(function (id) { if (!CHECKS[id]) err(`${w}: verificação "${id}" não existe.`); });
       });
 
+      function checkCond(c, w) {
+        if (c.check) { if (!CHECKS[c.check]) err(`${w}: verificação "${c.check}" não existe.`); }
+        else if (c.requirement) { if (reqIds.indexOf(c.requirement) === -1) err(`${w}: requisito "${c.requirement}" não existe.`); }
+        else if (c.metric) checkSpec(c, w);
+        else if (c.slot) {
+          var slot = (sc.slots || []).filter(function (s) { return s.id === c.slot; })[0];
+          if (!slot) err(`${w}: escolha "${c.slot}" não existe.`);
+          else [].concat(c.is || []).forEach(function (id) {
+            if (slot.options.indexOf(id) === -1) err(`${w}: "${id}" não é opção de "${c.slot}".`);
+          });
+          if (!c.is) err(`${w}: condição de escolha sem "is".`);
+        }
+        else if (c.margin) {
+          if (!RESOURCES.some(function (r) { return r.id === c.margin; })) err(`${w}: recurso "${c.margin}" não existe.`);
+          if (!OPS[c.op]) err(`${w}: operador "${c.op}" inválido.`);
+          if (!isNum(c.value)) err(`${w}: falta "value" (número).`);
+        }
+        else err(`${w}: condição sem check, requirement, metric, slot ou margin.`);
+      }
+      function validEffect(f) {
+        return f === undefined || f === 'abort' || f === 'none' ||
+          (!!f && typeof f === 'object' && isNum(f.degrade) && f.degrade >= 0 && f.degrade <= 1);
+      }
+      var eventIds = (sc.events || []).map(function (e) { return e.id; });
+
+      (sc.randomEvents || []).forEach(function (re) {
+        var w = `${where}, imprevisto ${re.id}`;
+        if (!re.id) err(`${where}: imprevisto sem id.`);
+        if (eventIds.indexOf(re.id) !== -1) err(`${w}: id igual ao de um evento.`);
+        if (!re.title) err(`${w}: falta "title".`);
+        if (!re.text) err(`${w}: falta o texto "text".`);
+        if (!isNum(re.chance) || re.chance < 0 || re.chance > 1) err(`${w}: "chance" deve ser um número de 0 a 1.`);
+        if (re.after && eventIds.indexOf(re.after) === -1) err(`${w}: "after" aponta para evento "${re.after}" que não existe.`);
+        if (!validEffect(re.effect)) err(`${w}: effect inválido.`);
+        (re.appliesIf || []).concat(re.mitigatedBy || []).forEach(function (c) { checkCond(c, w); });
+        if ((re.mitigatedBy || []).length && !re.mitigatedText) err(`${w}: falta o texto "mitigatedText".`);
+        [re.text, re.mitigatedText].forEach(function (t) {
+          String(t || '').replace(/\{(\w+)\}/g, function (all, key) {
+            if (!METRICS[key]) err(`${w}: {${key}} não é uma métrica.`);
+            return all;
+          });
+        });
+      });
+
       (sc.events || []).forEach(function (ev) {
         var w = `${where}, evento ${ev.id}`;
         if (!ev.title) err(`${w}: falta "title".`);
-        (ev.conditions || []).forEach(function (c) {
-          if (c.check) { if (!CHECKS[c.check]) err(`${w}: verificação "${c.check}" não existe.`); }
-          else if (c.requirement) { if (reqIds.indexOf(c.requirement) === -1) err(`${w}: requisito "${c.requirement}" não existe.`); }
-          else if (c.metric) checkSpec(c, w);
-          else err(`${w}: condição sem check, requirement ou metric.`);
-        });
-        var f = ev.onFail;
-        var okFail = f === undefined || f === 'abort' || f === 'none' ||
-          (f && typeof f === 'object' && isNum(f.degrade) && f.degrade >= 0 && f.degrade <= 1);
-        if (!okFail) err(`${w}: onFail inválido.`);
+        (ev.conditions || []).forEach(function (c) { checkCond(c, w); });
+        if (!validEffect(ev.onFail)) err(`${w}: onFail inválido.`);
         if ((ev.conditions || []).length && !ev.failure) err(`${w}: falta o texto "failure".`);
         [ev.success, ev.failure].forEach(function (t) {
           String(t || '').replace(/\{(\w+)\}/g, function (all, key) {

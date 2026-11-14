@@ -212,6 +212,20 @@
     assert.equal(r.complete, false);
     assert.equal(r.missing.length, 6);
     chooseDesign();
-    assert.equal(MS.sim.run(store.state).score.total, 100);
+    var noLuck = Object.assign({}, store.state, { seed: undefined }); // sem imprevistos
+    assert.equal(MS.sim.run(noLuck).score.total, 100);
+    assert.equal(MS.sim.run(store.state).risks.length, MS.data.scenarios.eo_cubesat.randomEvents.length);
+  });
+
+  test('semente: existe ao criar, muda a cada tentativa e pode ser definida', function () {
+    fresh();
+    var s1 = store.state.seed;
+    assert(typeof s1 === 'number', 'sem semente');
+    store.retry();
+    assert(store.state.seed !== s1, 'a semente deveria mudar no retry');
+    store.setSeed(42);
+    assert.equal(store.state.seed, 42);
+    assert.throws(function () { store.setSeed('x'); });
+    assert.equal(store.sanitize(JSON.parse(JSON.stringify(store.state))).seed, 42, 'semente salva é mantida');
   });
 })(globalThis);

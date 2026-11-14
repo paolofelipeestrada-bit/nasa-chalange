@@ -30,6 +30,7 @@
     var el = document.createElement('div');
     MS.ui.mount(el);
     MS.store.init({ storage: null, render: MS.ui.render });
+    MS.store.setSeed(T.quietSeed(GOOD)); // semente sem imprevistos: nota previsível
     function click(sel) {
       var b = el.querySelector(sel);
       assert(b, 'botão não encontrado: ' + sel);

@@ -33,6 +33,7 @@ e progresso; resultados são sempre recalculados.
 | Componente, órbita, lançador, estação | `catalog.js` + o id em `options` do slot em `scenarios.js` |
 | Requisito | `scenarios.js` → `requirements` (métricas em `MS.sim.metricDefs`) |
 | Evento da missão | `scenarios.js` → `events` (condição: `check`, `requirement` ou `metric`) |
+| Imprevisto (evento aleatório) | `scenarios.js` → `randomEvents` (chance, `appliesIf`, `mitigatedBy`, `effect`, `after`). Sorteio pela semente `state.seed`: mesma semente, mesmos imprevistos |
 | Linha do plano de verificação | `scenarios.js` → `verification` |
 | Cenário | copiar o bloco `eo_cubesat` em `scenarios.js` e trocar o id |
 | Fase | `phases.js` + uma tela nova com `MS.ui.register('id', { render })` num arquivo em `js/ui/` (e a tag `<script>` no `index.html`) |

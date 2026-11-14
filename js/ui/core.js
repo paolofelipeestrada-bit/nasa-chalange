@@ -25,7 +25,7 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  var STATUS_TEXT = { ok: 'OK', warn: 'Atenção', fail: 'Falha', pending: 'Pendente', skipped: 'Não ocorreu' };
+  var STATUS_TEXT = { ok: 'OK', warn: 'Atenção', fail: 'Falha', pending: 'Pendente', skipped: 'Não ocorreu', na: 'Não se aplica' };
   function badge(status, text) {
     return '<span class="badge s-' + esc(status) + '">' + esc(text || STATUS_TEXT[status] || status) + '</span>';
   }

@@ -35,6 +35,14 @@
     group: function (name) { currentGroup = name; },
     test: function (name, fn) { tests.push({ group: currentGroup, name: name, fn: fn }); },
     assert: assert,
+    // Primeira semente em que nenhum imprevisto acontece para este projeto.
+    quietSeed: function (design) {
+      for (var seed = 1; seed < 100000; seed++) {
+        var r = root.MS.sim.run({ scenarioId: 'eo_cubesat', design: design, seed: seed });
+        if (!r.risks.some(function (x) { return x.occurs; })) return seed;
+      }
+      throw new Error('nenhuma semente tranquila encontrada');
+    },
     run: function () {
       return tests.map(function (t) {
         try {

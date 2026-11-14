@@ -14,6 +14,7 @@
  *                             (ou ref: comparar com outra métrica)
  *   verification              plano de verificação (Build & Verify)
  *   events                    linha do tempo da missão (Implement)
+ *   randomEvents              imprevistos sorteados (chance, mitigação, efeito)
  *   scoring, grades           pesos da pontuação e faixas do relatório
  *
  * Métricas e verificações disponíveis: MS.sim.metricDefs e
@@ -169,6 +170,61 @@
         conditions: [{ requirement: 'R4' }], onFail: 'none',
         success: 'A missão completou o ano previsto; a órbita ainda dura cerca de {lifetime_years} anos.',
         failure: 'O arrasto atmosférico derrubou o satélite após {lifetime_years} ano, antes do previsto.'
+      }
+    ],
+
+    // Imprevistos: sorteados com a semente da tentativa (state.seed).
+    //   chance       probabilidade de acontecer (0 a 1)
+    //   appliesIf    só pode acontecer se estas condições valerem
+    //   mitigatedBy  se o projeto cumprir isto, o imprevisto não causa dano
+    //   effect       dano sem mitigação: { degrade: 0.7 } · 'abort' · 'none'
+    //   after        aparece na linha do tempo logo depois deste evento
+    //   lesson       entra nas lições do relatório quando causa dano
+    randomEvents: [
+      {
+        id: 'RE1', when: 'Dia 0', after: 'E1', title: 'Atraso no lançamento', chance: 0.2,
+        description: 'Foguetes de carona atrasam com frequência por causa do clima ou de outros satélites.',
+        effect: { degrade: 0.85 },
+        text: 'O lançamento atrasou dois meses: sobrou menos tempo de operação no ano previsto.',
+        lesson: 'Atrasos de lançamento são comuns: um satélite com vida orbital longa compensa o tempo perdido.'
+      },
+      {
+        id: 'RE2', when: 'Mês 2', after: 'E6', title: 'Tempestade solar', chance: 0.25,
+        description: 'Uma tempestade solar forte danifica parte das células solares.',
+        mitigatedBy: [{ margin: 'power', op: '>=', value: 0.3 }], effect: { degrade: 0.7 },
+        text: 'Uma tempestade solar danificou células solares: a energia ficou curta e o satélite passou semanas em modo de segurança.',
+        mitigatedText: 'Uma tempestade solar danificou células solares, mas a folga de energia absorveu a perda.',
+        lesson: 'Deixe pelo menos 30% de folga de energia: a radiação reduz a geração dos painéis.'
+      },
+      {
+        id: 'RE3', when: 'Mês 1', after: 'E5', title: 'Bug no software de bordo', chance: 0.3,
+        description: 'Um erro de software trava o computador e exige enviar uma correção grande lá de cima.',
+        mitigatedBy: [{ slot: 'comms', is: 'com_sband' }], effect: { degrade: 0.75 },
+        text: 'Um bug travou o computador de bordo. Pelo rádio lento, a correção levou semanas para subir.',
+        mitigatedText: 'Um bug travou o computador de bordo; a correção subiu em uma passagem pelo rádio banda S.',
+        lesson: 'Um rádio rápido também serve para corrigir o software em órbita.'
+      },
+      {
+        id: 'RE4', when: 'Mês 5', after: 'E6', title: 'Falha de uma roda de reação', chance: 0.15,
+        description: 'Rodas de reação têm partes móveis e podem travar.',
+        appliesIf: [{ slot: 'adcs', is: 'adcs_wheels' }], effect: { degrade: 0.6 },
+        text: 'Uma das rodas de reação travou. O satélite segue apontando com as outras, mas perde parte das imagens.',
+        lesson: 'Peças com partes móveis falham: missões reais levam uma roda extra (redundância).'
+      },
+      {
+        id: 'RE5', when: 'Mês 6', after: 'E7', title: 'Alerta de colisão com detrito', chance: 0.25,
+        description: 'Perto da ISS há muito tráfego e detritos; manobras de desvio interrompem as imagens.',
+        appliesIf: [{ slot: 'orbit', is: 'iss400' }], effect: { degrade: 0.9 },
+        text: 'Um detrito passou perto e as operações pararam por vários dias para análise e desvio.',
+        lesson: 'Órbitas cheias, como a da ISS, trazem mais interrupções por detritos.'
+      },
+      {
+        id: 'RE6', when: 'Mês 8', after: 'E8', title: 'Antena da estação em manutenção', chance: 0.3,
+        description: 'A antena em solo para por um mês e as passagens desse período são perdidas.',
+        mitigatedBy: [{ margin: 'downlink', op: '>=', value: 0.2 }], effect: { degrade: 0.85 },
+        text: 'A antena ficou um mês parada; sem folga para recuperar, as imagens acumuladas foram descartadas.',
+        mitigatedText: 'A antena ficou um mês parada, mas a folga de envio de dados recuperou o atraso depois.',
+        lesson: 'Folga de envio de dados (20% ou mais) protege contra passagens perdidas.'
       }
     ],
 
