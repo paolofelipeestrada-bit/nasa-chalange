@@ -475,6 +475,15 @@
     'card.easy.law': "La salida fácil lleva de vuelta al mismo lugar",
     'card.easy.why': "Mismo diseño que el intento {n}, y el puntaje no mejoró. Prueba cambiar una cosa a la vez.",
     'rep.pred.you': "Tu predicción",
-    'rep.pred.result': "Resultado"
+    'rep.pred.result': "Resultado",
+    'lobby.title': "Arma el equipo de la misión",
+    'lobby.sub': "Los equipos reales de la NASA negocian: cada rol quiere algo distinto. ¿Cómo vas a jugar?",
+    'lobby.solo': "Solo · Mission Director",
+    'lobby.soloText': "Juegas los cuatro roles. Tu equipo sigue dando consejos y votando Go o No-Go.",
+    'lobby.team': "Equipo · 2 a 4 personas",
+    'lobby.teamText': "Cada persona toma un rol y se encarga de sus piezas. Crea una sala y comparte el código.",
+    'lobby.teamBtn': "Abrir sala del equipo",
+    'lobby.playing': "Jugando solo",
+    'lobby.inRoom': "En la sala {code}"
   };
 })(globalThis);

@@ -495,6 +495,15 @@
     'card.easy.law': "The easy way out leads back in",
     'card.easy.why': "Same design as attempt {n}, and the score did not get better. Try changing one thing at a time.",
     'rep.pred.you': "Your guess",
-    'rep.pred.result': "Result"
+    'rep.pred.result': "Result",
+    'lobby.title': "Assemble your mission crew",
+    'lobby.sub': "Real NASA teams negotiate: every role wants something different. How are you playing?",
+    'lobby.solo': "Solo · Mission Director",
+    'lobby.soloText': "You play all four roles. Your crew still speaks up as advisors and votes Go or No-Go.",
+    'lobby.team': "Team · 2 to 4 players",
+    'lobby.teamText': "Each player takes a role and owns its parts. Create a room and share the code.",
+    'lobby.teamBtn': "Open team room",
+    'lobby.playing': "Playing solo",
+    'lobby.inRoom': "In room {code}"
   };
 })(globalThis);

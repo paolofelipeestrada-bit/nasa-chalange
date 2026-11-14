@@ -21,10 +21,10 @@ arrows at the top of the screen:
 | 1. Identify Need & Goals | Pick a customer (deforestation, fire scars or urban growth) and read the goals |
 | 2. Define Concept | Choose orbit, launcher and ground station |
 | 3. Define Requirements | Goals become measurable requirements, each with a way to verify it |
-| 4. Design | Choose the camera, structure, power, attitude control, radio and computer |
-| 5. Build & Verify | Every requirement is checked; see which risks the design is exposed to |
+| 4. Design | The Mission Director's cockpit: parts in tabs by crew role (Science, Satellite, Comms), the satellite and its *ripple effect* in the center, the customer's goals and **crew advice** on the right |
+| 5. Build & Verify | Every requirement is checked; the four crew members vote **Go / No-Go** from their own goals; **predict** how much data will reach Earth before you launch |
 | 6. Implement | Launch and watch the mission in 3D (stages separate, live telemetry, time warp, fullscreen), with random surprises. The ISS is always in orbit; with the Station cargo ride, the cargo ship climbs by Hohmann transfer, docks and the CubeSat is released from the Station |
-| Mission Report | Score, why things happened, and lessons for the next attempt |
+| Mission Report | Score, why things happened, your prediction vs. the result, a side-by-side comparison with your previous attempt, and **learning cards** (systems-thinking laws after Peter Senge) unlocked by what you just lived |
 
 The 6 resources the challenge asks for are always on screen (the panel stays visible while you
 scroll). Hover or focus an option to preview how it would change each resource before choosing.
@@ -114,6 +114,8 @@ js/data/catalog.js    orbits, launchers, ground stations and components
 js/data/scenarios.js  customers (scenarios): need, choices, requirements, verification, events, roles
 js/data/glossary.js   glossary terms (tips on dotted words)
 js/sim.js             pure engine: MS.sim.run(state) → metrics, checks, requirements, mission, score
+js/advice.js          pure crew advice: each role judges the design by its own goal (Go/No-Go),
+                      prediction buckets, previous-attempt comparison and learning cards
 js/life.js            pure day-by-day mission: altitude, memory, panels, battery + real space weather + decisions
 js/data/spaceweather.js  real NASA DONKI events (2019–2020, 2024–2025)
 js/state.js           single state + actions + localStorage (MS.store)
@@ -153,6 +155,7 @@ results are always recomputed. The language belongs to each player and is not pa
 | Help text of a phase | `phases.js` → `guide`, `tips`, `nasa` |
 | Glossary term | `glossary.js`; in data texts use `[[key]]` or `[[key\|text]]` |
 | Team role | `scenarios.js` → `team.roles` |
+| Crew advice or a learning card | `js/advice.js` (`crew`, `cards`) + texts `crew.*` / `card.*` in the 3 languages |
 | 3D look of an item | derived from its data in `js/viz/looks.js`; override with a `look: {...}` field on the catalog item |
 | New kind of 3D model | a builder in `BUILDERS` in `js/viz/parts3d.js` + its name in `MS.looks.KINDS` |
 | New physics, metric or check type | `sim.js` (`METRICS` + `computeMetrics`, `CHECKS` + `computeChecks`) |

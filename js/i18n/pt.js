@@ -476,6 +476,15 @@
     'card.easy.law': "O caminho fácil leva de volta ao mesmo lugar",
     'card.easy.why': "Mesmo projeto da tentativa {n}, e a nota não melhorou. Experimente mudar uma coisa de cada vez.",
     'rep.pred.you': "Seu palpite",
-    'rep.pred.result': "Resultado"
+    'rep.pred.result': "Resultado",
+    'lobby.title': "Monte a equipe da missão",
+    'lobby.sub': "Equipes reais da NASA negociam: cada papel quer uma coisa diferente. Como você vai jogar?",
+    'lobby.solo': "Sozinho · Mission Director",
+    'lobby.soloText': "Você faz os quatro papéis. A equipe continua dando conselhos e votando Go ou No-Go.",
+    'lobby.team': "Equipe · 2 a 4 pessoas",
+    'lobby.teamText': "Cada pessoa assume um papel e cuida das suas peças. Crie uma sala e compartilhe o código.",
+    'lobby.teamBtn': "Abrir sala da equipe",
+    'lobby.playing': "Jogando sozinho",
+    'lobby.inRoom': "Na sala {code}"
   };
 })(globalThis);

@@ -22,6 +22,22 @@
     }).join('') + '</div>';
   }
 
+  // Abertura: como vai jogar (sozinho com conselheiros ou em equipe).
+  function lobby() {
+    var room = MS.net ? MS.net.info() : { inRoom: false };
+    var roles = ['sci', 'eng', 'mgr', 'com'].map(function (k) {
+      return '<span class="lb-role r-' + k + '">' + h.icon(k, { size: 18 }) + '</span>';
+    }).join('');
+    return '<section class="lobby"><div class="lb-head"><h2 class="pixel">' + h.esc(t('lobby.title')) + '</h2><p>' + h.esc(t('lobby.sub')) + '</p></div>' +
+      '<div class="lb-seats"><div class="lb-seat' + (room.inRoom ? '' : ' on') + '"><span class="lb-av r-dir">' + h.icon('dir', { size: 26 }) + '</span>' +
+        '<div><b>' + h.esc(t('lobby.solo')) + '</b><p>' + h.esc(t('lobby.soloText')) + '</p>' +
+        (room.inRoom ? '' : h.stateTag('ok', t('lobby.playing'))) + '</div></div>' +
+      '<div class="lb-seat' + (room.inRoom ? ' on' : '') + '"><span class="lb-roles">' + roles + '</span>' +
+        '<div><b>' + h.esc(t('lobby.team')) + '</b><p>' + h.esc(t('lobby.teamText')) + '</p>' +
+        (room.inRoom ? h.stateTag('ok', t('lobby.inRoom', { code: room.code })) : '<button type="button" class="btn small" data-action="team-toggle">' + h.icon('team', { size: 16 }) + h.esc(t('lobby.teamBtn')) + '</button>') +
+        '</div></div></div></section>';
+  }
+
   // ------------------------------------------------------- Need & Goals
   ui.register('need', {
     nextLabel: 'scr.need.next',
@@ -35,7 +51,7 @@
         return '<div><b>' + h.esc((p.nasaStep ? p.nasaStep + '. ' : '★ ') + L(p.title)) + '</b>' + h.esc(L(p.subtitle) || '') + '</div>';
       }).join('');
       var lat = sc.aoi.latitude_deg;
-      return '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2><p class="section-note">' + h.esc(t('scr.need.pickNote')) + '</p>' +
+      return lobby() + '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2><p class="section-note">' + h.esc(t('scr.need.pickNote')) + '</p>' +
         scenarioCards(state) + '</div>' +
         '<div class="cols"><div>' +
         '<div class="card"><h2>' + h.esc(t('scr.need.problem')) + '</h2><p class="section-note">' + h.esc(t('scr.need.customer')) + ' ' + h.esc(L(sc.customer)) + ' · ' +

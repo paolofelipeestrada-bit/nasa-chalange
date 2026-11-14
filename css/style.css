@@ -472,7 +472,7 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 
 /* ------------------------------------------------ Cockpit (fase Design) */
 /* esquerda: peças · centro: satélite + cascata · direita: checagem + equipe */
-.cockpit { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, .95fr); gap: 16px; align-items: start; }
+.cockpit { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .95fr); gap: 16px; align-items: start; }
 .ck-panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); }
 .ck-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .ck-head h2 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
@@ -543,7 +543,6 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 .ck-tab { flex: 1 1 0; min-width: 0; justify-content: center; padding: 6px 8px; font-size: 14px; }
 .ck-tab > span:not(.ck-tab-n) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Cartões compactos no cockpit: só massa, energia, volume e custo nas especificações */
-.cockpit { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .95fr); }
 .ck-parts .specs > :not(.sp-mass_kg):not(.sp-power_W):not(.sp-volume_U):not(.sp-cost_k):not(.sp-solarPower_W):not(.sp-dataRate_kbps):not(.sp-capacity_U) { display: none; }
 .ck-parts .option-thumb { height: 104px; }
 .ck-parts .option { padding: 12px; gap: 6px; }
@@ -598,3 +597,35 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 @keyframes card-in { from { opacity: 0; transform: rotateY(70deg) scale(.95); } to { opacity: 1; transform: none; } }
 @media (max-width: 860px) { .launch-deck, .report-deck { grid-template-columns: 1fr; } .verif-grid { grid-template-columns: 1fr; } }
 .report-crew .crew { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+
+/* ------------------------------------------------ Abertura (fase 1) */
+.lobby { margin-bottom: 16px; padding: 18px; border-radius: var(--radius); border: 1.5px solid var(--line);
+  background: radial-gradient(ellipse at 50% 140%, rgba(56, 132, 255, .3) 0, transparent 60%), var(--surface); box-shadow: var(--shadow); }
+.lb-head h2 { font-size: 26px; margin: 0 0 4px; color: var(--text); letter-spacing: .03em; }
+.lb-head p { color: var(--muted); margin: 0 0 14px; }
+.lb-seats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lb-seat { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 14px; background: var(--surface-2); border: 1.5px solid var(--line); }
+.lb-seat.on { border: 2px solid var(--accent); box-shadow: 0 0 0 4px rgba(76, 195, 255, .14); }
+.lb-seat b { font-size: 18px; }
+.lb-seat p { margin: 2px 0 8px; color: var(--muted); font-size: 15px; }
+.lb-av { --rc: var(--dir); flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: #0c1736; border: 2px solid var(--rc); color: var(--rc); }
+.lb-roles { flex: none; display: grid; grid-template-columns: 28px 28px; gap: 2px; }
+.lb-role { --rc: var(--dir); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #0c1736; border: 1.5px solid var(--rc); color: var(--rc); }
+.lb-role .ico { width: 15px; height: 15px; }
+.journey b::before { content: none; }
+@media (max-width: 760px) { .lb-seats { grid-template-columns: 1fr; } }
+
+/* Decisão durante a missão (alerta de clima espacial, estilo Kit) */
+.decision { border: 2px solid var(--warn); background: linear-gradient(160deg, rgba(255, 194, 71, .1), var(--surface) 55%); box-shadow: 0 0 0 4px rgba(255, 194, 71, .12), var(--shadow); }
+.decision-ic { background: var(--warn); color: #1a1300; }
+.decision .choice { min-height: 64px; border: 1.5px solid var(--line); background: var(--surface-2); }
+.decision .choice:hover:not(:disabled) { border-color: var(--warn); box-shadow: 0 0 0 3px rgba(255, 194, 71, .2); }
+.choice-title { font-size: 16px; }
+.choice-text { font-size: 14px; }
+/* Cor de cada papel: no fim do arquivo para valer sobre os padrões dos componentes */
+.r-sci { --rc: var(--sci); } .r-eng { --rc: var(--eng); } .r-mgr { --rc: var(--mgr); } .r-com { --rc: var(--com); } .r-dir { --rc: var(--dir); }
+@media (max-width: 560px) {
+  .ck-tab > span:not(.ck-tab-n) { display: none; }
+  .top-actions .btn.small { padding: 4px 8px; }
+  .ck-parts .options { grid-template-columns: 1fr; }
+}
