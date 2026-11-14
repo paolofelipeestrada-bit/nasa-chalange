@@ -66,7 +66,9 @@
           '<ul class="rows">' + items + '</ul></div>';
       }).join('');
       var lock = ui.phaseLock ? ui.phaseLock(state) : null;
-      return '<div class="launch-deck">' + goNoGo(state, result) + predictPanel(state, !!lock) + '</div>' +
+      var hasLife = !!(MS.life && MS.data.spaceWeather);
+      return '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + predictPanel(state, !!lock) +
+        (hasLife ? '<div class="launch-window">' + ui.life.periodPicker(state, !!lock) + '</div>' : '') + '</div></div>' +
         alert + '<div class="verif-grid">' + rows + '</div>' + riskCard(result);
     }
   });
@@ -82,7 +84,8 @@
       if (hasLife && !state.period) return ui.life.periodPicker(state, !!lock);
       // 2. Missão parada esperando uma decisão do jogador.
       if (m.status === 'decide') {
-        return '<div class="alert s-warn">' + h.esc(t('life.stopped', { day: m.decision.day + 1, total: life.days })) + '</div>' +
+        return '<div class="card viz-card"><div data-viz="mission"></div></div>' +
+          '<div class="alert s-warn">' + h.esc(t('life.stopped', { day: m.decision.day + 1, total: life.days })) + '</div>' +
           ui.life.decision(m.decision, !!lock) + ui.life.chart(life, alt0) + ui.life.diary(life) + ui.life.periodPicker(state, !!lock);
       }
       var events = m.events.map(function (e) {
@@ -206,7 +209,8 @@
         '<div class="card"><h2>' + h.esc(t('rep.lessons')) + '</h2>' + lessons +
         '<p class="small muted">' + h.esc(t('rep.realWorld')) + '</p>' +
         '<div class="actions"><button type="button" class="btn primary" data-action="retry">' + h.esc(t('ui.retry')) + '</button>' +
-        '<button type="button" class="btn" data-action="reset">' + h.esc(t('rep.restart')) + '</button></div></div>';
+        '<button type="button" class="btn" data-action="reset">' + h.esc(t('rep.restart')) + '</button></div></div>' +
+        '<details class="card credits"><summary>' + h.icon('book', { size: 18 }) + h.esc(t('rep.credits')) + '</summary>' + h.credits() + '</details>';
     }
   });
 })(globalThis);
