@@ -23,22 +23,24 @@
   }
 
   // Abertura: como vai jogar (sozinho com conselheiros ou em equipe).
+  // Versão curta: uma linha por modo; a explicação fica na dica ao passar o mouse.
   function lobby() {
     var room = MS.net ? MS.net.info() : { inRoom: false };
     var roles = ['sci', 'eng', 'mgr', 'com'].map(function (k) {
-      return '<span class="lb-role r-' + k + '">' + h.icon(k, { size: 18 }) + '</span>';
+      return '<span class="lb-role r-' + k + '">' + h.icon(k, { size: 16 }) + '</span>';
     }).join('');
-    return '<section class="lobby"><div class="lb-head"><h2 class="pixel">' + h.esc(t('lobby.title')) + '</h2><p>' + h.esc(t('lobby.sub')) + '</p></div>' +
-      '<div class="lb-seats"><div class="lb-seat' + (room.inRoom ? '' : ' on') + '"><span class="lb-av r-dir">' + h.icon('dir', { size: 26 }) + '</span>' +
-        '<div><b>' + h.esc(t('lobby.solo')) + '</b><p>' + h.esc(t('lobby.soloText')) + '</p>' +
-        (room.inRoom ? '' : h.stateTag('ok', t('lobby.playing'))) + '</div></div>' +
-      '<div class="lb-seat' + (room.inRoom ? ' on' : '') + '"><span class="lb-roles">' + roles + '</span>' +
-        '<div><b>' + h.esc(t('lobby.team')) + '</b><p>' + h.esc(t('lobby.teamText')) + '</p>' +
+    return '<section class="lobby compact" aria-label="' + h.esc(t('lobby.title')) + '"><div class="lb-seats">' +
+      '<div class="lb-seat' + (room.inRoom ? '' : ' on') + '" title="' + h.esc(t('lobby.soloText')) + '"><span class="lb-av r-dir">' + h.icon('dir', { size: 20 }) + '</span>' +
+        '<b>' + h.esc(t('lobby.solo')) + '</b>' + (room.inRoom ? '' : h.stateTag('ok', t('lobby.playing'))) + '</div>' +
+      '<div class="lb-seat' + (room.inRoom ? ' on' : '') + '" title="' + h.esc(t('lobby.teamText')) + '"><span class="lb-roles">' + roles + '</span>' +
+        '<b>' + h.esc(t('lobby.team')) + '</b>' +
         (room.inRoom ? h.stateTag('ok', t('lobby.inRoom', { code: room.code })) : '<button type="button" class="btn small" data-action="team-toggle">' + h.icon('team', { size: 16 }) + h.esc(t('lobby.teamBtn')) + '</button>') +
-        '</div></div></div></section>';
+      '</div></div></section>';
   }
 
   // ------------------------------------------------------- Need & Goals
+  // Uma decisão por tela: escolher o cliente. Embaixo, a missão dele num
+  // cartão só (problema, objetivos e limites em uma linha).
   ui.register('need', {
     nextLabel: 'scr.need.next',
     render: function (state) {
@@ -46,24 +48,15 @@
       var goals = sc.goals.map(function (g) {
         return '<li><span class="gid">' + h.esc(g.id) + '</span><span>' + h.rich(g.text) + '</span></li>';
       }).join('');
-      var cons = sc.constraints.map(function (c) { return '<li>' + h.rich(c) + '</li>'; }).join('');
-      var journey = MS.data.flow.phases.map(function (p) {
-        return '<div><b>' + h.esc((p.nasaStep ? p.nasaStep + '. ' : '★ ') + L(p.title)) + '</b>' + h.esc(L(p.subtitle) || '') + '</div>';
-      }).join('');
       var lat = sc.aoi.latitude_deg;
-      return lobby() + '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2><p class="section-note">' + h.esc(t('scr.need.pickNote')) + '</p>' +
-        scenarioCards(state) + '</div>' +
-        '<div class="cols"><div>' +
-        '<div class="card"><h2>' + h.esc(t('scr.need.problem')) + '</h2><p class="section-note">' + h.esc(t('scr.need.customer')) + ' ' + h.esc(L(sc.customer)) + ' · ' +
-          h.segmentChip('user') + '</p>' +
-        '<p>' + h.rich(sc.need) + '</p></div>' +
-        '<div class="card"><h2>' + h.esc(t('scr.need.goals')) + '</h2><p class="section-note">' + h.esc(t('scr.need.goalsNote1')) + ' ' + h.term('requirement', t('scr.need.goalsTerm')) + ' ' + h.esc(t('scr.need.goalsNote2')) + '</p>' +
-        '<ul class="goal-list">' + goals + '</ul></div></div>' +
-        '<aside class="side"><div class="card"><h2>' + h.esc(t('scr.need.constraints')) + '</h2><ul>' + cons + '</ul>' +
-        '<p class="small muted">' + h.esc(t('scr.need.aoi', { name: L(sc.aoi.name), area: U.withUnit(sc.aoi.area_km2, 'km²', 0), lat: U.fmt(Math.abs(lat), 0) + '° ' + (lat >= 0 ? 'N' : 'S') })) + '</p></div>' +
-        '<div class="card"><h2>' + h.esc(t('scr.need.how')) + '</h2><p class="section-note">' + h.esc(t('scr.need.howNote')) + '</p>' +
-        '<div class="journey">' + journey + '</div>' +
-        '<p class="small muted" style="margin-top:10px">' + h.esc(t('scr.need.howMore')) + '</p></div></aside></div>';
+      var limits = sc.constraints.map(function (c) { return '<li>' + h.rich(c) + '</li>'; }).join('') +
+        '<li>' + h.esc(t('scr.need.aoi', { name: L(sc.aoi.name), area: U.withUnit(sc.aoi.area_km2, 'km²', 0), lat: U.fmt(Math.abs(lat), 0) + '° ' + (lat >= 0 ? 'N' : 'S') })) + '</li>';
+      return '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2>' + scenarioCards(state) + '</div>' +
+        lobby() +
+        '<div class="card mission-brief"><h2>' + h.esc(t('scr.need.goals')) + '</h2>' +
+        '<p class="brief-need">' + h.rich(sc.need) + '</p>' +
+        '<ul class="goal-list">' + goals + '</ul>' +
+        '<details class="brief-limits"><summary>' + h.esc(t('scr.need.constraints')) + '</summary><ul>' + limits + '</ul></details></div>';
     }
   });
 
@@ -74,7 +67,7 @@
       return '<div class="cols"><div>' + h.choices(state, 'concept') + '</div>' +
         '<aside class="side">' + '<div class="card hangar-card"><div data-viz="hangar"></div></div>' + '<div class="card"><h2>' + h.esc(t('scr.concept.defines')) + '</h2>' +
         '<p class="section-note">' + h.esc(t('scr.concept.note')) + '</p>' +
-        h.metricRows(result, ['altitude_km', 'period_min', 'eclipse_pct', 'lifetime_years', 'passesPerDay', 'contactMinPerDay', 'launchWait_months']) +
+        h.metricRows(result, ['altitude_km', 'lifetime_years', 'eclipse_pct', 'contactMinPerDay', 'launchWait_months']) +
         '</div><div class="card"><h2>' + h.esc(t('scr.compat')) + '</h2><p class="section-note">' + h.esc(t('scr.compatNote')) + '</p>' + h.statusRows(checks) + '</div></aside></div>';
     }
   });
