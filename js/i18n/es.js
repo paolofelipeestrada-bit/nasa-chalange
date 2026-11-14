@@ -3,7 +3,7 @@
   'use strict';
   var MS = root.MS = root.MS || {};
   MS.i18n.dict.es = {
-    'app.name': 'Diseñador de Misiones Espaciales',
+    'app.name': 'Space Tinkers',
 
     'u.years': 'años', 'u.days': 'días', 'u.perDay': 'por día', 'u.minPerDay': 'min/día', 'u.gbitPerDay': 'Gbit/día',
     'u.months': 'meses', 'u.slashDay': '/día',
@@ -309,9 +309,6 @@
     'about.nasa4.name': 'Build It Yourself: Satellite (NASA Webb)',
     'about.nasa4.use': 'Inspiración: los objetivos científicos guían el diseño, y cada opción se explica sola.',
     'about.nasa4.url': 'https://science.nasa.gov/mission/webb/game-build-it-yourself/',
-    'about.nasa5.name': 'GMAT — General Mission Analysis Tool (NASA)',
-    'about.nasa5.use': 'Referencia para la mecánica orbital detrás del juego (período, sombra, contactos con la estación).',
-    'about.nasa5.url': 'https://software.nasa.gov/software/GSC-19468-1',
     'about.simpleTitle': 'Qué simplificamos',
     'about.simple': 'Los números son realistas en orden de magnitud pero simplificados para el juego: órbitas circulares, sombra en el peor caso, precios aproximados (2026) y vidas orbitales estimadas. El juego enseña compromisos, no ingeniería exacta.',
     'about.aiTitle': 'Uso de IA',

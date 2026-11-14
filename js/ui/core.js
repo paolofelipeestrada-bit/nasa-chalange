@@ -449,7 +449,7 @@
   // Sobre o jogo: recursos da NASA usados, simplificações e uso de IA.
   function aboutPanel() {
     if (!ui.local.aboutOpen) return '';
-    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5'].map(function (k) {
+    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4'].map(function (k) {
       return '<li><b>' + esc(t('about.' + k + '.name')) + '</b> — ' + esc(t('about.' + k + '.use')) +
         ' <a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + '</a></li>';
     }).join('');

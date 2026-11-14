@@ -1,4 +1,4 @@
-# Space Mission Designer
+# Space Tinkers
 
 An educational game for the **NASA Space Apps Challenge 2026 — "Space Mission Design Game"**.
 Players design a small Earth-observation satellite (a CubeSat) for a real customer need and
@@ -67,8 +67,6 @@ between players).
 - **Concept Maturity Levels** (NASA JPL): the CML 1–4 tag shown at each step.
 - **Build It Yourself: Satellite** (NASA Webb): inspiration for goal-driven design and self-explaining options.
   https://science.nasa.gov/mission/webb/game-build-it-yourself/
-- **GMAT — General Mission Analysis Tool** (NASA): reference for the orbital mechanics
-  (period, shadow, ground-station contacts). https://software.nasa.gov/software/GSC-19468-1
 
 ### Optional NASA data we also use
 
