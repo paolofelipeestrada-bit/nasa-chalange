@@ -855,6 +855,8 @@
     V.last = now;
     if (!V.mission) return;
     var S = V.mission.schedule;
+    // Contagem regressiva na plataforma: o tempo da missão só anda depois do "Liftoff!".
+    if (V.holdUntil && now < V.holdUntil) dt = 0;
     if (V.playing) {
       V.t += dt * V.speed;
       if (S.launchFailed) V.t = Math.min(V.t, S.orbitStart + 3);
@@ -896,11 +898,35 @@
       V.wrap.querySelector('.viz-tele').innerHTML = lb.tele;
       V.hudKey = null; V.flagKey = null; V.teleAt = 0;
     }
-    var key = JSON.stringify([state.scenarioId, state.design, state.seed, state.attempt, state.period || null, MS.i18n.lang, (state.decisions && JSON.stringify(state.decisions)) || null]);
-    if (key !== V.key) { V.key = key; V.hudKey = null; V.flagKey = null; buildMission(state, result); }
+    var base = JSON.stringify([state.scenarioId, state.design, state.seed, state.attempt, state.period || null, MS.i18n.lang]);
+    var key = base + JSON.stringify(state.decisions || {});
+    if (key !== V.key) {
+      var same = V.baseKey === base, keepT = V.t;
+      V.key = key; V.baseKey = base; V.hudKey = null; V.flagKey = null;
+      buildMission(state, result);
+      if (same) {
+        // Só mudou uma decisão da missão: segue do mesmo ponto, sem repetir a decolagem.
+        var dt = 1 / 30;
+        while (V.t < keepT) { var d = Math.min(dt, keepT - V.t); V.t += d; update(d); }
+      } else {
+        countdown();
+      }
+    }
     onControl('none');
     if (!V.raf) { V.last = 0; V.raf = root.requestAnimationFrame(frame); }
   };
+
+  // 3, 2, 1, Liftoff! sobre o foguete na plataforma (pulado com menos movimento).
+  function countdown() {
+    var reduce = false;
+    try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
+    var el = V.wrap.querySelector('.viz-countdown');
+    if (!el) { el = document.createElement('div'); el.className = 'viz-countdown'; el.setAttribute('aria-hidden', 'true'); V.wrap.appendChild(el); }
+    if (reduce) { V.holdUntil = 0; el.innerHTML = ''; return; }
+    el.innerHTML = '<span>3</span><span>2</span><span>1</span><span class="go">' + MS.ui.h.esc(t('viz.liftoff')) + '</span>';
+    el.classList.remove('run'); void el.offsetWidth; el.classList.add('run');
+    V.holdUntil = (root.performance ? root.performance.now() : Date.now()) + 3000;
+  }
 
   viz.debug = function () { return V; };
 

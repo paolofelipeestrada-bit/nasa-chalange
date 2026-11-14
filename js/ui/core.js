@@ -414,6 +414,7 @@
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
       '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
+      '<button type="button" class="btn small" data-action="coach">' + icon('info', { size: 16 }) + esc(t('coach.tips')) + '</button>' +
       '</div></div>' +
       '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><ol>' + steps + '</ol></nav>' +
       hud(state, result) + '</header>';
@@ -447,9 +448,21 @@
   }
 
   // Sobre o jogo: recursos da NASA usados, simplificações e uso de IA.
+  // credits() é o mesmo conteúdo, mostrado no fim do jogo (relatório).
+  function credits() {
+    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5', 'nasa6'].map(function (k) {
+      return '<li><b>' + esc(t('about.' + k + '.name')) + '</b> — ' + esc(t('about.' + k + '.use')) +
+        ' <a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + '</a></li>';
+    }).join('');
+    return '<p>' + esc(t('about.intro')) + '</p>' +
+      '<h3>' + esc(t('about.nasaTitle')) + '</h3><ul>' + res + '</ul>' +
+      '<h3>' + esc(t('about.simpleTitle')) + '</h3><p class="small">' + esc(t('about.simple')) + '</p>' +
+      '<h3>' + esc(t('about.aiTitle')) + '</h3><p class="small">' + esc(t('about.ai')) + '</p>' +
+      '<h3>' + esc(t('about.libsTitle')) + '</h3><p class="small">' + esc(t('about.libs')) + '</p>';
+  }
   function aboutPanel() {
     if (!ui.local.aboutOpen) return '';
-    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5'].map(function (k) {
+    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4'].map(function (k) {
       return '<li><b>' + esc(t('about.' + k + '.name')) + '</b> — ' + esc(t('about.' + k + '.use')) +
         ' <a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + '</a></li>';
     }).join('');
@@ -524,6 +537,7 @@
     hud: function (d) { ui.local.hudOpen = ui.local.hudOpen === d.hud ? null : d.hud; rerender(); },
     glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; rerender(); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },
     about: function () { ui.local.aboutOpen = !ui.local.aboutOpen; rerender(); if (ui.local.aboutOpen) root.scrollTo(0, 0); },
+    coach: function () { if (MS.coach && MS.store.state) MS.coach.start(MS.store.state.phase); },
     reset: function () {
       var msg = roomInfo() ? t('ui.confirmResetTeam') : t('ui.confirmReset');
       if (root.confirm(msg)) dispatch('reset');
@@ -573,6 +587,7 @@
     if (MS.viz && MS.viz.attachAll) MS.viz.attachAll(rootEl, state); // visual 3D (se a tela tiver um)
     if (MS.hangar) MS.hangar.attach(rootEl, state); // hangar 3D da coluna direita
     if (ui.menuAttach) ui.menuAttach(rootEl, state); // Terra 3D do menu inicial
+    if (MS.coach) MS.coach.attach(rootEl, state);   // balões de ensino
     if (state.phase !== lastPhase) {
       root.scrollTo(0, 0);
       lastPhase = state.phase;
@@ -611,7 +626,7 @@
     register: function (id, screen) { screens[id] = screen; },
     screens: screens, hudCards: HUD,
     dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,
-    h: { esc: esc, badge: badge, icon: icon, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
+    h: { esc: esc, badge: badge, icon: icon, credits: credits, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
          term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
          choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel }
   });

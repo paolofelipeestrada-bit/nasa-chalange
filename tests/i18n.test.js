@@ -44,7 +44,7 @@
   });
 
   test('o inglês é o idioma padrão sem escolha salva', function () {
-    assert.equal(I.dict.en['app.name'], 'Space Mission Designer');
+    assert.equal(I.dict.en['app.name'], 'Space Tinkers');
     assert(LANGS.indexOf(I.lang) !== -1);
   });
 

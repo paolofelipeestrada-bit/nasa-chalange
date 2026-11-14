@@ -4,7 +4,7 @@
   'use strict';
   var MS = root.MS = root.MS || {};
   MS.i18n.dict.en = {
-    'app.name': 'Space Mission Designer',
+    'app.name': 'Space Tinkers',
 
     // Unidades
     'u.years': 'years', 'u.days': 'days', 'u.perDay': 'per day', 'u.minPerDay': 'min/day', 'u.gbitPerDay': 'Gbit/day',
@@ -329,9 +329,6 @@
     'about.nasa4.name': 'Build It Yourself: Satellite (NASA Webb)',
     'about.nasa4.use': 'Inspiration: science goals drive the design, and every option explains itself.',
     'about.nasa4.url': 'https://science.nasa.gov/mission/webb/game-build-it-yourself/',
-    'about.nasa5.name': 'GMAT — General Mission Analysis Tool (NASA)',
-    'about.nasa5.use': 'Reference for the orbital mechanics behind the game (period, shadow, station contacts).',
-    'about.nasa5.url': 'https://software.nasa.gov/software/GSC-19468-1',
     'about.simpleTitle': 'What we simplified',
     'about.simple': 'Numbers are realistic in order of magnitude but simplified for play: orbits are circular, the shadow is the worst case, prices are approximate (2026) and lifetimes are rough estimates. The game teaches trade-offs, not exact engineering.',
     'about.aiTitle': 'Use of AI',
@@ -536,6 +533,42 @@
     'lobby.teamText': "Each player takes a role and owns its parts. Create a room and share the code.",
     'lobby.teamBtn': "Open team room",
     'lobby.playing': "Playing solo",
-    'lobby.inRoom': "In room {code}"
+    'lobby.inRoom': "In room {code}",
+    'coach.tips': "Tips",
+    'coach.title': "Tip",
+    'coach.next': "Next",
+    'coach.back': "Back",
+    'coach.done': "Got it!",
+    'coach.skip': "Skip tips",
+    'coach.need.1': "Welcome to Space Tinkers! You will build a real kind of satellite, step by step, like a NASA team. Play alone or as a team.",
+    'coach.need.2': "First, pick a customer. Each one has a different problem, so each needs a different satellite.",
+    'coach.need.3': "These 6 gauges are your mission resources. They stay at the top all game. Green: room to spare. Yellow: at the limit. Red: it does not fit.",
+    'coach.need.4': "Dotted words have a short explanation: hover or tap them. The glossary lists them all.",
+    'coach.concept.1': "Now the big choices: the orbit, the rocket and the ground antenna. The orbit changes everything else.",
+    'coach.concept.2': "Hover (or tap) a card before choosing: the gauges at the top show what would change.",
+    'coach.concept.3': "Your choices appear here in 3D: the rocket on the pad, the orbit around Earth, the station on the ground. Drag to turn it.",
+    'coach.requirements.1': "The customer's goals become clear rules with numbers, and each rule comes with a test to prove it. NASA works exactly like this.",
+    'coach.design.1': "Time to build! Parts are grouped by crew member. Start with Science: the camera decides what you can see.",
+    'coach.design.2': "Every change ripples through the whole satellite. Swap a part and watch the chain of effects here.",
+    'coach.design.3': "The customer's goals. When they are all green, the satellite can do its job.",
+    'coach.design.4': "Your crew judges each design by their own goal. They often disagree: finding a design everyone accepts is the game!",
+    'coach.build.1': "Before launch, each crew member votes Go or No-Go.",
+    'coach.build.2': "Make a guess! The report will compare it with what really happens. Scientists do this too.",
+    'coach.build.3': "Pick the launch date. The mission will fly through the real space weather NASA recorded that year.",
+    'coach.build.4': "Green is only for launching. Ready? 3, 2, 1…",
+    'coach.implement.1': "Liftoff! Watch the rocket drop its stages and place your satellite in orbit. Use 5× or 20× to speed up time.",
+    'coach.implement.2': "Mission control needs you! Your answer becomes the rule for the rest of the year.",
+    'coach.implement.3': "Day by day: the orbit slowly drops, memory fills up and empties, power goes up and down.",
+    'coach.report.1': "Your score, and below it the reasons why things happened.",
+    'coach.report.2': "Learning cards give a name to what you just lived. Try again to collect them all.",
+    'coach.report.3': "Here are the real NASA resources and data behind the game.",
+    'rep.credits': "Credits and NASA resources used",
+    'viz.liftoff': "Liftoff!",
+    'about.nasa5.name': "DONKI — Space Weather Database (NASA CCMC)",
+    'about.nasa5.use': "Real solar storms, flares and particle events of 2019–2020 and 2024–2025 that test your satellite day by day.",
+    'about.nasa5.url': "https://ccmc.gsfc.nasa.gov/DONKI/",
+    'about.nasa6.name': "NASA Mission Viz",
+    'about.nasa6.use': "Its Earth image became the 1° land map that paints the 3D planet, and its orbit propagator is our reference for drawing orbits.",
+    'about.nasa6.url': "https://github.com/nasa/mission-viz"
   };
 })(globalThis);
