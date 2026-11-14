@@ -23,7 +23,7 @@
   var MS = root.MS = root.MS || {};
 
   // Tipos de modelo que js/viz/parts3d.js sabe desenhar.
-  var KINDS = ['orbit', 'rocket', 'station', 'camera', 'frame', 'solar', 'adcs', 'radio', 'computer'];
+  var KINDS = ['orbit', 'rocket', 'station', 'camera', 'frame', 'solar', 'adcs', 'radio', 'computer', 'iss'];
 
   function num(x, d) { return typeof x === 'number' && isFinite(x) ? x : d; }
   // Valor por formato ({ '3U': 7, '6U': 14 }) ou número simples.

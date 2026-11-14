@@ -439,3 +439,7 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 .viz3d:fullscreen .viz-title { font-size: 24px; } .viz3d:fullscreen .viz-text { font-size: 15px; max-width: 560px; }
 .viz3d:fullscreen .viz-tele { width: 270px; font-size: 13px; }
 @media (max-width: 560px) { .viz-tele { width: auto; right: 14px; bottom: 92px; grid-template-columns: 1fr 1fr; column-gap: 12px; } .tl-status, .tl-fuel { grid-column: 1 / -1; } }
+
+/* Encontro e acoplamento com a ISS */
+.tl-status.st-dock { background: rgba(90, 160, 255, .2); color: #9cc4ff; }
+.lg-iss::before { background: #dfe6ff; }

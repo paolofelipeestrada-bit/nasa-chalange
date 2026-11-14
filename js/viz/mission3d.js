@@ -44,7 +44,10 @@
   var EARTH_RATE = 0.019;            // rad/s (~17° de deriva por órbita)
   var ROCKET_SCALE = 0.045, SAT_SCALE = 0.075;
   var SEP1 = 0.42, FAIRING = 0.58;   // frações da subida: separação do 1º estágio e da carenagem
-  var STATUS_HEX = { orbit: 0x4cc26f, sub: 0xe3b341, decay: 0xe3b341, risk: 0xff6b6b, reentry: 0xff6b6b, fail: 0xff6b6b };
+  var STATUS_HEX = { orbit: 0x4cc26f, sub: 0xe3b341, decay: 0xe3b341, risk: 0xff6b6b, reentry: 0xff6b6b, fail: 0xff6b6b, dock: 0x5aa0ff };
+  var ISS_SCALE = 0.06;
+  // Frações do passo de acoplamento: deriva, transferência de Hohmann, aproximação, acoplada, CubeSat liberado.
+  var DK = { hohmann: 0.12, arrive: 0.6, docked: 0.72, deploy: 0.82 };
   var V = null;                      // a "vista" persistente (criada uma vez)
 
   // ------------------------------------------------------------ Utilidades
@@ -141,7 +144,7 @@
   function staticLabels() {
     return {
       legend: '<span class="lg-aoi">' + t('viz.aoi') + '</span><span class="lg-cov">' + t('viz.cov') + '</span>' +
-        '<span class="lg-con">' + t('viz.con') + '</span><span class="lg-path">' + t('viz.lg.path') + '</span>',
+        '<span class="lg-con">' + t('viz.con') + '</span><span class="lg-path">' + t('viz.lg.path') + '</span><span class="lg-iss">' + t('viz.lg.iss') + '</span>',
       tele: '<div class="tl-row"><span>' + t('viz.tl.met') + '</span><b data-tl="met">—</b></div>' +
         '<div class="tl-row"><span>' + t('viz.tl.alt') + '</span><b data-tl="alt">—</b></div>' +
         '<div class="tl-row"><span>' + t('viz.tl.vel') + '</span><b data-tl="vel">—</b></div>' +
@@ -330,15 +333,53 @@
     var schedule = MS.vizSchedule.build(result);
     var life = result.life && result.life.series && result.life.series.length ? result.life : null;
 
+    // Estação Espacial: sempre em órbita. Numa missão de carga, fica no mesmo
+    // plano da órbita escolhida, para o encontro acontecer.
+    var issData = MS.data.catalog.spaceStation || { altitude_km: 418, inclination_deg: 51.64, chaseBelow_km: 40 };
+    var docking = !!schedule.docking && !schedule.launchFailed;
+    var issEl = MS.orbit.circular(issData.altitude_km, docking ? orbit.inclination_deg : issData.inclination_deg, docking ? 0 : 55);
+    var rISS = 1 + issData.altitude_km * ALT_SCALE;
+    var issRate = ORBIT_RATE * Math.pow((MS.orbit.RE + orbit.altitude_km) / (MS.orbit.RE + issData.altitude_km), 1.5);
+    var issRing = [];
+    for (var j = 0; j <= 120; j++) {
+      var q = MS.orbit.position(issEl, j / 120 * Math.PI * 2);
+      issRing.push(new THREE.Vector3(q.x, q.y, q.z).multiplyScalar(rISS / q.r));
+    }
+    group.add(line(issRing, 0xdfe6ff, 0.16));
+    var issObj = P && P.build ? P.build({ kind: 'iss' }) : new THREE.Group();
+    issObj.scale.setScalar(ISS_SCALE);
+    group.add(issObj);
+
+    // Encontro (só missões de carga): a nave chega 40 km abaixo, sobe pela
+    // elipse de Hohmann e encontra a ISS no apogeu; a fase da ISS é escolhida
+    // para ela estar logo à frente nesse instante.
+    var dock = null, satU0 = u0, rAscent = rOrb;
+    if (docking) {
+      var dstep = schedule.steps.filter(function (x) { return x.event.fx === 'separation'; })[0];
+      var dur = dstep.t1 - dstep.t0;
+      var chaseKm = issData.altitude_km - (issData.chaseBelow_km || 40);
+      var hoh = MS.orbit.hohmann(MS.orbit.RE + chaseKm, MS.orbit.RE + issData.altitude_km);
+      var tB0 = dstep.t0 + DK.hohmann * dur, tArr = dstep.t0 + DK.arrive * dur, tDep = dstep.t0 + DK.deploy * dur;
+      var uB0 = u0 + (tB0 - schedule.orbitStart) * ORBIT_RATE;
+      dock = {
+        step: dstep, dur: dur, chaseKm: chaseKm, rChase: 1 + chaseKm * ALT_SCALE, hoh: hoh, uB0: uB0, tDep: tDep,
+        el: { a_km: hoh.a_km, e: hoh.e, i_deg: orbit.inclination_deg, raan_deg: 0, argp_deg: uB0 / DEG }
+      };
+      var issU0 = uB0 + Math.PI - 0.035 - tArr * issRate; // ISS logo atrás: a nave entra de ré na porta da frente
+      satU0 = issU0 + tDep * issRate - 0.004 - (tDep - schedule.orbitStart) * ORBIT_RATE;
+      rAscent = dock.rChase;
+    }
+
     V.mission = {
       state: state, result: result, schedule: schedule, group: group, onEarth: onEarth, el: el, life: life,
-      sc: sc, rOrb: rOrb, u0: u0, sat: sat, satMats: satMats, cone: cone,
+      sc: sc, rOrb: rOrb, u0: u0, satU0: satU0, rAscent: rAscent, sat: sat, satMats: satMats, cone: cone,
+      iss: issObj, issEl: issEl, rISS: rISS, issRate: issRate, issU0: docking ? issU0 : 1.7, dock: dock, capsule: null,
       orbitLine: orbitLine, ascentLine: ascentLine, trail: trail, trailTimer: 0,
       contact: contact, station: station, stLocal: stLocal, aoiCenter: aoiCenter, aoiRad: (aoi.radius_deg || 10) * DEG,
       coverage: coverage, covCount: 0, covMax: COV, covTimer: 0,
       rocket: rocket, stages: ud, loose: [], sep1: false, fairingOff: false, exploded: false,
       debris: debris, siteName: L.site ? Lx(L.site.name) : Lx(L.name),
-      minEl: (gs.minElevation_deg || 10) * DEG, flash: null
+      minEl: (gs.minElevation_deg || 10) * DEG, flash: null, fl: {}
     };
 
     // Alinha a Terra para que a 1ª passagem depois do início das imagens
@@ -348,7 +389,7 @@
     if (img) {
       var best = null;
       for (var tt = img.t0 + 0.5; tt < img.t0 + 17; tt += 0.05) {
-        var pp = orbitPoint(u0 + (tt - schedule.orbitStart) * ORBIT_RATE, 1).normalize();
+        var pp = orbitPoint(satU0 + (tt - schedule.orbitStart) * ORBIT_RATE, 1).normalize();
         var lat = Math.asin(pp.y) / DEG, err = Math.abs(lat - aoi.latitude_deg);
         if (pp.dot(V.sunDir) < 0.3) err += 90; // precisa ser de dia (câmera óptica)
         if (!best || err < best.err) best = { err: err, t: tt, lon: Math.atan2(-pp.z, pp.x) };
@@ -393,13 +434,26 @@
   function launchPoint(s) {
     var m = V.mission, a = m.u0 - 0.5 + 0.5 * Math.pow(s, 1.4);
     var e = s * s * (3 - 2 * s);
-    return orbitPoint(a, 1 + (m.rOrb - 1) * e + 0.006);
+    return orbitPoint(a, 1 + (m.rAscent - 1) * e + 0.006);
   }
   function setLine(l, pts) {
     var pa = l.geometry.attributes.position, n = Math.min(pts.length, l.userData.n);
     for (var i = 0; i < n; i++) pa.setXYZ(i, pts[i].x, pts[i].y, pts[i].z);
     pa.needsUpdate = true; l.geometry.setDrawRange(0, n);
   }
+
+  // Posição e atitude da ISS no instante T (módulos ao longo da direção do voo).
+  function issPoint(T) {
+    var m = V.mission, u = m.issU0 + T * m.issRate, p = MS.orbit.position(m.issEl, u);
+    return new THREE.Vector3(p.x, p.y, p.z).multiplyScalar(m.rISS / p.r);
+  }
+  function orient(obj, pos, ahead) {
+    var y = pos.clone().normalize(), z = ahead.clone().sub(pos).normalize();
+    var x = y.clone().cross(z).normalize(); z = x.clone().cross(y).normalize();
+    obj.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+  }
+  // Ponto de cena de um raio em km (altitude exagerada como o resto).
+  function sceneR(r_km) { return 1 + (r_km - MS.orbit.RE) * ALT_SCALE; }
 
   function started(fx, T) { return MS.vizSchedule.firstStarted(V.mission.schedule, fx, T); }
   function failedStep(fx, T) { var s = started(fx, T); return s && s.event.status !== 'ok' ? s : null; }
@@ -441,7 +495,7 @@
     var local = step ? (T - step.t0) / (step.t1 - step.t0) : 1;
     var inOrbit = T >= S.orbitStart && !S.launchFailed;
     var ud = m.stages, s = Math.min(1, Math.max(0, (T - 1.2) / (S.orbitStart - 1.2)));
-    var sepStep = S.steps[1] && S.steps[1].event.fx === 'separation' ? S.steps[1] : null;
+    var sepStep = S.steps.filter(function (x) { return x.event.fx === 'separation'; })[0] || null;
     var opsStart = sepStep ? sepStep.t1 : S.orbitStart;
     var lifeEnd = m.result.life && m.result.life.totals ? m.result.life.totals.end : null;
     var tele = {};
@@ -492,10 +546,10 @@
       // Em órbita: o estágio gasto se afasta durante a separação e some.
       if (fx === 'separation') {
         if (local < 0.1 && !m.inserted) { m.inserted = true; flash(t('viz.ev.orbit'), T); }
-        if (local > 0.35 && !m.deployed) { m.deployed = true; flash(t('viz.ev.deploy'), T); }
-        var uB = m.u0 - 0.004 - 0.03 * local;
-        m.rocket.visible = true;
-        m.rocket.position.copy(orbitPoint(uB, m.rOrb));
+        if (local > 0.35 && !m.deployed && !m.dock) { m.deployed = true; flash(t('viz.ev.deploy'), T); }
+        var uB = m.u0 - 0.004 - 0.03 * local + (m.dock ? (T - S.orbitStart) * ORBIT_RATE : 0);
+        m.rocket.visible = !m.dock || local < DK.hohmann * 1.5;
+        m.rocket.position.copy(orbitPoint(uB, m.rAscent));
         if (ud.flame2) ud.flame2.visible = false;
       } else {
         m.rocket.visible = false;
@@ -505,20 +559,95 @@
     }
     updateLoose(dt, T);
 
+    // ---- Estação Espacial: sempre girando em volta da Terra
+    var issPos = issPoint(T);
+    m.iss.position.copy(issPos);
+    orient(m.iss, issPos, issPoint(T + 0.05));
+    m.iss.updateMatrixWorld();
+
+    // ---- Encontro e acoplamento da nave de carga com a ISS
+    var dk = m.dock, dockFocus = null;
+    if (dk && T >= S.orbitStart) {
+      var dl = Math.min(1, (T - dk.step.t0) / dk.dur);
+      if (!m.capsule && ud.upper) {
+        // Solta a nave do foguete e centraliza nela (o desenho começa na base do foguete).
+        var up = ud.upper, bb = new THREE.Box3();
+        up.children.forEach(function (c) { bb.expandByObject(c); });
+        var ul = up.worldToLocal(bb.getCenter(new THREE.Vector3()));
+        var top = up.worldToLocal(bb.max.clone()).y;
+        up.children.forEach(function (c) { c.position.y -= ul.y; });
+        m.group.attach(up); m.capsule = up;
+        up.scale.multiplyScalar(1.6);
+        m.capNose = (top - ul.y) * up.scale.y; // distância do centro até o nariz (em unidades de cena)
+      }
+      var cap = m.capsule, cpos, ahead, burn = false, fuel = 1;
+      var portW = m.iss.localToWorld(m.iss.userData.port ? m.iss.userData.port.clone() : new THREE.Vector3());
+      var dockAt = portW.clone().add(portW.clone().sub(issPos).normalize().multiplyScalar(m.capNose || 0.02)); // nariz encaixado na porta
+      if (dl < DK.hohmann) {
+        var ub = m.u0 + (T - S.orbitStart) * ORBIT_RATE;
+        cpos = orbitPoint(ub, dk.rChase); ahead = orbitPoint(ub + 0.02, dk.rChase);
+      } else if (dl < DK.arrive) {
+        if (!m.fl.hohmann) { m.fl.hohmann = true; flash(t('viz.ev.hohmann'), T); }
+        var f = (dl - DK.hohmann) / (DK.arrive - DK.hohmann);
+        var nu = MS.orbit.trueFromMean(Math.PI * f, dk.el.e);
+        var pk = MS.orbit.position(dk.el, nu), pk2 = MS.orbit.position(dk.el, nu + 0.02);
+        cpos = new THREE.Vector3(pk.x, pk.y, pk.z).multiplyScalar(sceneR(pk.r) / pk.r);
+        ahead = new THREE.Vector3(pk2.x, pk2.y, pk2.z).multiplyScalar(sceneR(pk2.r) / pk2.r);
+        burn = f < 0.12 || f > 0.9; // os dois impulsos da manobra
+        fuel = 1 - 0.18 * Math.min(1, f / 0.12) - (f > 0.9 ? 0.04 * (f - 0.9) / 0.1 : 0);
+        tele.alt = MS.sim.util.withUnit(pk.r - MS.orbit.RE, 'km', 0);
+        tele.vel = MS.sim.util.withUnit(MS.orbit.speed(dk.el, pk.r), 'km/s', 2);
+      } else if (dl < DK.docked) {
+        if (!m.fl.approach) { m.fl.approach = true; flash(t('viz.ev.approach'), T); m.arrPos = cap.position.clone(); }
+        var g2 = (dl - DK.arrive) / (DK.docked - DK.arrive), e2 = g2 * g2 * (3 - 2 * g2);
+        cpos = (m.arrPos || cap.position).clone().lerp(dockAt, e2);
+        ahead = issPos.clone(); // nariz virado para a estação
+        fuel = 0.78;
+      } else {
+        if (!m.fl.docked) { m.fl.docked = true; flash(t('viz.ev.docked'), T); }
+        cpos = dockAt; ahead = issPos.clone();
+        fuel = 0.78;
+      }
+      cap.position.copy(cpos);
+      orient(cap, cpos, ahead);
+      cap.rotateX(Math.PI / 2); // o foguete foi desenhado de pé (+Y): a ponta passa a apontar para a frente
+      if (ud.flame2) ud.flame2.visible = false;
+      if (burn && Math.random() < 0.7) spawn(cpos.clone().sub(ahead.clone().sub(cpos).normalize().multiplyScalar(0.02)), 0x9ec5ff, 1, 0.01);
+      if (T < dk.step.t1) {
+        dockFocus = T < dk.tDep ? cpos.clone() : null;
+        tele.stage = t('viz.stage.cargo');
+        tele.fuel = fuel;
+        tele.status = 'dock';
+        tele.dockText = dl < DK.docked ? 'rendezvous' : 'docked';
+        var hNow = dl < DK.hohmann ? dk.chaseKm : ((MS.data.catalog.spaceStation || {}).altitude_km || 418);
+        if (!tele.alt) tele.alt = MS.sim.util.withUnit(hNow, 'km', 0);
+        if (!tele.vel) tele.vel = MS.sim.util.withUnit(Math.sqrt(MS.orbit.MU / (MS.orbit.RE + hNow)), 'km/s', 2);
+        tele.met = 'T+ ' + Math.max(1, Math.round(dl * 30)) + ' h'; // encontro real leva cerca de um dia
+      }
+      if (dl >= DK.deploy && !m.fl.issDeploy) { m.fl.issDeploy = true; flash(t('viz.ev.issDeploy'), T); }
+    }
+    m.dockFocus = dockFocus;
+
     // ---- Terra e nuvens giram depois do lançamento
     V.earth.rotation.y = m.earthOffset + Math.max(0, T - S.orbitStart) * EARTH_RATE;
     V.earth.updateMatrixWorld();
     V.cloud.rotation.y = V.earth.rotation.y * 1.15 + T * 0.004;
 
     // ---- Satélite
-    var u = m.u0 + Math.max(0, T - S.orbitStart) * ORBIT_RATE, r = m.rOrb;
+    var u = m.satU0 + Math.max(0, T - S.orbitStart) * ORBIT_RATE, r = m.rOrb, satScale = SAT_SCALE;
+    if (m.dock && T < m.dock.step.t1) {
+      var dg = Math.max(0, (T - m.dock.tDep) / (m.dock.step.t1 - m.dock.tDep));
+      r = m.rISS + (m.rOrb - m.rISS) * dg;
+      satScale = SAT_SCALE * (0.3 + 0.7 * dg);
+    }
     var lifeReentry = step && step.event.id === 'LIFE' && lifeEnd === 'reentry';
     var reentry = (fx === 'end' && st !== 'ok') || lifeReentry;
     var gone = S.duration && T >= S.duration && (failedStep('end', T) || lifeEnd === 'reentry');
     if (reentry) r = m.rOrb - (m.rOrb - 1) * local;
     var satPos = orbitPoint(u, r);
-    var showSat = inOrbit && !gone && (!sepStep || T >= sepStep.t0 + (sepStep.t1 - sepStep.t0) * 0.35);
+    var showSat = inOrbit && !gone && (m.dock ? T >= m.dock.tDep : (!sepStep || T >= sepStep.t0 + (sepStep.t1 - sepStep.t0) * 0.35));
     m.sat.visible = showSat;
+    m.sat.scale.setScalar(satScale);
     m.sat.position.copy(satPos);
     m.sat.lookAt(0, 0, 0);
     if (failedStep('wobble', T) || fx === 'wobble') m.sat.rotateZ(Math.sin(T * 9) * 0.25);
@@ -593,7 +722,7 @@
     if (failedStep('delay', T)) flags.push(t('viz.delayed'));
 
     // ---- Telemetria em órbita (altitude real do dia, se houver a missão dia a dia)
-    if (inOrbit) {
+    if (inOrbit && tele.status !== 'dock') {
       var plannedYears = (m.sc.params && m.sc.params.plannedDuration_years) || 1;
       var days = m.life ? Math.max(1, m.life.totals.lastDay || m.life.days) : Math.round(365 * Math.min(plannedYears, m.result.metrics.lifetime_years.value || 1));
       var frac = Math.min(1, Math.max(0, (T - opsStart) / Math.max(1, S.duration - opsStart)));
@@ -636,13 +765,14 @@
     if (V.camMode === 'free') { V.controls.update(); return; }
     var target, want;
     var launching = V.t < S.orbitStart + (S.launchFailed ? 3 : 0);
-    var focus = launching ? (m.rocket.visible ? m.rocket.position.clone() : launchPoint(0.5)) : satPos.clone();
+    var focus = launching ? (m.rocket.visible ? m.rocket.position.clone() : launchPoint(0.5)) : (m.dockFocus || satPos).clone();
     var up = focus.clone().normalize();
     var side = up.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
-    var sepEnd = S.steps[1] ? S.steps[1].t1 : S.orbitStart;
+    var sepStepC = S.steps.filter(function (x) { return x.event.fx === 'separation'; })[0];
+    var sepEnd = sepStepC ? sepStepC.t1 : S.orbitStart;
     if (V.camMode === 'follow' || launching || V.t < sepEnd) {
       target = focus;
-      var close = launching ? 0.3 : 0.2;
+      var close = launching ? 0.3 : m.dockFocus ? 0.26 : 0.2;
       want = focus.clone().add(up.multiplyScalar(close * 0.45)).add(side.multiplyScalar(close));
     } else {
       target = new THREE.Vector3(0, 0, 0);
@@ -691,7 +821,7 @@
       var bar = hud.querySelector('[data-tl="fuelbar"]');
       if (bar) { bar.style.width = (fuelPct == null ? 0 : fuelPct * 100) + '%'; bar.className = fuelPct != null && fuelPct < 0.2 ? 'low' : ''; }
       var stEl = hud.querySelector('[data-tl="status"]');
-      if (stEl) { stEl.textContent = t('viz.st.' + (tele.status || 'sub')); stEl.className = 'tl-status st-' + (tele.status || 'sub'); }
+      if (stEl) { stEl.textContent = t('viz.st.' + (tele.status === 'dock' ? tele.dockText : (tele.status || 'sub'))); stEl.className = 'tl-status st-' + (tele.status || 'sub'); }
     }
     hud.querySelector('.viz-progress span').style.width = Math.min(100, V.t / S.duration * 100) + '%';
   }

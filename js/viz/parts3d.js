@@ -457,8 +457,41 @@
     return g;
   }
 
+  // ------------------------------------------------- Estação Espacial (ISS)
+  // Treliça comprida, 8 asas de painéis solares, radiadores, módulos
+  // pressurizados ao longo do eixo Z (direção do voo) e a porta de acoplamento
+  // na frente (+Z). userData.port = ponto de acoplamento (coordenadas locais).
+  function iss() {
+    var m = materials(), g = new THREE.Group();
+    g.add(box(2.3, 0.07, 0.07, m.alu));
+    [-1.1, -0.78, 0.78, 1.1].forEach(function (x) {
+      [-1, 1].forEach(function (s) {
+        var p = panel(0.24, 0.95, 1, 4);
+        p.rotation.x = -Math.PI / 2; p.position.set(x, 0, s * 0.53);
+        g.add(p);
+      });
+      g.add(box(0.05, 0.05, 0.12, m.grey, x, 0, 0));
+    });
+    [-0.38, 0.38].forEach(function (x) { g.add(box(0.2, 0.012, 0.45, m.white, x, -0.06, -0.3)); });
+    function mod(len, r, x, y, z, axis, mat) {
+      var c = cyl(r, r, len, mat || m.white, 10);
+      if (axis === 'z') c.rotation.x = Math.PI / 2; else c.rotation.z = Math.PI / 2;
+      c.position.set(x, y, z); g.add(c);
+    }
+    mod(1.1, 0.1, 0, -0.16, 0.05, 'z');               // módulos centrais
+    mod(0.38, 0.085, 0, -0.16, 0.8, 'z', m.offwhite);  // nó da frente
+    mod(0.4, 0.11, 0, -0.16, -0.7, 'z', m.offwhite);   // módulo de serviço
+    mod(0.42, 0.09, 0.3, -0.16, 0.62, 'x');            // laboratório lateral (de onde saem CubeSats)
+    mod(0.36, 0.09, -0.28, -0.16, 0.62, 'x');
+    [-1, 1].forEach(function (s) { var w = panel(0.5, 0.14, 3, 1); w.position.set(s * 0.36, -0.16, -0.78); g.add(w); });
+    var port = cyl(0.06, 0.06, 0.06, m.gold, 10); port.rotation.x = Math.PI / 2; port.position.set(0, -0.16, 1.02); g.add(port);
+    g.userData.port = new THREE.Vector3(0, -0.16, 1.1);
+    g.userData.airlock = new THREE.Vector3(0.52, -0.16, 0.62);
+    return g;
+  }
+
   // --------------------------------------------------------------- Montagem
-  var BUILDERS = { camera: camera, frame: frame, solar: solar, adcs: adcs, radio: radio, computer: computer, orbit: orbit, rocket: rocket, station: station };
+  var BUILDERS = { camera: camera, frame: frame, solar: solar, adcs: adcs, radio: radio, computer: computer, orbit: orbit, rocket: rocket, station: station, iss: iss };
   function build(look) {
     var fn = look && BUILDERS[look.kind];
     if (fn) return fn(look);

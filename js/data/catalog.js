@@ -109,6 +109,16 @@
       }
     },
 
+    // ------------------------------------------- Estação Espacial (só 3D)
+    // Sempre em órbita na simulação; com o lançador de carga (look.upper =
+    // 'capsule') a nave faz o encontro e o acoplamento antes de soltar o CubeSat.
+    spaceStation: {
+      name: T('International Space Station', 'Estação Espacial Internacional', 'Estación Espacial Internacional'),
+      altitude_km: 418, inclination_deg: 51.64,
+      chaseBelow_km: 40, // a nave de carga chega 40 km abaixo e sobe até a estação (transferência de Hohmann)
+      source: T('Typical orbit from NASA ISS Trajectory Data (spaceflight.nasa.gov).', 'Órbita típica dos dados de trajetória da ISS da NASA (spaceflight.nasa.gov).', 'Órbita típica de los datos de trayectoria de la ISS de la NASA (spaceflight.nasa.gov).')
+    },
+
     // --------------------------------------------------- Estações em solo
     groundStations: {
       gs_polar: {

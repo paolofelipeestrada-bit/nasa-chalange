@@ -45,4 +45,12 @@
     var lost = VS.build(run({ orbit: 'iss400', launcher: 'iss_cargo' })); // sem contato
     assert.equal(lost.steps[lost.steps.length - 1].event.id, 'E4');
   });
+  test('carga para a ISS: a separação vira encontro + acoplamento (passo mais longo)', function () {
+    var cargo = VS.build(run({ orbit: 'iss400', launcher: 'iss_cargo', groundStation: 'gs_national', obc: 'obc_adv' }));
+    var normal = VS.build(run({}));
+    var sep = function (s) { return s.steps.filter(function (x) { return x.event.fx === 'separation'; })[0]; };
+    assert.equal(cargo.docking, true);
+    assert.equal(normal.docking, false);
+    assert(sep(cargo).t1 - sep(cargo).t0 > sep(normal).t1 - sep(normal).t0, 'acoplamento leva mais tempo');
+  });
 })(globalThis);
