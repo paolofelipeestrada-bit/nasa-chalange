@@ -582,6 +582,19 @@
     'about.nasa5.url': "https://ccmc.gsfc.nasa.gov/DONKI/",
     'about.nasa6.name': "NASA Mission Viz",
     'about.nasa6.use': "Its Earth image became the 1° land map that paints the 3D planet, and its orbit propagator is our reference for drawing orbits.",
-    'about.nasa6.url': "https://github.com/nasa/mission-viz"
+    'about.nasa6.url': "https://github.com/nasa/mission-viz",
+    'cine.skip': "Skip launch",
+    'cine.ch.pad': "Scene 1 · On the pad",
+    'cine.ch.poll': "Scene 2 · Go / No-Go poll",
+    'cine.ch.count': "Scene 3 · Countdown",
+    'cine.ch.liftoff': "Scene 4 · Liftoff",
+    'cine.ch.ascent': "Scene 5 · Climbing to orbit",
+    'cine.cap.pad': "On the pad at {site}. The rocket is fueled, and your CubeSat waits inside its nose, under the fairing.",
+    'cine.cap.poll': "Launch director poll: before every launch, each team reports Go or No-Go.",
+    'cine.cap.count': "The engines light a moment before zero, so they reach full power before the rocket lets go.",
+    'cine.cap.liftoff': "Liftoff! The engines push harder than the whole rocket weighs, so it rises.",
+    'cine.cap.ascent': "The rocket tilts sideways: to stay in orbit, speed matters more than height — about 7.6 km/s.",
+    'cine.dirGo': "Launch director: all Go. Cleared for launch!",
+    'cine.dirNoGo': "Launch director: {n} No-Go, but we launch anyway."
   };
 })(globalThis);

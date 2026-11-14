@@ -822,3 +822,30 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 @media (max-width: 560px) { .sh-dock { bottom: 128px; } .sh-text { font-size: 18px; } .sh-av { width: 42px; height: 42px; } .sh-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .sh-alert, .sh-panel { animation: none; } }
+
+/* ------------------------------------------------ Cena de lançamento (chão) */
+.viz-cine { display: none; }
+.viz3d.cine-on .viz-cine { display: block; position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.viz3d.cine-on .viz-top, .viz3d.cine-on .viz-flags, .viz3d.cine-on .viz-tele, .viz3d.cine-on .viz-legend, .viz3d.cine-on .viz-countdown { display: none; }
+.vc-chapter { position: absolute; left: 16px; top: 14px; font-size: 14px; letter-spacing: .12em; color: #fff; text-transform: uppercase;
+  background: rgba(10, 18, 48, .7); border: 1px solid rgba(127, 178, 255, .45); border-radius: 10px; padding: 6px 12px; text-shadow: none; }
+.vc-caption { position: absolute; left: 50%; bottom: 62px; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); margin: 0;
+  text-align: center; font-size: 17px; line-height: 1.45; color: #fff; background: rgba(6, 10, 26, .72); border-radius: 12px; padding: 10px 16px; }
+.vc-count { position: absolute; inset: 0; display: grid; place-items: center; font-size: 140px; color: #fff; opacity: 0;
+  text-shadow: 0 0 30px rgba(76, 195, 255, .8), 0 6px 0 #0a1230; }
+.vc-count.on { opacity: 1; }
+.vc-count.pop { animation: vc-pop 1s ease both; }
+@keyframes vc-pop { 0% { transform: scale(1.7); opacity: 0; } 20% { transform: scale(1); opacity: 1; } 85% { opacity: 1; } 100% { transform: scale(.75); opacity: 0; } }
+.vc-poll { position: absolute; right: 16px; top: 14px; width: min(320px, 46%); list-style: none; margin: 0; padding: 10px; display: grid; gap: 6px;
+  background: rgba(6, 10, 26, .78); border: 1px solid rgba(127, 178, 255, .4); border-radius: 12px; }
+.vc-poll li { --rc: var(--dir); display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 15px; color: #fff;
+  padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, .04); border-left: 3px solid var(--rc); animation: coach-in .3s ease both; }
+.vc-poll li span { color: var(--rc); font-weight: 700; }
+.vc-poll b { font-size: 13px; padding: 2px 9px; border-radius: 99px; letter-spacing: .05em; }
+.vc-poll b.go { background: rgba(74, 222, 128, .18); color: var(--ok); } .vc-poll b.nogo { background: rgba(255, 107, 107, .2); color: var(--fail); }
+.vc-poll .vc-dir { border-left-color: var(--ok); } .vc-poll .vc-dir span { color: #fff; font-weight: 600; }
+.vc-skip { position: absolute; right: 16px; bottom: 62px; pointer-events: auto; background: rgba(10, 18, 48, .8) !important; }
+.vc-fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+.viz3d.cine-on .vc-poll li.r-sci { --rc: var(--sci); } .viz3d.cine-on .vc-poll li.r-eng { --rc: var(--eng); }
+.viz3d.cine-on .vc-poll li.r-mgr { --rc: var(--mgr); } .viz3d.cine-on .vc-poll li.r-com { --rc: var(--com); }
+@media (max-width: 560px) { .vc-count { font-size: 96px; } .vc-caption { font-size: 14px; bottom: 96px; } .vc-skip { bottom: 140px; } .vc-poll { width: calc(100% - 32px); } }

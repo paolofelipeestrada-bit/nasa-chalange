@@ -760,7 +760,8 @@
   // ---------------------------------------------------------------- Câmera
   function camText(mode) { return t('viz.cam.' + mode); }
   function updateCamera(satPos, dt) {
-    var m = V.mission, S = m.schedule, cam = V.camera, k = 1 - Math.exp(-dt * 2.5);
+    var m = V.mission, S = m.schedule, cam = V.camera, k = V.snapCam ? 1 : 1 - Math.exp(-dt * 2.5);
+    V.snapCam = false;
     V.controls.enabled = V.camMode === 'free';
     if (V.camMode === 'free') { V.controls.update(); return; }
     var target, want;
@@ -830,8 +831,9 @@
   function onControl(act, data) {
     var bar = V.wrap;
     if (act === 'play') V.playing = !V.playing;
-    if (act === 'restart') { buildMission(V.mission.state, V.mission.result); V.hudKey = null; }
-    if (act === 'end') { V.t = V.mission.schedule.duration; V.playing = true; }
+    if (act === 'restart') { buildMission(V.mission.state, V.mission.result); V.hudKey = null; startCine(); }
+    if (act === 'skip') endCine(false);
+    if (act === 'end') { endCine(false); V.t = V.mission.schedule.duration; V.playing = true; }
     if (act === 'warp' && data) V.speed = +data.x || 1;
     if (act === 'cam') { V.camMode = V.camMode === 'auto' ? 'follow' : V.camMode === 'follow' ? 'free' : 'auto'; }
     if (act === 'full') {
@@ -855,8 +857,13 @@
     V.last = now;
     if (!V.mission) return;
     var S = V.mission.schedule;
-    // Contagem regressiva na plataforma: o tempo da missão só anda depois do "Liftoff!".
-    if (V.holdUntil && now < V.holdUntil) dt = 0;
+    if (V.cine) {
+      var cd = V.playing ? dt * V.speed : 0;
+      V.cine.t += cd;
+      var res = V.cine.obj.update(V.cine.t, cd, V.camera);
+      if (res.done) endCine(false);
+      else { cineHud(res); V.renderer.render(V.cine.obj.scene, V.camera); return; }
+    }
     if (V.playing) {
       V.t += dt * V.speed;
       if (S.launchFailed) V.t = Math.min(V.t, S.orbitStart + 3);
@@ -916,19 +923,78 @@
     if (!V.raf) { V.last = 0; V.raf = root.requestAnimationFrame(frame); }
   };
 
-  // 3, 2, 1, Liftoff! sobre o foguete na plataforma (pulado com menos movimento).
-  function countdown() {
+  // ------------------------------------------------ Cena de lançamento no chão
+  // Antes da vista orbital, o lançamento é contado em cenas (js/viz/launchscene.js):
+  // plataforma, votação Go/No-Go, contagem, decolagem e subida. Depois corta
+  // para a órbita com o foguete já subindo. Pulada com "menos movimento".
+  function countdown() { startCine(); }
+  function startCine() {
+    endCine(true);
     var reduce = false;
     try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
-    var el = V.wrap.querySelector('.viz-countdown');
-    if (!el) { el = document.createElement('div'); el.className = 'viz-countdown'; el.setAttribute('aria-hidden', 'true'); V.wrap.appendChild(el); }
-    if (reduce) { V.holdUntil = 0; el.innerHTML = ''; return; }
-    el.innerHTML = '<span>3</span><span>2</span><span>1</span><span class="go">' + MS.ui.h.esc(t('viz.liftoff')) + '</span>';
-    el.classList.remove('run'); void el.offsetWidth; el.classList.add('run');
-    V.holdUntil = (root.performance ? root.performance.now() : Date.now()) + 3000;
+    if (reduce || !MS.launchScene || !V.mission) return;
+    var look = MS.looks.resolve('launchers', V.mission.result.selection.launcher);
+    var crew = MS.advice ? MS.advice.crew(V.mission.state, V.mission.result) : [];
+    V.cine = { t: 0, obj: MS.launchScene.create(look), crew: crew, key: '' };
+    V.wrap.classList.add('cine-on');
+    var el = V.wrap.querySelector('.viz-cine');
+    if (!el) { el = document.createElement('div'); el.className = 'viz-cine'; V.wrap.appendChild(el); }
+    el.innerHTML = '<div class="vc-chapter pixel"></div><div class="vc-count pixel" aria-hidden="true"></div>' +
+      '<ul class="vc-poll"></ul><p class="vc-caption" aria-live="polite"></p>' +
+      '<button type="button" class="btn small vc-skip" data-viz-act="skip">⏭ ' + MS.ui.h.esc(t('cine.skip')) + '</button><div class="vc-fade"></div>';
+    V.controls.enabled = false;
+    V.t = 0;
+  }
+  // Fim da cena: volta à vista orbital com o foguete já no meio da subida.
+  function endCine(silent) {
+    if (!V || !V.cine) return;
+    V.cine.obj.dispose();
+    V.cine = null;
+    V.wrap.classList.remove('cine-on');
+    if (silent || !V.mission) return;
+    var S = V.mission.schedule;
+    V.t = Math.max(V.t, 1.2 + 0.3 * Math.max(0, S.orbitStart - 1.2));
+    V.snapCam = true;
+    update(0);
+  }
+  function cineHud(res) {
+    var c = V.cine, el = V.wrap.querySelector('.viz-cine'), esc = MS.ui.h.esc;
+    if (!el) return;
+    var key = res.chapter + '|' + (res.count || '') + '|' + MS.i18n.lang;
+    if (key !== c.key) {
+      c.key = key;
+      el.querySelector('.vc-chapter').textContent = t('cine.ch.' + res.chapter);
+      el.querySelector('.vc-caption').textContent = t('cine.cap.' + res.chapter, { site: V.mission.siteName });
+      el.querySelector('.vc-count').textContent = res.count ? String(res.count) : '';
+      el.querySelector('.vc-count').classList.toggle('on', !!res.count);
+      if (res.count) { var cn = el.querySelector('.vc-count'); cn.classList.remove('pop'); void cn.offsetWidth; cn.classList.add('pop'); }
+    }
+    // Votação: os conselheiros respondem um a um (mesmos votos da verificação).
+    var poll = el.querySelector('.vc-poll');
+    var showPoll = res.chapter === 'poll' && c.crew.length;
+    poll.style.display = showPoll ? '' : 'none';
+    if (showPoll) {
+      var n = Math.min(c.crew.length + 1, Math.floor((c.t - 3.5) / 0.55) + 1);
+      if (poll.childElementCount !== n) {
+        var nogo = c.crew.filter(function (a) { return a.vote === 'nogo'; }).length;
+        poll.innerHTML = c.crew.slice(0, n).map(function (a) {
+          var go = a.vote !== 'nogo';
+          return '<li class="r-' + a.key + '"><span>' + esc(a.name) + '</span><b class="' + (go ? 'go' : 'nogo') + '">' + esc(t(go ? 'ck.go' : 'ck.nogo')) + '</b></li>';
+        }).join('') + (n > c.crew.length ? '<li class="vc-dir"><span>' + esc(nogo ? t('cine.dirNoGo', { n: nogo }) : t('cine.dirGo')) + '</span></li>' : '');
+      }
+    }
+    el.querySelector('.vc-fade').style.opacity = String(Math.max(0, Math.min(1, (c.t - (MS.launchScene.END - 0.6)) / 0.6)));
   }
 
   viz.debug = function () { return V; };
+  // Pula a cena de lançamento até o instante s (para depurar e para as capturas).
+  viz.cineSeek = function (s) {
+    if (!V || !V.cine) return null;
+    var dt = 1 / 30;
+    while (V.cine && V.cine.t < s) { V.cine.t += dt; var r = V.cine.obj.update(V.cine.t, dt, V.camera); cineHud(r); }
+    if (V.cine) V.renderer.render(V.cine.obj.scene, V.camera);
+    return V.cine ? V.cine.t : null;
+  };
 
   // Avança a animação até o instante s (segundos), quadro a quadro. Útil para
   // depurar: MS.viz.seek(40) pula para 40 s com as imagens já acumuladas.

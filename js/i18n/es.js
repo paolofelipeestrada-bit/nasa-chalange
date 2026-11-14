@@ -562,6 +562,19 @@
     'about.nasa5.url': "https://ccmc.gsfc.nasa.gov/DONKI/",
     'about.nasa6.name': "NASA Mission Viz",
     'about.nasa6.use': "Su imagen de la Tierra se volvió el mapa de 1° que pinta el planeta 3D, y su propagador de órbitas es nuestra referencia para dibujar las órbitas.",
-    'about.nasa6.url': "https://github.com/nasa/mission-viz"
+    'about.nasa6.url': "https://github.com/nasa/mission-viz",
+    'cine.skip': "Saltar lanzamiento",
+    'cine.ch.pad': "Escena 1 · En la plataforma",
+    'cine.ch.poll': "Escena 2 · Votación Go / No-Go",
+    'cine.ch.count': "Escena 3 · Cuenta regresiva",
+    'cine.ch.liftoff': "Escena 4 · Despegue",
+    'cine.ch.ascent': "Escena 5 · Subiendo a la órbita",
+    'cine.cap.pad': "En la plataforma de {site}. El cohete está cargado y tu CubeSat espera dentro de la punta, bajo la cofia.",
+    'cine.cap.poll': "Votación del director de lanzamiento: antes de cada lanzamiento, cada equipo responde Go o No-Go.",
+    'cine.cap.count': "Los motores se encienden un poco antes del cero, para llegar a toda su fuerza antes de soltar el cohete.",
+    'cine.cap.liftoff': "¡Despegue! Los motores empujan más de lo que pesa todo el cohete, por eso sube.",
+    'cine.cap.ascent': "El cohete se inclina hacia un lado: para quedarse en órbita, la velocidad importa más que la altura — unos 7,6 km/s.",
+    'cine.dirGo': "Director de lanzamiento: todos Go. ¡Autorizado para lanzar!",
+    'cine.dirNoGo': "Director de lanzamiento: {n} No-Go, pero lanzamos igual."
   };
 })(globalThis);
