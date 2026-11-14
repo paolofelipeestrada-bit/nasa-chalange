@@ -185,6 +185,23 @@
     commit(createState(scenarioId));
   }
 
+  // Trocar de missão (cliente/objetivo) na fase 1: guarda as escolhas que
+  // também existem no cenário novo, sorteia imprevistos novos.
+  function setScenario(scenarioId) {
+    var sc = data().scenarios[scenarioId];
+    if (!sc) throw new Error('Cenário desconhecido: ' + scenarioId);
+    if (scenarioId === store.state.scenarioId) return true;
+    var s = createState(scenarioId);
+    sc.slots.forEach(function (slot) {
+      var v = store.state.design[slot.id];
+      if (v && slot.options.indexOf(v) !== -1) s.design[slot.id] = v;
+    });
+    s.phase = store.state.phase;
+    s.attempt = store.state.attempt;
+    commit(clampPhases(s));
+    return true;
+  }
+
   // -------------------------------------------------------- Persistência
   function save() {
     if (!store.storage || !store.persist) return;
@@ -251,7 +268,7 @@
     select: select, selectComponent: selectComponent,
     setOrbit: setOrbit, setLauncher: setLauncher, setGroundStation: setGroundStation,
     nextPhase: nextPhase, prevPhase: prevPhase, goToPhase: goToPhase,
-    retry: retry, reset: reset, setSeed: setSeed,
+    retry: retry, reset: reset, setSeed: setSeed, setScenario: setScenario,
     // multiplayer
     onChange: onChange, load: loadRemote, setPersistence: setPersistence,
     // consultas

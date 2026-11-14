@@ -15,14 +15,14 @@
   'use strict';
   var MS = root.MS, viz = MS.viz = MS.viz || {};
   var THREE = root.THREE;
+  var t = MS.i18n.t, Lx = MS.i18n.L;
   viz.fxNames = MS.vizSchedule.FX;
   viz.available = !!(THREE && THREE.OrbitControls);
 
   if (!viz.available) {
     viz.attachAll = function (rootEl) {
       rootEl.querySelectorAll('[data-viz]').forEach(function (n) {
-        n.innerHTML = '<p class="muted small" style="padding:16px">O visual 3D precisa de internet para carregar a biblioteca Three.js. ' +
-          'A linha do tempo abaixo mostra a missão.</p>';
+        n.innerHTML = '<p class="muted small" style="padding:16px">' + MS.ui.h.esc(t('viz.noThree')) + '</p>';
       });
     };
     return;
@@ -109,14 +109,14 @@
     wrap.innerHTML =
       '<div class="viz-hud viz-top"><div class="viz-when"></div><div class="viz-title"></div><div class="viz-text"></div></div>' +
       '<div class="viz-hud viz-flags"></div>' +
-      '<div class="viz-legend"><span class="lg-aoi">Área de interesse</span><span class="lg-cov">Imagens feitas</span>' +
-      '<span class="lg-con">Contato com a estação</span></div>' +
+      '<div class="viz-legend"><span class="lg-aoi">' + t('viz.aoi') + '</span><span class="lg-cov">' + t('viz.cov') + '</span>' +
+      '<span class="lg-con">' + t('viz.con') + '</span></div>' +
       '<div class="viz-bar">' +
-      '<button type="button" class="btn small" data-viz-act="play">⏸ Pausar</button>' +
-      '<button type="button" class="btn small" data-viz-act="restart">↺ Reiniciar</button>' +
-      '<button type="button" class="btn small" data-viz-act="end">⏭ Fim</button>' +
-      '<button type="button" class="btn small" data-viz-act="speed">Velocidade 1×</button>' +
-      '<button type="button" class="btn small" data-viz-act="cam">Câmera: automática</button>' +
+      '<button type="button" class="btn small" data-viz-act="play">⏸ ' + t('viz.pause') + '</button>' +
+      '<button type="button" class="btn small" data-viz-act="restart">↺ ' + t('viz.restart') + '</button>' +
+      '<button type="button" class="btn small" data-viz-act="end">⏭ ' + t('viz.skipEnd') + '</button>' +
+      '<button type="button" class="btn small" data-viz-act="speed">' + t('viz.speed') + ' 1×</button>' +
+      '<button type="button" class="btn small" data-viz-act="cam">' + t('viz.cam.auto') + '</button>' +
       '<span class="viz-progress"><span></span></span></div>';
 
     var renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -283,7 +283,7 @@
       rOrb: rOrb, u0: u0, sat: sat, body: body, bodyMat: bodyMat, wings: wings, cone: cone,
       contact: contact, station: station, stLocal: stLocal, aoiCenter: aoiCenter, aoiRad: (aoi.radius_deg || 10) * DEG,
       coverage: coverage, covCount: 0, covMax: COV, covTimer: 0,
-      rocket: rocket, flame: flame, debris: debris, exploded: false, siteName: L.site ? L.site.name : L.name,
+      rocket: rocket, flame: flame, debris: debris, exploded: false, siteName: L.site ? Lx(L.site.name) : Lx(L.name),
       minEl: (gs.minElevation_deg || 10) * DEG
     };
     sat.scale.setScalar(0.65);
@@ -357,7 +357,7 @@
       var s = Math.max(0, (t - 0.8) / (S.orbitStart - 0.8));
       if (S.launchFailed && s >= 0.5) {
         if (!m.exploded) { m.exploded = true; m.rocket.visible = false; spawn(launchPoint(0.5), 0xff7a1a, 260, 0.25); spawn(launchPoint(0.5), 0xffe08a, 120, 0.15); }
-        flags.push('Falha no lançamento');
+        flags.push(t('viz.launchFail'));
       } else {
         var p = launchPoint(s), q = launchPoint(Math.min(1, s + 0.01));
         m.rocket.visible = true;
@@ -391,7 +391,7 @@
     // Cores de estado do satélite
     var emissive = 0x000000;
     var safeMode = failedStep('power', t);
-    if (safeMode) { emissive = 0x000000; flags.push('Modo de segurança'); }
+    if (safeMode) { emissive = 0x000000; flags.push(t('viz.safeMode')); }
     if (fx === 'glitch' && local < 0.6 && Math.floor(t * 4) % 2 === 0) emissive = 0xaa0000;
     if (fx === 'storm' && st !== 'ok' && Math.floor(t * 3) % 2 === 0) emissive = 0x772200;
     if (reentry) { emissive = 0xff5a00; if (Math.random() < 0.8) spawn(satPos, 0xff8a2a, 3, 0.05); }
@@ -415,9 +415,9 @@
     m.contact.visible = showLine || (cmd && m.sat.visible);
     m.contact.material.color.setHex(cmd ? 0x59a8ff : 0x4cff7a);
     if (m.contact.visible) { m.contact.geometry.setFromPoints([stWorld, satPos]); }
-    if (showLine) flags.push('Contato com a estação');
+    if (showLine) flags.push(t('viz.con'));
     if (lost) flags.push('Sem contato');
-    if (stationDown) flags.push('Estação parada');
+    if (stationDown) flags.push(t('viz.stationDown'));
     var red = lost || stationDown || (fx === 'contact' && st !== 'ok');
     m.station.material.color.setHex(red ? (Math.floor(t * 3) % 2 ? 0xff3b3b : 0x661111) : showLine ? 0x4cff7a : 0xffffff);
 
@@ -457,7 +457,7 @@
       m.debris.position.copy(satPos).add(side.multiplyScalar(0.4 - 0.8 * local)).add(satPos.clone().normalize().multiplyScalar(0.03));
       m.debris.rotation.x += dt * 4; m.debris.rotation.y += dt * 3;
     }
-    if (failedStep('delay', t)) flags.push('Lançamento atrasado');
+    if (failedStep('delay', t)) flags.push(t('viz.delayed'));
 
     updateParticles(dt);
     updateCamera(satPos, dt);
@@ -465,7 +465,7 @@
   }
 
   // ---------------------------------------------------------------- Câmera
-  var CAM_TEXT = { auto: 'Câmera: automática', follow: 'Câmera: satélite', free: 'Câmera: livre' };
+  function camText(mode) { return t('viz.cam.' + mode); }
   function updateCamera(satPos, dt) {
     var m = V.mission, S = m.schedule, cam = V.camera, k = 1 - Math.exp(-dt * 2.5);
     V.controls.enabled = V.camMode === 'free';
@@ -498,14 +498,14 @@
       var when = hud.querySelector('.viz-when'), title = hud.querySelector('.viz-title'), text = hud.querySelector('.viz-text');
       if (step) {
         var e = step.event;
-        when.textContent = (e.random ? 'IMPREVISTO · ' : '') + e.when + (e.fx === 'launch' ? ' · ' + m.siteName : '');
+        when.textContent = (e.random ? t('viz.random') + ' · ' : '') + e.when + (e.fx === 'launch' ? ' · ' + m.siteName : '');
         title.textContent = e.title;
         title.style.color = STATUS_COLOR[e.status] || '';
         text.textContent = e.text;
       } else if (V.t >= S.duration) {
         var o = m.result.mission.outcome;
-        when.textContent = 'Fim da simulação';
-        title.textContent = m.result.mission.aborted ? 'Missão perdida' : 'Missão concluída';
+        when.textContent = t('viz.end');
+        title.textContent = m.result.mission.aborted ? t('viz.lost') : t('viz.done');
         title.style.color = STATUS_COLOR[m.result.mission.status] || '';
         text.textContent = o ? o.explanation : '';
       }
@@ -526,9 +526,9 @@
     if (act === 'end') { V.t = V.mission.schedule.duration; V.playing = true; }
     if (act === 'speed') V.speed = V.speed >= 4 ? 1 : V.speed * 2;
     if (act === 'cam') { V.camMode = V.camMode === 'auto' ? 'follow' : V.camMode === 'follow' ? 'free' : 'auto'; }
-    bar.querySelector('[data-viz-act="play"]').textContent = V.playing ? '⏸ Pausar' : '▶ Continuar';
-    bar.querySelector('[data-viz-act="speed"]').textContent = 'Velocidade ' + V.speed + '×';
-    bar.querySelector('[data-viz-act="cam"]').textContent = CAM_TEXT[V.camMode];
+    bar.querySelector('[data-viz-act="play"]').textContent = V.playing ? '⏸ ' + t('viz.pause') : '▶ ' + t('viz.play');
+    bar.querySelector('[data-viz-act="speed"]').textContent = t('viz.speed') + ' ' + V.speed + '×';
+    bar.querySelector('[data-viz-act="cam"]').textContent = camText(V.camMode);
   }
 
   function frame(now) {
@@ -554,11 +554,11 @@
       return;
     }
     var result = MS.sim.run(state);
-    if (!result.complete) { host.innerHTML = '<p class="muted small" style="padding:16px">Complete o projeto para ver a missão.</p>'; return; }
+    if (!result.complete) { host.innerHTML = '<p class="muted small" style="padding:16px">' + MS.ui.h.esc(t('viz.complete')) + '</p>'; return; }
     if (!V) {
       try { createView(); }
       catch (e) {
-        host.innerHTML = '<p class="muted small" style="padding:16px">Este navegador não conseguiu iniciar o 3D (WebGL).</p>';
+        host.innerHTML = '<p class="muted small" style="padding:16px">' + MS.ui.h.esc(t('viz.noWebgl')) + '</p>';
         V = null; return;
       }
       V.renderer.domElement.addEventListener('pointerdown', function () {
@@ -567,7 +567,18 @@
     }
     host.appendChild(V.wrap);
     resize();
-    var key = JSON.stringify([state.scenarioId, state.design, state.seed, state.attempt]);
+    if (V.lang !== MS.i18n.lang) {
+      // Idioma trocado: refaz os rótulos fixos da vista (legenda e botões).
+      V.lang = MS.i18n.lang;
+      var lg = V.wrap.querySelector('.viz-legend');
+      if (lg) lg.innerHTML = '<span class="lg-aoi">' + t('viz.aoi') + '</span><span class="lg-cov">' + t('viz.cov') + '</span><span class="lg-con">' + t('viz.con') + '</span>';
+      var rs = V.wrap.querySelector('[data-viz-act="restart"]'), en = V.wrap.querySelector('[data-viz-act="end"]');
+      if (rs) rs.textContent = '↺ ' + t('viz.restart');
+      if (en) en.textContent = '⏭ ' + t('viz.skipEnd');
+      V.hudKey = null; V.flagKey = null;
+      onControl('none');
+    }
+    var key = JSON.stringify([state.scenarioId, state.design, state.seed, state.attempt, MS.i18n.lang]);
     if (key !== V.key) { V.key = key; V.hudKey = null; V.flagKey = null; buildMission(state, result); onControl('none'); }
     if (!V.raf) { V.last = 0; V.raf = root.requestAnimationFrame(frame); }
   };

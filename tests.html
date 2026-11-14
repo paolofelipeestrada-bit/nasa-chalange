@@ -34,6 +34,12 @@
 </script>
 
 <!-- Mesma ordem que o index.html vai usar -->
+<script src="js/i18n/i18n.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/pt.js"></script>
+<script src="js/i18n/es.js"></script>
+<!-- Os testes do motor conferem textos em português -->
+<script>MS.i18n.setLang('pt', false);</script>
 <script src="js/data/phases.js"></script>
 <script src="js/data/catalog.js"></script>
 <script src="js/data/scenarios.js"></script>
@@ -55,6 +61,7 @@
 <script src="tests/ui.test.js"></script>
 <script src="tests/viz.test.js"></script>
 <script src="tests/team.test.js"></script>
+<script src="tests/i18n.test.js"></script>
 
 <script>
   (function () {

@@ -6,19 +6,28 @@
  *   MS.ui.mount(el)           liga a interface a um elemento e aos cliques
  *   MS.ui.register(id, tela)  registra uma tela (ver js/ui/screens-*.js)
  *
- * Tela = { render(state, result) → HTML, nextLabel?: texto do botão Avançar }
+ * Tela = { render(state, result) → HTML, nextLabel?: chave do botão Avançar }
  * "result" é sempre MS.sim.run(state): a tela só mostra, nunca calcula.
+ *
+ * Sempre na tela (topo): idioma, os 6 passos da NASA e o PAINEL DE
+ * RECURSOS (massa, energia, orçamento, dados, comunicação, tempo).
+ * Passar o mouse (ou focar) num cartão de opção mostra a prévia do
+ * efeito em cada recurso; depois de escolher, a faixa "o que mudou"
+ * mostra a cadeia de efeitos.
  *
  * Cliques: qualquer elemento com data-action="..." chama a ação de ACTIONS
  * (ex.: <button data-action="select" data-slot="orbit" data-option="sso500">).
+ * Textos: MS.i18n.t('chave') e MS.i18n.L(texto dos dados).
  * ===================================================================== */
 (function (root) {
   'use strict';
   var MS = root.MS = root.MS || {};
   var ui = MS.ui = MS.ui || {};
-  ui.local = ui.local || { teamOpen: false, glossaryOpen: false }; // estado só da tela (não vai para o state)
+  ui.local = ui.local || {};
+  ['teamOpen', 'glossaryOpen', 'aboutOpen'].forEach(function (k) { if (!(k in ui.local)) ui.local[k] = false; });
   var screens = {};
   var U = MS.sim.util;
+  var t = MS.i18n.t, L = MS.i18n.L;
 
   // ------------------------------------------------------------- Helpers
   function esc(s) {
@@ -26,9 +35,9 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  var STATUS_TEXT = { ok: 'OK', warn: 'Atenção', fail: 'Falha', pending: 'Pendente', skipped: 'Não ocorreu', na: 'Não se aplica' };
+  function statusText(status) { return MS.i18n.has('st.' + status) ? t('st.' + status) : status; }
   function badge(status, text) {
-    return '<span class="badge s-' + esc(status) + '">' + esc(text || STATUS_TEXT[status] || status) + '</span>';
+    return '<span class="badge s-' + esc(status) + '">' + esc(text || statusText(status)) + '</span>';
   }
   function value(m) { return m && m.value != null ? U.withUnit(m.value, m.unit, m.decimals) : '—'; }
   function scenario(state) { return MS.data.scenarios[state.scenarioId]; }
@@ -36,47 +45,49 @@
   function term(key, label) {
     var g = MS.data.glossary && MS.data.glossary[key];
     if (!g) return esc(label || key);
-    return '<span class="term" tabindex="0" data-tip="' + esc(g.text) + '">' + esc(label || g.term) + '</span>';
+    return '<span class="term" tabindex="0" data-tip="' + esc(L(g.text)) + '">' + esc(label || L(g.term)) + '</span>';
   }
   // Texto com [[chave]] ou [[chave|texto]] vira termo com dica; o resto é escapado.
   function rich(text) {
     var out = '', re = /\[\[(\w+)(?:\|([^\]]+))?\]\]/g, last = 0, m;
-    text = String(text == null ? '' : text);
+    text = String(L(text) == null ? '' : L(text));
     while ((m = re.exec(text))) { out += esc(text.slice(last, m.index)) + term(m[1], m[2]); last = re.lastIndex; }
     return out + esc(text.slice(last));
   }
   // Métrica/recurso → termo do glossário que a explica.
   var TERM_OF = { gsd_m: 'gsd', swath_km: 'swath', revisit_days: 'revisit', downlink_Gbit_day: 'downlink', eclipse_pct: 'eclipse',
-                  lifetime_years: 'lifetime', downlink: 'downlink', contactMinPerDay: 'groundStation', passesPerDay: 'groundStation' };
+                  lifetime_years: 'lifetime', downlink: 'downlink', contactMinPerDay: 'groundStation', passesPerDay: 'groundStation',
+                  margin: 'margin', time: 'schedule', schedule_months: 'schedule' };
   function labelOf(key, label) { return TERM_OF[key] ? term(TERM_OF[key], label) : esc(label); }
 
   function explain(text, label) {
-    return text ? '<details><summary>' + esc(label || 'Como foi calculado') + '</summary>' + esc(text) + '</details>' : '';
+    return text ? '<details><summary>' + esc(label || t('ui.howCalc')) + '</summary>' + esc(text) + '</details>' : '';
   }
 
-  // Campos que aparecem nos cartões de opção: [campo, rótulo, unidade, casas].
-  // Campo novo no catálogo? Acrescente aqui para ele aparecer nos cartões.
+  // Campos que aparecem nos cartões de opção: [campo, unidade, casas].
+  // Rótulo: t('spec.<campo>'). Campo novo no catálogo? Acrescente aqui.
   var SPEC_FIELDS = [
-    ['altitude_km', 'Altitude', 'km', 0], ['inclination_deg', 'Inclinação', '°', 1],
-    ['lifetime_years', 'Vida orbital', 'anos', 1], ['orbits', 'Vai para', 'orbits'],
-    ['maxMass_kg', 'Massa máx.', 'kg', 1], ['latitude_deg', 'Latitude', 'lat'], ['bands', 'Bandas', 'list'],
-    ['focal_mm', 'Focal', 'mm', 0], ['pixelsAcross', 'Pixels/linha', '', 0],
-    ['requiredPointing_deg', 'Exige apontar', '°', 2], ['capacity_U', 'Volume útil', 'U', 1],
-    ['solarPower_W', 'Geração ao sol', 'W', 0], ['accuracy_deg', 'Precisão', '°', 2],
-    ['band', 'Banda', 'text'], ['dataRate_kbps', 'Taxa', 'rate'], ['storage_GB', 'Memória', 'GB', 0],
-    ['compressionRatio', 'Compressão', 'ratio'],
-    ['mass_kg', 'Massa', 'kg', 2], ['power_W', 'Potência', 'W', 1], ['volume_U', 'Volume', 'U', 1],
-    ['cost_k', 'Custo', 'k$', 0], ['maturity', 'Maturidade', 'maturity']
+    ['altitude_km', 'km', 0], ['inclination_deg', '°', 1],
+    ['lifetime_years', 'years', 1], ['orbits', 'orbits'], ['waitMonths', 'months', 0],
+    ['maxMass_kg', 'kg', 1], ['latitude_deg', 'lat'], ['bands', 'list'],
+    ['focal_mm', 'mm', 0], ['pixelsAcross', '', 0],
+    ['requiredPointing_deg', '°', 2], ['capacity_U', 'U', 1],
+    ['solarPower_W', 'W', 0], ['accuracy_deg', '°', 2],
+    ['band', 'text'], ['dataRate_kbps', 'rate'], ['storage_GB', 'GB', 0],
+    ['compressionRatio', 'ratio'],
+    ['mass_kg', 'kg', 2], ['power_W', 'W', 1], ['volume_U', 'U', 1],
+    ['cost_k', 'k$', 0], ['maturity', 'maturity']
   ];
   function fmtSpec(v, unit, dec) {
     var cat = MS.data.catalog;
-    if (unit === 'orbits') return v.map(function (id) { return cat.orbits[id] ? cat.orbits[id].name : id; }).join(', ');
+    if (unit === 'orbits') return v.map(function (id) { return cat.orbits[id] ? L(cat.orbits[id].name) : id; }).join(', ');
     if (unit === 'list') return Array.isArray(v) ? v.join(', ') : String(v); // estação: lista · câmera: nº de bandas
     if (unit === 'text') return String(v);
     if (unit === 'lat') return U.fmt(Math.abs(v), 0) + '° ' + (v >= 0 ? 'N' : 'S');
     if (unit === 'rate') return v >= 1000 ? U.fmt(v / 1000, 1) + ' Mbps' : U.fmt(v, 1) + ' kbps';
     if (unit === 'ratio') return U.fmt(v, 0) + ':1';
-    if (unit === 'maturity') return (cat.maturity[v] || {}).label || v;
+    if (unit === 'maturity') return L((cat.maturity[v] || {}).label) || v;
+    if (unit === 'years' || unit === 'months') return U.withUnit(v, t('u.' + unit), dec);
     return U.withUnit(v, unit, dec);
   }
   // ff = formato da estrutura escolhida; sem formato, mostra "3U: x · 6U: y".
@@ -87,14 +98,21 @@
       var text;
       if (typeof v === 'object' && !Array.isArray(v)) {
         var one = U.byFF(v, ff);
-        text = one != null ? fmtSpec(one, f[2], f[3])
-          : Object.keys(v).map(function (k) { return k + ': ' + fmtSpec(v[k], f[2], f[3]); }).join(' · ');
+        text = one != null ? fmtSpec(one, f[1], f[2])
+          : Object.keys(v).map(function (k) { return k + ': ' + fmtSpec(v[k], f[1], f[2]); }).join(' · ');
       } else {
-        text = fmtSpec(v, f[2], f[3]);
+        text = fmtSpec(v, f[1], f[2]);
       }
-      return '<dt>' + esc(f[1]) + '</dt><dd>' + esc(text) + '</dd>';
+      return '<dt>' + esc(t('spec.' + f[0])) + '</dt><dd>' + esc(text) + '</dd>';
     }).join('');
     return '<dl class="specs">' + rows + '</dl>';
+  }
+
+  // Selo de segmento da missão (lançamento, espaço, solo, usuário).
+  function segmentChip(id) {
+    var seg = MS.data.flow.segments && MS.data.flow.segments[id];
+    if (!seg) return '';
+    return '<span class="seg seg-' + esc(id) + '" title="' + esc(L(seg.text)) + '">' + esc(L(seg.name)) + '</span>';
   }
 
   // Sala multiplayer ativa? (null = jogando sozinho)
@@ -120,30 +138,31 @@
       var locked = room && !MS.team.can(sc, room.members, room.me, 'select', [slot.id]).ok;
       var ownerTag = owner && owner.role
         ? '<span class="owner' + (owner.member && owner.member.id === room.me ? ' mine' : '') + '">' +
-          esc(owner.role.name + ': ' + (owner.member ? owner.member.name : 'livre')) + '</span>' : '';
+          esc(L(owner.role.name) + ': ' + (owner.member ? owner.member.name : t('ui.free'))) + '</span>' : '';
       var cards = slot.options.map(function (id) {
         var it = cat[slot.source][id], sel = cur === id;
-        return '<button type="button" class="option' + (sel ? ' selected' : '') + '" aria-pressed="' + sel + '"' + (locked ? ' disabled' : '') +
+        return '<button type="button" class="option' + (sel ? ' selected' : '') + '" aria-pressed="' + sel + '" data-chosen="' + esc(t('ui.chosen')) + '"' + (locked ? ' disabled' : '') +
           ' data-action="select" data-slot="' + esc(slot.id) + '" data-option="' + esc(id) + '">' +
-          '<span class="option-name">' + esc(it.name) + '</span>' +
-          '<span class="option-desc">' + esc(it.description || '') + '</span>' +
-          (it.pros || it.cons ? '<span class="pc">' + (it.pros ? '<span class="pro"><span><b>Vantagem:</b> ' + esc(it.pros) + '</span></span>' : '') +
-            (it.cons ? '<span class="con"><span><b>Cuidado:</b> ' + esc(it.cons) + '</span></span>' : '') + '</span>' : '') +
-          specs(it, ff) + '</button>';
+          '<span class="option-name">' + esc(L(it.name)) + '</span>' +
+          '<span class="option-desc">' + esc(L(it.description) || '') + '</span>' +
+          (it.pros || it.cons ? '<span class="pc">' + (it.pros ? '<span class="pro"><span><b>' + esc(t('ui.pro')) + '</b> ' + esc(L(it.pros)) + '</span></span>' : '') +
+            (it.cons ? '<span class="con"><span><b>' + esc(t('ui.con')) + '</b> ' + esc(L(it.cons)) + '</span></span>' : '') + '</span>' : '') +
+          specs(it, ff) +
+          (it.source ? '<span class="src">' + esc(t('ui.source')) + ' ' + esc(L(it.source)) + '</span>' : '') + '</button>';
       }).join('');
-      return '<section class="slot"><div class="slot-head"><h3>' + rich(slot.label) + '</h3>' +
-        (cur ? '<span class="slot-done">✓ escolhido</span>' : '<span class="slot-todo">escolha uma opção</span>') + ownerTag +
+      return '<section class="slot"><div class="slot-head"><h3>' + rich(slot.label) + '</h3>' + segmentChip(slot.segment) +
+        (cur ? '<span class="slot-done">✓ ' + esc(t('ui.chosen')) + '</span>' : '<span class="slot-todo">' + esc(t('ui.chooseOne')) + '</span>') + ownerTag +
         '</div>' + (slot.help ? '<p class="section-note">' + rich(slot.help) + '</p>' : '') +
         '<div class="options">' + cards + '</div></section>';
     }).join('');
   }
 
-  // Lista de métricas do motor, com explicação.
+  // Lista de métricas do motor: frase simples + a conta para quem quiser.
   function metricRows(result, keys) {
     return '<ul class="rows">' + keys.map(function (k) {
       var m = result.metrics[k];
       return '<li><div class="row-head"><span>' + labelOf(k, m.label) + '</span><span class="value">' + esc(value(m)) +
-        '</span></div>' + explain(m.explanation) + '</li>';
+        '</span></div>' + (m.plain && m.value != null ? '<div class="plain">' + esc(m.plain) + '</div>' : '') + explain(m.explanation) + '</li>';
     }).join('') + '</ul>';
   }
 
@@ -154,12 +173,13 @@
       var title = (opts.prefixId ? x.id + ' · ' : '') + (x.title || x.label);
       return '<li><div class="row-head"><span><strong>' + esc(title) + '</strong></span>' + badge(x.status) + '</div>' +
         (x.text ? '<div class="small">' + esc(x.text) + '</div>' : '') +
-        (x.status === 'pending' ? '<div class="small muted">' + esc(x.explanation) + '</div>' : explain(x.explanation, 'Por quê')) +
-        (x.hint ? '<div class="hint">' + esc(x.hint) + '</div>' : '') + '</li>';
+        (x.plain && x.status !== 'pending' ? '<div class="plain">' + esc(x.plain) + '</div>' : '') +
+        (x.status === 'pending' ? '<div class="small muted">' + esc(x.explanation) + '</div>' : explain(x.explanation, t('ui.why'))) +
+        (x.hint ? '<div class="hint" data-label="' + esc(t('ui.tip')) + '">' + esc(x.hint) + '</div>' : '') + '</li>';
     }).join('') + '</ul>';
   }
 
-  // Painel de recursos: barra de uso + marca da folga recomendada.
+  // Painel de recursos detalhado (lateral do Design): barra + marca da folga.
   function resourcePanel(result) {
     return result.resources.map(function (r) {
       var use = r.usage == null ? 0 : Math.max(0, Math.min(100, r.usage * 100));
@@ -167,49 +187,222 @@
       return '<div class="res s-' + r.status + '"><div class="row-head"><strong>' + labelOf(r.id, r.label) + '</strong>' + badge(r.status) + '</div>' +
         '<div class="bar"><div class="fill" style="width:' + use + '%"></div>' + mark + '</div>' +
         '<div class="res-text">' + esc(r.explanation) + '</div></div>';
-    }).join('') + '<div class="legend"><span><i style="background:var(--ok)"></i>com ' + term('margin', 'folga') + '</span>' +
-      '<span><i style="background:var(--warn)"></i>no limite</span><span><i style="background:var(--fail)"></i>não cabe</span>' +
-      '<span>| = limite recomendado</span></div>';
+    }).join('') + legend();
+  }
+  function legend() {
+    return '<div class="legend"><span><i style="background:var(--ok)"></i>' + esc(t('ui.legendOk')) + ' ' + term('margin', t('ui.legendMargin')) + '</span>' +
+      '<span><i style="background:var(--warn)"></i>' + esc(t('ui.legendWarn')) + '</span><span><i style="background:var(--fail)"></i>' + esc(t('ui.legendFail')) + '</span>' +
+      '<span>| = ' + esc(t('ui.legendMark')) + '</span></div>';
+  }
+
+  // ------------------------------------------- Painel fixo: os 6 recursos
+  // Os 6 recursos que o desafio pede, sempre visíveis no topo.
+  //   res: recursos do motor que o cartão resume (o status é o pior deles)
+  var HUD = [
+    { id: 'mass',  icon: '⚖️', res: ['mass', 'volume'] },
+    { id: 'power', icon: '⚡', res: ['power'] },
+    { id: 'cost',  icon: '💰', res: ['cost'] },
+    { id: 'data',  icon: '💾', res: ['storage'], metric: 'dataPerDay_Gbit' },
+    { id: 'comms', icon: '📡', res: ['downlink'] },
+    { id: 'time',  icon: '⏱️', res: ['time'] }
+  ];
+  function resById(result, id) { return result.resources.filter(function (r) { return r.id === id; })[0]; }
+  function hudStatus(card, result) { return U.worst(card.res.map(function (id) { return resById(result, id).status; })); }
+  function hudValue(card, result) {
+    if (card.metric) { var m = result.metrics[card.metric]; return m.value == null ? '—' : U.withUnit(m.value, m.unit, 1) + t('u.slashDay'); }
+    var r = resById(result, card.res[0]);
+    if (r.demand == null && r.capacity == null) return '—';
+    var d = r.demand == null ? '—' : U.fmt(r.demand, r.decimals > 1 ? 1 : r.decimals);
+    var c = r.capacity == null ? '—' : U.fmt(r.capacity, r.decimals > 1 ? 1 : r.decimals);
+    return d + ' / ' + c + ' ' + r.unit;
+  }
+  function hudCard(card, result, open) {
+    var r = resById(result, card.res[0]), st = hudStatus(card, result);
+    var use = r.usage == null ? 0 : Math.max(0, Math.min(100, r.usage * 100));
+    var mark = r.recommendedMargin > 0 ? '<i class="mk" style="left:' + ((1 - r.recommendedMargin) * 100) + '%"></i>' : '';
+    return '<button type="button" class="hud-card s-' + st + (open ? ' open' : '') + '" data-action="hud" data-hud="' + card.id + '" aria-expanded="' + !!open + '"' +
+      ' title="' + esc(t('hud.' + card.id + '.what')) + '">' +
+      '<span class="hud-top"><span class="hud-ic" aria-hidden="true">' + card.icon + '</span><span class="hud-name">' + esc(t('hud.' + card.id)) + '</span>' +
+      '<span class="hud-st">' + esc(statusText(st)) + '</span></span>' +
+      '<span class="hud-val">' + esc(hudValue(card, result)) + '</span>' +
+      '<span class="hud-bar"><i class="fl" style="width:' + use + '%"></i>' + mark + '</span>' +
+      '<span class="hud-delta" aria-hidden="true"></span></button>';
+  }
+  function hudDetail(id, result) {
+    var card = HUD.filter(function (c) { return c.id === id; })[0];
+    if (!card) return '';
+    var body = card.res.map(function (rid) {
+      var r = resById(result, rid);
+      return '<div class="hud-d-item"><div class="row-head"><strong>' + labelOf(r.id, r.label) + '</strong>' + badge(r.status) + '</div>' +
+        (r.plain ? '<p class="plain">' + esc(r.plain) + '</p>' : '') + '<p class="small">' + esc(r.explanation) + '</p>' +
+        explain(r.details.filter(Boolean).join(' '), t('ui.seeMath')) + '</div>';
+    }).join('');
+    return '<div class="hud-detail" role="region" aria-label="' + esc(t('hud.' + id)) + '"><div class="row-head"><strong>' + esc(t('hud.' + id + '.what')) + '</strong>' +
+      '<button type="button" class="btn small" data-action="hud" data-hud="' + id + '">' + esc(t('ui.close')) + '</button></div>' + body + '</div>';
+  }
+  function hud(state, result) {
+    var open = ui.local.hudOpen;
+    return '<div class="hud-wrap"><div class="hud" role="group" aria-label="' + esc(t('hud.title')) + '">' +
+      HUD.map(function (c) { return hudCard(c, result, open === c.id); }).join('') + '</div>' +
+      (open ? hudDetail(open, result) : '') +
+      '<div class="cascade" aria-live="polite">' + (ui.local.cascade && ui.local.cascade.phase === state.phase ? ui.local.cascade.html : '') + '</div></div>';
+  }
+
+  // Diferença de um recurso entre dois resultados, em texto ("+0,6 kg").
+  function deltaText(a, b, card) {
+    if (card.metric) {
+      var ma = a.metrics[card.metric], mb = b.metrics[card.metric];
+      if (ma.value == null || mb.value == null) return mb.value != null ? U.withUnit(mb.value, mb.unit, 1) : '';
+      var dm = mb.value - ma.value;
+      return Math.abs(dm) < 1e-9 ? '' : (dm > 0 ? '+' : '−') + U.withUnit(Math.abs(dm), mb.unit, 1);
+    }
+    var ra = resById(a, card.res[0]), rb = resById(b, card.res[0]), parts = [];
+    var dec = rb.decimals > 1 ? 1 : rb.decimals;
+    if (rb.demand != null && ra.demand != null && Math.abs(rb.demand - ra.demand) > 1e-9) {
+      var d = rb.demand - ra.demand;
+      parts.push((d > 0 ? '+' : '−') + U.withUnit(Math.abs(d), rb.unit, dec));
+    } else if (rb.demand != null && ra.demand == null) parts.push(U.withUnit(rb.demand, rb.unit, dec));
+    if (rb.capacity != null && ra.capacity != null && Math.abs(rb.capacity - ra.capacity) > 1e-9) {
+      var c = rb.capacity - ra.capacity;
+      parts.push(t('hud.limit') + ' ' + (c > 0 ? '+' : '−') + U.withUnit(Math.abs(c), rb.unit, dec));
+    } else if (rb.capacity != null && ra.capacity == null) parts.push(t('hud.limit') + ' ' + U.withUnit(rb.capacity, rb.unit, dec));
+    return parts.join(' · ');
+  }
+
+  // Prévia: mostra no painel o que uma opção mudaria (sem escolher).
+  function previewOption(slot, option) {
+    var state = MS.store.state;
+    if (!rootEl || !state || state.design[slot] === option) { clearPreview(); return; }
+    var base = MS.sim.run(state);
+    var cand = MS.sim.run(Object.assign({}, state, { design: Object.assign({}, state.design, (function () { var o = {}; o[slot] = option; return o; })()) }));
+    HUD.forEach(function (card) {
+      var el = rootEl.querySelector('.hud-card[data-hud="' + card.id + '"]');
+      if (!el) return;
+      var before = hudStatus(card, base), after = hudStatus(card, cand);
+      var txt = deltaText(base, cand, card);
+      el.querySelector('.hud-delta').textContent = txt ? txt + (after !== before ? ' → ' + statusText(after) : '') : (after !== before ? '→ ' + statusText(after) : '');
+      el.classList.remove('pv-ok', 'pv-warn', 'pv-fail', 'pv-pending');
+      if (txt || after !== before) el.classList.add('pv', 'pv-' + after);
+    });
+    var hudEl = rootEl.querySelector('.hud');
+    if (hudEl) hudEl.classList.add('previewing');
+  }
+  function clearPreview() {
+    if (!rootEl) return;
+    var cards = rootEl.querySelectorAll('.hud-card');
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].classList.remove('pv', 'pv-ok', 'pv-warn', 'pv-fail', 'pv-pending');
+      var d = cards[i].querySelector('.hud-delta');
+      if (d) d.textContent = '';
+    }
+    var hudEl = rootEl.querySelector('.hud');
+    if (hudEl) hudEl.classList.remove('previewing');
+  }
+
+  // Cadeia de efeitos: o que a última mudança de projeto alterou.
+  function cascadeHTML(prevState, prev, state, cur) {
+    var sc = scenario(state), cat = MS.data.catalog;
+    var changed = sc.slots.filter(function (s) { return prevState.design[s.id] !== state.design[s.id]; });
+    if (!changed.length) return '';
+    var what = changed.map(function (s) {
+      var id = state.design[s.id], item = id && cat[s.source][id];
+      return '<b>' + esc(L(s.label)) + ':</b> ' + esc(item ? L(item.name) : t('ui.none'));
+    }).join(', ');
+    var items = [];
+    HUD.forEach(function (card) {
+      var d = deltaText(prev, cur, card), a = hudStatus(card, prev), b = hudStatus(card, cur);
+      if (!d && a === b) return;
+      items.push({ rank: (b === 'fail' ? 3 : b === 'warn' ? 2 : 1) + (a !== b ? 3 : 0),
+        html: '<span class="cz s-' + b + '">' + card.icon + ' ' + esc(t('hud.' + card.id)) + ' ' + esc(d) +
+          (a !== b ? ' <b>' + esc(statusText(a)) + ' → ' + esc(statusText(b)) + '</b>' : '') + '</span>' });
+    });
+    cur.requirements.forEach(function (r) {
+      var pr = prev.requirements.filter(function (x) { return x.id === r.id; })[0];
+      if (pr && pr.status !== r.status && r.status !== 'pending') {
+        items.push({ rank: 5, html: '<span class="cz s-' + r.status + '">' + esc(r.id + ' ' + r.title) + ' <b>' + esc(statusText(pr.status)) + ' → ' + esc(statusText(r.status)) + '</b></span>' });
+      }
+    });
+    if (!items.length) return '';
+    items.sort(function (x, y) { return y.rank - x.rank; });
+    return '<span class="cz-head">' + esc(t('ui.cascade')) + ' ' + what + '</span><span class="cz-arrow" aria-hidden="true">→</span>' +
+      items.slice(0, 5).map(function (i) { return i.html; }).join('<span class="cz-arrow" aria-hidden="true">→</span>');
   }
 
   // ------------------------------------------------------- Moldura da tela
-  function header(state, info) {
+  var FLAGS = {
+    en: '<svg viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#b22234"/><path d="M0 1.15h19M0 2.7h19M0 4.23h19M0 5.77h19M0 7.3h19M0 8.85h19" stroke="#fff" stroke-width=".77"/><rect width="7.6" height="5.38" fill="#3c3b6e"/></svg>',
+    pt: '<svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009c3b"/><path d="M10 1.7 18.3 7 10 12.3 1.7 7z" fill="#ffdf00"/><circle cx="10" cy="7" r="3.4" fill="#002776"/></svg>',
+    es: '<svg viewBox="0 0 3 2" aria-hidden="true"><rect width="3" height="2" fill="#aa151b"/><rect y=".5" width="3" height="1" fill="#f1bf00"/></svg>'
+  };
+  function langSwitch() {
+    return '<div class="langs" role="group" aria-label="' + esc(t('ui.language')) + '">' + MS.i18n.langs.map(function (l) {
+      var on = l.id === MS.i18n.lang;
+      return '<button type="button" class="flag' + (on ? ' on' : '') + '" data-action="lang" data-lang="' + l.id + '" aria-pressed="' + on + '" title="' + esc(l.name) + '">' +
+        FLAGS[l.id] + '<span>' + l.id.toUpperCase() + '</span></button>';
+    }).join('') + '</div>';
+  }
+
+  function header(state, info, result) {
     var lock = phaseLock(state), room = MS.net ? MS.net.info() : { inRoom: false };
     var steps = info.phases.map(function (p, i) {
       var cls = i === info.index ? 'current' : i <= info.reachedIndex ? 'done' : '';
       var dis = i > info.reachedIndex || (lock && i !== info.index);
-      return '<li class="' + cls + '"><button type="button" data-action="goto" data-phase="' + esc(p.id) + '"' +
-        (dis ? ' disabled' : '') + (i === info.index ? ' aria-current="step"' : '') + ' title="' + esc(p.title + ' — ' + (p.subtitle || '')) + '">' +
-        '<span class="dot">' + (cls === 'done' ? '✓' : i + 1) + '</span>' + esc(p.short || p.title) + '</button></li>';
+      return '<li class="' + cls + (p.nasaStep ? '' : ' extra') + '" style="--i:' + i + '"><button type="button" data-action="goto" data-phase="' + esc(p.id) + '"' +
+        (dis ? ' disabled' : '') + (i === info.index ? ' aria-current="step"' : '') + ' title="' + esc(L(p.title) + ' — ' + L(p.subtitle)) + '">' +
+        '<span class="num">' + (cls === 'done' && i !== info.index ? '✓' : p.nasaStep || '★') + '</span><span class="lbl">' + esc(L(p.title)) + '</span>' +
+        '<span class="lbl-s">' + esc(L(p.short)) + '</span></button></li>';
     }).join('');
     return '<header class="top"><div class="brand">' +
-      '<div class="logo"><span class="logo-mark" aria-hidden="true"></span><div><strong>Simulador de Missão</strong><span>' + esc(scenario(state).title) + '</span></div></div>' +
-      '<div class="top-actions"><span class="chip">Tentativa ' + state.attempt + '</span>' +
+      '<div class="logo"><span class="logo-mark" aria-hidden="true"></span><div><strong>' + esc(t('app.name')) + '</strong><span>' + esc(L(scenario(state).title)) + '</span></div></div>' +
+      '<div class="top-actions">' + langSwitch() + '<span class="chip">' + esc(t('ui.attempt', { n: state.attempt })) + '</span>' +
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' +
-        (room.inRoom ? 'Equipe · ' + esc(room.code) : 'Jogar em equipe') + '</button>' +
-      '<button type="button" class="btn small" data-action="glossary">Glossário</button>' +
-      '<button type="button" class="btn small" data-action="reset"' + (lock ? ' disabled' : '') + '>Recomeçar</button></div></div>' +
-      '<nav class="steps" aria-label="Fases da missão"><ol>' + steps + '</ol></nav></header>';
+        (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
+      '<button type="button" class="btn small" data-action="glossary">' + esc(t('ui.glossary')) + '</button>' +
+      '<button type="button" class="btn small" data-action="about">' + esc(t('ui.about')) + '</button>' +
+      '<button type="button" class="btn small" data-action="reset"' + (lock ? ' disabled' : '') + '>' + esc(t('ui.restart')) + '</button></div></div>' +
+      '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><span class="steps-cap">' + esc(t('ui.stepsCap')) + '</span><ol>' + steps + '</ol></nav>' +
+      hud(state, result) + '</header>';
   }
 
-  // Caixa "O que fazer aqui" (textos em js/data/phases.js).
+  // Caixa "O que fazer aqui" + o que a NASA faz neste passo.
   function guide(phase) {
     if (!phase.guide) return '';
-    var tips = (phase.tips || []).map(function (t) { return '<li>' + rich(t) + '</li>'; }).join('');
-    return '<div class="guide"><span class="guide-icon" aria-hidden="true">?</span><div><strong>O que fazer aqui</strong>' +
-      '<p>' + rich(phase.guide) + '</p>' + (tips ? '<ul>' + tips + '</ul>' : '') + '</div></div>';
+    var tips = (phase.tips || []).map(function (x) { return '<li>' + rich(x) + '</li>'; }).join('');
+    var segs = (phase.segments || []).map(segmentChip).join('');
+    var cml = MS.data.flow.cml && MS.data.flow.cml[phase.cml];
+    return '<div class="guide"><span class="guide-icon" aria-hidden="true">?</span><div><strong>' + esc(t('ui.whatToDo')) + '</strong>' +
+      '<p>' + rich(phase.guide) + '</p>' + (tips ? '<ul>' + tips + '</ul>' : '') +
+      (phase.nasa ? '<div class="nasa"><span class="nasa-tag">' + esc(phase.nasaStep ? t('ui.atNasaStep', { n: phase.nasaStep }) : t('ui.atNasa')) + '</span>' +
+        '<p>' + rich(phase.nasa) + '</p><div class="nasa-meta"><span class="small muted">' + term('segments', t('ui.segments')) + ':</span> ' + segs +
+        (cml ? ' <span class="cml" title="' + esc(L(MS.data.glossary.cml.text)) + '">' + esc(L(cml)) + '</span>' : '') + '</div></div>' : '') +
+      '</div></div>';
   }
 
   // Glossário completo (botão no topo).
   function glossaryPanel() {
-    if (!ui.local || !ui.local.glossaryOpen) return '';
+    if (!ui.local.glossaryOpen) return '';
     var g = MS.data.glossary || {};
-    var items = Object.keys(g).sort(function (a, b) { return g[a].term.localeCompare(g[b].term, 'pt'); }).map(function (k) {
-      return '<div><dt>' + esc(g[k].term) + '</dt><dd>' + esc(g[k].text) + '</dd></div>';
+    var items = Object.keys(g).sort(function (a, b) { return L(g[a].term).localeCompare(L(g[b].term), MS.i18n.locale()); }).map(function (k) {
+      return '<div><dt>' + esc(L(g[k].term)) + '</dt><dd>' + esc(L(g[k].text)) + '</dd></div>';
     }).join('');
-    return '<div class="card"><div class="row-head"><h2>Glossário</h2><button type="button" class="btn small" data-action="glossary">Fechar</button></div>' +
-      '<p class="section-note">Os termos sublinhados com pontinhos mostram a explicação ao passar o mouse (ou tocar).</p>' +
+    return '<div class="card"><div class="row-head"><h2>' + esc(t('ui.glossary')) + '</h2><button type="button" class="btn small" data-action="glossary">' + esc(t('ui.close')) + '</button></div>' +
+      '<p class="section-note">' + esc(t('ui.glossaryNote')) + '</p>' +
       '<dl class="glossary">' + items + '</dl></div>';
+  }
+
+  // Sobre o jogo: recursos da NASA usados, simplificações e uso de IA.
+  function aboutPanel() {
+    if (!ui.local.aboutOpen) return '';
+    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5'].map(function (k) {
+      return '<li><b>' + esc(t('about.' + k + '.name')) + '</b> — ' + esc(t('about.' + k + '.use')) +
+        ' <a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + '</a></li>';
+    }).join('');
+    return '<div class="card about"><div class="row-head"><h2>' + esc(t('about.title')) + '</h2><button type="button" class="btn small" data-action="about">' + esc(t('ui.close')) + '</button></div>' +
+      '<p>' + esc(t('about.intro')) + '</p>' +
+      '<h3>' + esc(t('about.nasaTitle')) + '</h3><ul>' + res + '</ul>' +
+      '<h3>' + esc(t('about.simpleTitle')) + '</h3><p class="small">' + esc(t('about.simple')) + '</p>' +
+      '<h3>' + esc(t('about.aiTitle')) + '</h3><p class="small">' + esc(t('about.ai')) + '</p>' +
+      '<h3>' + esc(t('about.libsTitle')) + '</h3><p class="small">' + esc(t('about.libs')) + '</p></div>';
   }
 
   function footer(state, info, screen) {
@@ -217,37 +410,39 @@
     var next = info.phases[info.index + 1];
     var lock = phaseLock(state);
     var right = can.isLast
-      ? '<button type="button" class="btn primary" data-action="retry"' + (lock ? ' disabled' : '') + '>Ajustar e simular de novo</button>'
+      ? '<button type="button" class="btn primary" data-action="retry"' + (lock ? ' disabled' : '') + '>' + esc(t('ui.retry')) + '</button>'
       : '<button type="button" class="btn primary" data-action="next"' + (can.ok && !lock ? '' : ' disabled') + '>' +
-        esc(screen && screen.nextLabel ? screen.nextLabel : 'Avançar: ' + next.title) + ' →</button>';
-    var missing = can.missing.length ? 'Falta escolher: ' + can.missing.join(', ') : '';
-    if (lock) missing = lock + (missing ? ' ' + missing + '.' : '');
+        esc(screen && screen.nextLabel ? t(screen.nextLabel) : t('ui.advanceTo', { name: L(next.short) })) + ' →</button>';
+    var missing = can.missing.length ? t('ui.stillToChoose', { list: can.missing.map(L).join(', ') }) : '';
+    if (lock) missing = lock + (missing ? ' ' + missing : '');
     return '<footer class="nav"><div class="nav-inner">' +
-      '<button type="button" class="btn" data-action="prev"' + (info.index === 0 || lock ? ' disabled' : '') + '>← Voltar</button>' +
+      '<button type="button" class="btn" data-action="prev"' + (info.index === 0 || lock ? ' disabled' : '') + '>← ' + esc(t('ui.back')) + '</button>' +
       '<span class="missing' + (can.missing.length && !lock ? ' todo' : '') + '">' + esc(missing) + '</span>' + right + '</div></footer>';
   }
 
   function renderHTML(state) {
     var info = MS.store.phaseInfo(state);
     var screen = screens[info.current.screen];
-    var body;
+    var body, result = null;
     try {
-      var result = MS.sim.run(state);
+      result = MS.sim.run(state);
       body = screen ? screen.render(state, result)
-        : '<div class="alert s-fail">A tela "' + esc(info.current.screen) + '" não foi registrada.</div>';
+        : '<div class="alert s-fail">' + esc(t('ui.noScreen', { id: info.current.screen })) + '</div>';
     } catch (e) {
-      body = '<div class="alert s-fail">Erro ao montar a tela: ' + esc(e.message) + '</div>';
+      body = '<div class="alert s-fail">' + esc(t('ui.screenError')) + ' ' + esc(e.message) + '</div>';
       if (root.console) console.error(e);
     }
     var problems = MS.sim.validate(MS.data);
     var warn = problems.length
-      ? '<div class="alert s-fail"><strong>Problemas nos dados:</strong><ul>' +
+      ? '<div class="alert s-fail"><strong>' + esc(t('ui.dataProblems')) + '</strong><ul>' +
         problems.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul></div>' : '';
-    return header(state, info) + '<main>' + warn + (ui.teamPanel ? ui.teamPanel(state) : '') +
-      glossaryPanel() +
-      '<div class="phase-head"><span class="eyebrow">Fase ' + (info.index + 1) + ' de ' + info.phases.length + '</span>' +
-      '<h1>' + esc(info.current.title) + '</h1><p class="muted">' + esc(info.current.subtitle || '') + '</p></div>' +
-      guide(info.current) + body + '</main>' + footer(state, info, screen);
+    var ph = info.current;
+    var eyebrow = ph.nasaStep ? t('ui.stepOf', { n: ph.nasaStep, total: 6 }) : t('ui.finalStep');
+    return (result ? header(state, info, result) : '') + '<main>' + warn + (ui.teamPanel ? ui.teamPanel(state) : '') +
+      aboutPanel() + glossaryPanel() +
+      '<div class="phase-head"><span class="eyebrow">' + esc(eyebrow) + '</span>' +
+      '<h1>' + esc(L(ph.title)) + '</h1><p class="muted">' + esc(L(ph.subtitle) || '') + '</p></div>' +
+      guide(ph) + body + '</main>' + footer(state, info, screen);
   }
 
   // --------------------------------------------------------------- Ações
@@ -256,47 +451,99 @@
     if (MS.net && MS.net.active()) return MS.net.dispatch(name, args);
     return MS.store[name].apply(null, args || []);
   }
+  function rerender() { if (MS.store.state) render(MS.store.state); }
   var ACTIONS = {
     select: function (d) { dispatch('select', [d.slot, d.option]); },
+    scenario: function (d) { dispatch('setScenario', [d.id]); },
     next: function () { dispatch('nextPhase'); },
     prev: function () { dispatch('prevPhase'); },
     goto: function (d) { dispatch('goToPhase', [d.phase]); },
     retry: function () { dispatch('retry'); },
-    glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; render(MS.store.state); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },
+    lang: function (d) { MS.i18n.setLang(d.lang); ui.local.cascade = null; rerender(); },
+    hud: function (d) { ui.local.hudOpen = ui.local.hudOpen === d.hud ? null : d.hud; rerender(); },
+    glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; rerender(); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },
+    about: function () { ui.local.aboutOpen = !ui.local.aboutOpen; rerender(); if (ui.local.aboutOpen) root.scrollTo(0, 0); },
     reset: function () {
-      var msg = roomInfo() ? 'Apagar as escolhas da equipe inteira e começar do zero?' : 'Apagar todas as escolhas e começar do zero?';
+      var msg = roomInfo() ? t('ui.confirmResetTeam') : t('ui.confirmReset');
       if (root.confirm(msg)) dispatch('reset');
     }
   };
 
   var rootEl = null, lastPhase = null;
+  // Guarda qual botão estava em foco para devolver o foco depois de redesenhar.
+  var FOCUS_KEYS = ['action', 'slot', 'option', 'phase', 'hud', 'lang', 'id', 'role'];
+  function focusKey() {
+    var a = root.document && root.document.activeElement;
+    if (!a || !a.dataset || !a.dataset.action || !rootEl || !rootEl.contains(a)) return null;
+    return FOCUS_KEYS.filter(function (k) { return a.dataset[k] != null; })
+      .map(function (k) { return '[data-' + k + '="' + String(a.dataset[k]).replace(/"/g, '') + '"]'; }).join('');
+  }
+  // O topo gruda na tela com só o painel de recursos à mostra: o jogador
+  // sempre vê massa, energia, orçamento, dados, comunicação e tempo.
+  function stickHud() {
+    var top = rootEl && rootEl.querySelector('.top'), hw = top && top.querySelector('.hud-wrap');
+    if (hw) top.style.top = -Math.max(0, hw.offsetTop - 6) + 'px';
+  }
+
   function render(state) {
     if (!rootEl) return;
+    try { document.title = t('app.name'); document.documentElement.lang = MS.i18n.locale(); } catch (e) { /* sem document */ }
+    // Cadeia de efeitos: compara com o projeto anterior (mesmo cenário).
+    var prev = ui.local.prevState;
+    if (prev && prev.scenarioId === state.scenarioId && JSON.stringify(prev.design) !== JSON.stringify(state.design)) {
+      try {
+        var html = cascadeHTML(prev, MS.sim.run(prev), state, MS.sim.run(state));
+        ui.local.cascade = html ? { phase: state.phase, html: html } : null;
+      } catch (e) { ui.local.cascade = null; }
+    } else if (prev && prev.scenarioId !== state.scenarioId) {
+      ui.local.cascade = null;
+    }
+    ui.local.prevState = state;
+
+    var fk = focusKey();
     rootEl.innerHTML = renderHTML(state);
+    stickHud();
     if (MS.viz && MS.viz.attachAll) MS.viz.attachAll(rootEl, state); // visual 3D (se a tela tiver um)
     if (state.phase !== lastPhase) {
       root.scrollTo(0, 0);
       lastPhase = state.phase;
       var nav = rootEl.querySelector('.steps'), cur = rootEl.querySelector('.steps .current');
-      if (nav && cur) nav.scrollLeft = cur.offsetLeft - nav.offsetLeft - 16; // celular: fase atual visível
+      if (nav && cur) nav.scrollLeft = cur.offsetLeft - 16; // celular: fase atual visível
+    } else if (fk) {
+      var el = rootEl.querySelector(fk);
+      if (el && el.focus) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
     }
   }
   function mount(el) {
     rootEl = el;
+    if (root.addEventListener) root.addEventListener('resize', stickHud);
     el.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-action]');
-      if (!t || t.disabled || !ACTIONS[t.dataset.action]) return;
-      ACTIONS[t.dataset.action](t.dataset);
+      var tg = e.target.closest('[data-action]');
+      if (!tg || tg.disabled || !ACTIONS[tg.dataset.action]) return;
+      ACTIONS[tg.dataset.action](tg.dataset);
     });
+    // Prévia no painel ao passar o mouse ou focar um cartão de opção.
+    function onEnter(e) {
+      var o = e.target.closest && e.target.closest('.option[data-slot]');
+      if (o && !o.disabled) previewOption(o.dataset.slot, o.dataset.option);
+    }
+    function onLeave(e) {
+      var o = e.target.closest && e.target.closest('.option[data-slot]');
+      if (o && (!e.relatedTarget || !o.contains(e.relatedTarget))) clearPreview();
+    }
+    el.addEventListener('mouseover', onEnter);
+    el.addEventListener('focusin', onEnter);
+    el.addEventListener('mouseout', onLeave);
+    el.addEventListener('focusout', onLeave);
   }
 
   Object.assign(ui, {
     render: render, renderHTML: renderHTML, mount: mount, actions: ACTIONS,
     register: function (id, screen) { screens[id] = screen; },
-    screens: screens,
-    dispatch: dispatch, roomInfo: roomInfo,
+    screens: screens, hudCards: HUD,
+    dispatch: dispatch, roomInfo: roomInfo, preview: previewOption, clearPreview: clearPreview,
     h: { esc: esc, badge: badge, value: value, explain: explain, specs: specs, scenario: scenario,
-         term: term, rich: rich, labelOf: labelOf,
+         term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
          choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel }
   });
 })(globalThis);
