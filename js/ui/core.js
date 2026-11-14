@@ -103,9 +103,9 @@
       } else {
         text = fmtSpec(v, f[1], f[2]);
       }
-      return '<dt class="sp-' + f[0] + '">' + esc(t('spec.' + f[0])) + '</dt><dd class="sp-' + f[0] + '">' + esc(text) + '</dd>';
+      return '<span class="sp sp-' + f[0] + '"><i>' + esc(t('spec.' + f[0])) + '</i> ' + esc(text) + '</span>';
     }).join('');
-    return '<dl class="specs">' + rows + '</dl>';
+    return '<span class="specs">' + rows + '</span>';
   }
 
   // Selo de segmento da missão (lançamento, espaço, solo, usuário).
@@ -143,19 +143,19 @@
         var it = cat[slot.source][id], sel = cur === id;
         // Imagem 3D da peça (js/viz/parts3d.js); sem Three.js fica sem imagem.
         var pic = MS.parts3d && MS.parts3d.thumb ? MS.parts3d.thumb(slot.source, id) : '';
+        var tip = [L(it.description), it.source ? t('ui.source') + ' ' + L(it.source) : ''].filter(Boolean).join(' — ');
         return '<button type="button" class="option' + (sel ? ' selected' : '') + (pic ? ' has-thumb' : '') + '" aria-pressed="' + sel + '" data-chosen="' + esc(t('ui.chosen')) + '"' + (locked ? ' disabled' : '') +
+          (tip ? ' title="' + esc(tip) + '"' : '') +
           ' data-action="select" data-slot="' + esc(slot.id) + '" data-option="' + esc(id) + '">' +
           (pic ? '<span class="option-thumb"><img src="' + esc(pic) + '" alt="" draggable="false"></span>' : '') +
           '<span class="option-name">' + esc(L(it.name)) + '</span>' +
-          '<span class="option-desc">' + esc(L(it.description) || '') + '</span>' +
           (it.pros || it.cons ? '<span class="pc">' + (it.pros ? '<span class="pro"><span><b>' + esc(t('ui.pro')) + '</b> ' + esc(L(it.pros)) + '</span></span>' : '') +
             (it.cons ? '<span class="con"><span><b>' + esc(t('ui.con')) + '</b> ' + esc(L(it.cons)) + '</span></span>' : '') + '</span>' : '') +
-          specs(it, ff) +
-          (it.source ? '<span class="src">' + esc(t('ui.source')) + ' ' + esc(L(it.source)) + '</span>' : '') + '</button>';
+          specs(it, ff) + '</button>';
       }).join('');
       return '<section class="slot"><div class="slot-head"><h3>' + rich(slot.label) + '</h3>' + segmentChip(slot.segment) +
         (cur ? '<span class="slot-done">✓ ' + esc(t('ui.chosen')) + '</span>' : '<span class="slot-todo">' + esc(t('ui.chooseOne')) + '</span>') + ownerTag +
-        '</div>' + (slot.help ? '<p class="section-note">' + rich(slot.help) + '</p>' : '') +
+        '</div>' + (slot.help ? '<p class="slot-why"><b>' + esc(t('ui.whyMatters')) + '</b> ' + rich(slot.help) + '</p>' : '') +
         '<div class="options">' + cards + '</div></section>';
     }).join('');
   }
@@ -275,7 +275,7 @@
       ' title="' + esc(t('hud.' + card.id + '.what')) + '">' +
       '<span class="hud-ic">' + icon(card.id, { size: 22 }) + '</span><span class="hud-body">' +
       '<span class="hud-top"><span class="hud-name">' + esc(t('hud.' + card.id)) + '</span>' +
-      '<span class="hud-st">' + icon(stateIcon(st), { size: 13, stroke: 2.6 }) + esc(statusText(st)) + '</span></span>' +
+      '<span class="hud-st" title="' + esc(statusText(st)) + '">' + icon(stateIcon(st), { size: 14, stroke: 2.6 }) + '<span class="sr">' + esc(statusText(st)) + '</span></span></span>' +
       '<span class="hud-val">' + esc(hudValue(card, result)) + '</span>' +
       '<span class="hud-bar"><i class="fl" style="width:' + use + '%"></i>' + mark + '</span>' +
       '<span class="hud-delta" aria-hidden="true"></span></span></button>';
@@ -410,13 +410,12 @@
     return '<header class="top"><div class="brand">' +
       '<div class="logo">' + EMBLEM + '<span class="logo-sep" aria-hidden="true"></span><div><strong class="pixel">' + esc(t('app.name')) + '</strong><span>' + esc(L(scenario(state).title)) + '</span></div></div>' +
       '<div class="top-actions">' + (ui.menuHTML ? '<button type="button" class="btn small" data-action="menu-open">' + icon('back', { size: 16 }) + esc(t('menu.open')) + '</button>' : '') +
-      langSwitch() + '<span class="chip">' + esc(t('ui.attempt', { n: state.attempt })) + '</span>' +
+      langSwitch() +
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
       '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
-      '<button type="button" class="btn small" data-action="about">' + icon('info', { size: 16 }) + esc(t('ui.about')) + '</button>' +
-      '<button type="button" class="btn small" data-action="reset"' + (lock ? ' disabled' : '') + '>' + icon('restart', { size: 16 }) + esc(t('ui.restart')) + '</button></div></div>' +
-      '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><span class="steps-cap">' + esc(t('ui.stepsCap')) + '</span><ol>' + steps + '</ol></nav>' +
+      '</div></div>' +
+      '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><ol>' + steps + '</ol></nav>' +
       hud(state, result) + '</header>';
   }
 

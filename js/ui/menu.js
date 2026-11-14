@@ -46,9 +46,8 @@
 
   ui.menuHTML = function (state) {
     var p = progress(state), room = MS.net ? MS.net.info() : { inRoom: false };
-    var nScen = Object.keys(MS.data.scenarios).length;
     var playSub = p.any
-      ? t('menu.continueSub', { phase: L(p.info.current.title), n: state.attempt, mission: L(h.scenario(state).title) })
+      ? t('menu.continueSub', { phase: L(p.info.current.short || p.info.current.title), mission: L(h.scenario(state).title) })
       : t('menu.soloSub');
     var tutBtn = MS.tutorial ? bigButton('menu-tutorial', h.icon('book', { size: 26 }), t('menu.tutorial') + (p.any ? '' : ' · ' + t('menu.tutorialNew')), t('menu.tutorialSub'), 'tut') : '';
     var btns = bigButton('menu-play', h.icon(p.any ? 'rocket' : 'dir', { size: 26 }), p.any ? t('menu.continue') : t('menu.solo'), playSub, 'primary') +
@@ -65,14 +64,10 @@
         '<span class="mn-kicker">' + h.esc(t('menu.kicker')) + '</span>' +
         '<h1 class="pixel">' + h.esc(t('app.name')) + '</h1>' +
         '<p class="mn-tag">' + h.esc(t('menu.tagline')) + '</p>' +
-        '<ul class="mn-facts"><li>' + h.icon('card', { size: 16 }) + h.esc(t('menu.factMissions', { n: nScen })) + '</li>' +
-          '<li>' + h.icon('sun', { size: 16 }) + h.esc(t('menu.factWeather')) + '</li>' +
-          '<li>' + h.icon('team', { size: 16 }) + h.esc(t('menu.factTeam')) + '</li></ul>' +
         '<div class="mn-btns">' + btns + '</div>' +
         '<div class="mn-small">' + small + '</div>' +
         howPanel() +
-      '</div></div>' +
-      '<p class="mn-foot">' + h.esc(t('menu.foot')) + '</p></div>';
+      '</div></div></div>';
   };
 
   function closeMenu() { local.menuOpen = false; stop3d(); }
@@ -80,10 +75,7 @@
   Object.assign(ui.actions, {
     'menu-play': function () { closeMenu(); rerender(); root.scrollTo(0, 0); },
     'menu-team': function () { closeMenu(); local.teamOpen = true; rerender(); root.scrollTo(0, 0); },
-    'menu-new': function () {
-      if (!root.confirm(t('ui.confirmReset'))) return;
-      closeMenu(); MS.store.reset(MS.store.state.scenarioId); root.scrollTo(0, 0);
-    },
+    'menu-new': function () { closeMenu(); rerender(); ui.actions.reset(); root.scrollTo(0, 0); }, // confirma (e respeita a sala)
     'menu-how': function () { local.menuHow = !local.menuHow; rerender(); },
     'menu-about': function () { closeMenu(); local.aboutOpen = true; rerender(); root.scrollTo(0, 0); },
     'menu-tutorial': function () { closeMenu(); rerender(); if (MS.tutorial) MS.tutorial.start(); },

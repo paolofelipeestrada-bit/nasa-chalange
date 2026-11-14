@@ -104,14 +104,18 @@
 
   // ------------------------------------------------------ Mission Report
   // "Por que" da missão: as causas das falhas, em frases.
+  // Por que deu esse resultado: primeiro o que deu errado (com a causa),
+  // depois o que deu certo. Sempre aparece, mesmo numa missão perfeita.
   function whyList(result) {
-    var out = [];
-    result.mission.events.forEach(function (e) {
-      if (e.status === 'fail' || e.status === 'warn') {
-        out.push('<li><b>' + h.esc(e.title) + ':</b> ' + h.esc(e.text) + (e.causes && e.causes.length ? ' <span class="muted">' + h.esc(t('rep.because')) + ' ' + h.esc(e.causes[0]) + '</span>' : '') + '</li>');
-      }
+    var order = { fail: 0, warn: 1, ok: 2 };
+    var evs = result.mission.events.filter(function (e) { return order[e.status] != null; })
+      .sort(function (a, b) { return order[a.status] - order[b.status]; }).slice(0, 6);
+    if (!evs.length) return '';
+    var out = evs.map(function (e) {
+      return '<li class="s-' + e.status + '">' + h.icon(h.stateIcon(e.status), { size: 16, stroke: 2.6 }) + '<span><b>' + h.esc(e.title) + ':</b> ' + h.esc(e.text) +
+        (e.causes && e.causes.length && e.status !== 'ok' ? ' <span class="muted">' + h.esc(t('rep.because')) + ' ' + h.esc(e.causes[0]) + '</span>' : '') + '</span></li>';
     });
-    return out.length ? '<div class="card"><h2>' + h.esc(t('rep.whyTitle')) + '</h2><ul class="why">' + out.join('') + '</ul></div>' : '';
+    return '<div class="card"><h2>' + h.esc(t('rep.whyTitle')) + '</h2><ul class="why why-all">' + out.join('') + '</ul></div>';
   }
 
   // A missão no tempo, resumida: gráficos + números + o ano escolhido.
@@ -194,19 +198,24 @@
           }).join('') + '</ul>'
         : '<p>' + h.esc(t('rep.noRandom')) + '</p>') + '</div>';
       var ringColor = s.total >= 70 ? 'var(--ok)' : s.total >= 40 ? 'var(--warn)' : 'var(--fail)';
+      // Ordem pensada para ler de cima para baixo: nota → por quê → o que
+      // tentar agora. O resto (contas, requisitos, sorte, diário) fica em
+      // "Ver todos os detalhes", aberto só por quem quiser.
       return '<div class="card"><div class="score"><div class="score-ring" style="--p:' + Math.round(s.total / s.max * 100) + ';--ring:' + ringColor + '">' +
         '<span>' + s.total + '</span></div><div><div class="small muted">' + h.esc(t('rep.of', { max: s.max })) + '</div><h2 style="margin:2px 0 0">' + h.esc(s.grade || '') + '</h2></div></div>' +
-        '<p class="small muted">' + h.esc(t('rep.line', { n: state.attempt, cost: h.value(cost), sched: h.value(result.metrics.schedule_months) })) + ' ' +
-        h.esc(result.mission.explanation) + '</p></div>' +
+        '<p class="small muted">' + h.esc(t('rep.line', { n: state.attempt, cost: h.value(cost), sched: h.value(result.metrics.schedule_months) })) + '</p>' +
+        h.explain(result.mission.explanation, t('ui.seeMath')) + '</div>' +
+        whyList(result) +
+        '<div class="card"><h2>' + h.esc(t('rep.lessons')) + '</h2>' + lessons +
+        '<div class="actions"><button type="button" class="btn primary" data-action="retry">' + h.esc(t('ui.retry')) + '</button>' +
+        '<button type="button" class="btn" data-action="reset">' + h.esc(t('rep.restart')) + '</button></div></div>' +
         '<div class="report-deck">' + predictionCard(state, result) + compareCard(state, result) + '</div>' +
-        cardsCard(state, result) + '<div class="report-crew">' + goNoGo(state, result, t('rep.crew.title')) + '</div>' +
-        whyList(result) + lifeReport(result) +
+        cardsCard(state, result) +
+        '<details class="card rep-more"><summary>' + h.esc(t('rep.more')) + '</summary>' +
+        '<div class="report-crew">' + goNoGo(state, result, t('rep.crew.title')) + '</div>' + lifeReport(result) +
         '<div class="card"><h2>' + h.esc(t('rep.score')) + '</h2><div class="table-wrap"><table><tbody>' + parts + '</tbody></table></div></div>' +
         '<div class="card"><h2>' + h.esc(t('scr.design.reqs')) + '</h2>' + h.statusRows(result.requirements, { prefixId: true }) + '</div>' + luck +
-        '<div class="card"><h2>' + h.esc(t('rep.lessons')) + '</h2>' + lessons +
-        '<p class="small muted">' + h.esc(t('rep.realWorld')) + '</p>' +
-        '<div class="actions"><button type="button" class="btn primary" data-action="retry">' + h.esc(t('ui.retry')) + '</button>' +
-        '<button type="button" class="btn" data-action="reset">' + h.esc(t('rep.restart')) + '</button></div></div>';
+        '<p class="small muted">' + h.esc(t('rep.realWorld')) + '</p></details>';
     }
   });
 })(globalThis);
