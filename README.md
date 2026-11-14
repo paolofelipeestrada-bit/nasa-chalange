@@ -49,6 +49,9 @@ os dados vão direto de um para o outro).
 | Evento da missão | `scenarios.js` → `events` (condição: `check`, `requirement` ou `metric`) |
 | Imprevisto (evento aleatório) | `scenarios.js` → `randomEvents` (chance, `appliesIf`, `mitigatedBy`, `effect`, `after`). Sorteio pela semente `state.seed`: mesma semente, mesmos imprevistos |
 | Efeito visual de um evento no 3D | campo `fx` do evento em `scenarios.js` (lista em `MS.vizSchedule.FX`); efeito novo de verdade: `update()` em `js/viz/mission3d.js` |
+| Texto de ajuda de uma fase ("O que fazer aqui") | `phases.js` → `guide` e `tips` |
+| Termo do glossário (dica ao passar o mouse) | `js/data/glossary.js`; nos textos dos dados use `[[chave]]` ou `[[chave\|texto]]` |
+| Vantagem/Cuidado de uma opção | `catalog.js` → `pros` e `cons` do item; ajuda de uma escolha: `help` do slot em `scenarios.js` |
 | Papel do modo equipe | `scenarios.js` → `team.roles` (`slots` que o papel controla, `canAdvance` para conduzir as fases) |
 | Linha do plano de verificação | `scenarios.js` → `verification` |
 | Cenário | copiar o bloco `eo_cubesat` em `scenarios.js` e trocar o id |

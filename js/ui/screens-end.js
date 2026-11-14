@@ -17,7 +17,7 @@
         h.explain(r.explanation, 'Por quê') + '</li>';
     }).join('');
     var exposed = count(result.risks, 'warn');
-    return '<div class="card"><h2>Riscos da missão</h2><p class="small muted">Imprevistos são sorteados durante a missão. ' +
+    return '<div class="card"><h2>' + h.term('risk', 'Riscos') + ' da missão</h2><p class="small muted">Imprevistos são sorteados durante a missão. ' +
       'Um projeto com folga ou com as escolhas certas fica protegido. ' +
       (exposed ? exposed + ' risco(s) com o projeto exposto.' : 'Nenhum risco com o projeto exposto.') + '</p>' +
       '<ul class="rows">' + rows + '</ul></div>';
@@ -88,8 +88,9 @@
               '<div class="small muted">Impacto: ' + h.esc(r.impact) + '</div></li>';
           }).join('') + '</ul>'
         : '<p>Nenhum imprevisto aconteceu. Sorte! Veja no Build &amp; Verify os riscos a que o projeto ficou exposto.</p>') + '</div>';
-      return '<div class="card"><div class="score"><span class="big">' + s.total + '</span><span class="muted">de ' + s.max +
-        ' pontos</span><h2>' + h.esc(s.grade || '') + '</h2></div>' +
+      var ringColor = s.total >= 70 ? 'var(--ok)' : s.total >= 40 ? 'var(--warn)' : 'var(--fail)';
+      return '<div class="card"><div class="score"><div class="score-ring" style="--p:' + Math.round(s.total / s.max * 100) + ';--ring:' + ringColor + '">' +
+        '<span>' + s.total + '</span></div><div><div class="small muted">de ' + s.max + ' pontos</div><h2 style="margin:2px 0 0">' + h.esc(s.grade || '') + '</h2></div></div>' +
         '<p class="small muted">Tentativa ' + state.attempt + ' · custo ' + h.esc(h.value(cost)) + ' · ' +
         h.esc(result.mission.explanation) + '</p></div>' +
         '<div class="card"><h2>Pontuação</h2><div class="table-wrap"><table><tbody>' + parts + '</tbody></table></div></div>' +

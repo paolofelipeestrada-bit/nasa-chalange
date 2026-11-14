@@ -14,6 +14,7 @@
   function saveName(n) { try { root.localStorage.setItem(NAME_KEY, n); } catch (e) { /* sem armazenamento */ } }
   function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
   function rerender() { if (MS.store.state) ui.render(MS.store.state); }
+  function maxPlayers(sc) { return (sc.team && sc.team.maxPlayers) || 4; }
 
   // ----------------------------------------------------------------- Painel
   ui.teamPanel = function (state) {
@@ -25,8 +26,11 @@
     if (!info.inRoom) {
       return '<div class="card team"><div class="row-head"><h2>Jogar em equipe</h2>' +
         '<button type="button" class="btn small" data-action="team-toggle">Fechar</button></div>' +
-        '<p class="small muted">Cooperativo: cada pessoa cuida de alguns subsistemas da mesma missão e todos veem as escolhas ao vivo. ' +
-        'Um cria a sala e passa o código; os outros entram com ele.</p>' + err +
+        '<p class="small muted">Cooperativo, de 2 a ' + maxPlayers(sc) + ' jogadores: cada pessoa cuida de alguns subsistemas da mesma missão e todos veem as escolhas ao vivo.</p>' +
+        '<ol class="team-steps"><li>Uma pessoa digita o nome e clica em <b>Criar sala</b>.</li>' +
+        '<li>Ela passa o código de 6 letras para a equipe.</li>' +
+        '<li>Os outros digitam o nome e o código e clicam em <b>Entrar</b>.</li>' +
+        '<li>Cada um assume um papel e a equipe joga junta.</li></ol>' + err +
         (MS.net.available() ? '' : '<div class="alert s-warn small">O modo equipe precisa de internet.</div>') +
         '<div class="team-form"><label>Seu nome <input id="team-name" maxlength="24" autocomplete="nickname" value="' + h.esc(savedName()) + '"></label>' +
         '<button type="button" class="btn primary" data-action="team-host">Criar sala</button>' +
@@ -44,7 +48,7 @@
     var me = MS.team.member(info.members, info.me) || { roles: [] };
     var mine = me.roles.map(function (id) { var r = MS.team.role(sc, id); return r ? r.name : id; });
     var head = '<div class="row-head"><div><h2>Sala <span class="code">' + h.esc(info.code) + '</span></h2>' +
-      '<span class="small muted">' + info.members.length + ' na sala · você: ' + h.esc(info.myName) +
+      '<span class="small muted"><span class="seats">' + info.members.length + '/' + maxPlayers(sc) + ' jogadores</span> · você: ' + h.esc(info.myName) +
       (mine.length ? ' (' + h.esc(mine.join(', ')) + ')' : ' (sem papel)') + (info.isHost ? ' · anfitrião' : '') + '</span></div>' +
       '<div class="actions"><button type="button" class="btn small" data-action="team-toggle">' + (local.teamOpen ? 'Recolher' : 'Ver equipe') + '</button>' +
       '<button type="button" class="btn small" data-action="team-leave">Sair da sala</button></div></div>';

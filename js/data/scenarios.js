@@ -8,7 +8,8 @@
  *   aoi                       área de interesse (área e latitude)
  *   budget_k                  orçamento total (k$)
  *   params                    parâmetros do modelo e margens recomendadas
- *   slots                     escolhas do jogador: fase em que aparecem,
+ *   slots                     escolhas do jogador: fase em que aparecem, help (texto de ajuda,
+ *                             aceita [[termo]] do glossário),
  *                             seção do catálogo (source) e opções (ids)
  *   requirements              métrica do motor + operador + valor
  *                             (ou ref: comparar com outra métrica)
@@ -65,15 +66,15 @@
 
     // Ordem aqui = ordem na tela. "phase" diz em que fase a escolha é feita.
     slots: [
-      { id: 'orbit',         phase: 'concept', source: 'orbits',         label: 'Órbita',              options: ['sso500', 'iss400'] },
-      { id: 'launcher',      phase: 'concept', source: 'launchers',      label: 'Lançador',            options: ['rideshare_sso', 'iss_cargo'] },
-      { id: 'groundStation', phase: 'concept', source: 'groundStations', label: 'Estação em solo',     options: ['gs_polar', 'gs_national'] },
-      { id: 'payload',       phase: 'design',  source: 'components',     label: 'Instrumento',         options: ['cam_wide', 'cam_mid', 'cam_hr'] },
-      { id: 'structure',     phase: 'design',  source: 'components',     label: 'Estrutura',           options: ['struct_3u', 'struct_6u'] },
-      { id: 'power',         phase: 'design',  source: 'components',     label: 'Energia',             options: ['eps_body', 'eps_deploy'] },
-      { id: 'adcs',          phase: 'design',  source: 'components',     label: 'Controle de atitude', options: ['adcs_mag', 'adcs_wheels'] },
-      { id: 'comms',         phase: 'design',  source: 'components',     label: 'Comunicação',         options: ['com_uhf', 'com_sband'] },
-      { id: 'obc',           phase: 'design',  source: 'components',     label: 'Computador de bordo', options: ['obc_basic', 'obc_adv'] }
+      { id: 'orbit', help: 'Onde o satélite vai ficar. Mais baixa: imagens mais nítidas, mas cai antes ([[lifetime|vida orbital]]).',         phase: 'concept', source: 'orbits',         label: 'Órbita',              options: ['sso500', 'iss400'] },
+      { id: 'launcher', help: 'O foguete que leva o satélite. Cada um só vai para certas órbitas.',      phase: 'concept', source: 'launchers',      label: 'Lançador',            options: ['rideshare_sso', 'iss_cargo'] },
+      { id: 'groundStation', help: 'A antena na Terra que recebe as imagens. Mais passagens por dia = mais tempo para o [[downlink|envio de dados]].', phase: 'concept', source: 'groundStations', label: 'Estação em solo',     options: ['gs_polar', 'gs_national'] },
+      { id: 'payload', help: 'A câmera: define o detalhe das imagens ([[gsd|GSD]]) e a largura da foto ([[swath|faixa]]).',       phase: 'design',  source: 'components',     label: 'Instrumento',         options: ['cam_wide', 'cam_mid', 'cam_hr'] },
+      { id: 'structure', help: 'A "caixa" do [[cubesat|CubeSat]]: tudo precisa caber no volume dela (em [[u|U]]).',     phase: 'design',  source: 'components',     label: 'Estrutura',           options: ['struct_3u', 'struct_6u'] },
+      { id: 'power', help: 'Painéis solares e bateria. Precisa gerar mais energia do que o satélite gasta, com [[margin|folga]].',         phase: 'design',  source: 'components',     label: 'Energia',             options: ['eps_body', 'eps_deploy'] },
+      { id: 'adcs', help: 'Gira e aponta o satélite ([[adcs|controle de atitude]]). Câmeras melhores exigem apontamento mais preciso.',          phase: 'design',  source: 'components',     label: 'Controle de atitude', options: ['adcs_mag', 'adcs_wheels'] },
+      { id: 'comms', help: 'O rádio que manda as imagens para a estação. Rápido o bastante para enviar tudo o que a câmera gera?',         phase: 'design',  source: 'components',     label: 'Comunicação',         options: ['com_uhf', 'com_sband'] },
+      { id: 'obc', help: 'O computador de bordo guarda e comprime as imagens ([[compression|compressão]]): menos dados para enviar.',           phase: 'design',  source: 'components',     label: 'Computador de bordo', options: ['obc_basic', 'obc_adv'] }
     ],
 
     requirements: [
@@ -238,12 +239,14 @@
     team: {
       maxPlayers: 4,
       roles: [
-        { id: 'manager', name: 'Gerente de missão', canAdvance: true, slots: ['orbit', 'launcher', 'groundStation'],
-          description: 'Define o conceito (órbita, lançador e estação) e conduz a equipe pelas fases.' },
-        { id: 'payload', name: 'Carga útil e dados', slots: ['payload', 'comms', 'obc'],
-          description: 'Escolhe o instrumento, o rádio e o computador: tudo o que gera e envia as imagens.' },
+        { id: 'manager', name: 'Gerente de missão', canAdvance: true, slots: ['orbit', 'launcher'],
+          description: 'Escolhe a órbita e o lançador, cuida do orçamento e conduz a equipe pelas fases.' },
+        { id: 'payload', name: 'Carga útil', slots: ['payload', 'obc'],
+          description: 'Escolhe o instrumento e o computador de bordo: o que tira e prepara as imagens.' },
         { id: 'bus', name: 'Plataforma', slots: ['structure', 'power', 'adcs'],
-          description: 'Cuida da estrutura, da energia e do apontamento: o satélite que carrega o instrumento.' }
+          description: 'Cuida da estrutura, da energia e do apontamento: o satélite que carrega o instrumento.' },
+        { id: 'ground', name: 'Comunicações e solo', slots: ['comms', 'groundStation'],
+          description: 'Escolhe o rádio e a estação em solo: o caminho das imagens até a Terra.' }
       ]
     },
 
