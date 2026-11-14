@@ -409,7 +409,8 @@
     }).join('');
     return '<header class="top"><div class="brand">' +
       '<div class="logo">' + EMBLEM + '<span class="logo-sep" aria-hidden="true"></span><div><strong class="pixel">' + esc(t('app.name')) + '</strong><span>' + esc(L(scenario(state).title)) + '</span></div></div>' +
-      '<div class="top-actions">' + langSwitch() + '<span class="chip">' + esc(t('ui.attempt', { n: state.attempt })) + '</span>' +
+      '<div class="top-actions">' + (ui.menuHTML ? '<button type="button" class="btn small" data-action="menu-open">' + icon('back', { size: 16 }) + esc(t('menu.open')) + '</button>' : '') +
+      langSwitch() + '<span class="chip">' + esc(t('ui.attempt', { n: state.attempt })) + '</span>' +
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
       '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
@@ -490,6 +491,7 @@
   }
 
   function renderHTML(state) {
+    if (ui.local.menuOpen && ui.menuHTML) return ui.menuHTML(state); // menu inicial (js/ui/menu.js)
     var info = MS.store.phaseInfo(state);
     var screen = screens[info.current.screen];
     var body, result = null;
@@ -555,11 +557,17 @@
   // sempre vê massa, energia, orçamento, dados, comunicação e tempo.
   function stickHud() {
     var top = rootEl && rootEl.querySelector('.top'), hw = top && top.querySelector('.hud-wrap');
-    if (hw) top.style.top = -Math.max(0, hw.offsetTop - 6) + 'px';
+    if (!hw) return;
+    var hide = Math.max(0, hw.offsetTop - 6);
+    top.style.top = -hide + 'px';
+    // Altura que fica grudada: a coluna da direita (hangar 3D) gruda logo abaixo.
+    try { document.documentElement.style.setProperty('--stick-h', (top.offsetHeight - hide) + 'px'); } catch (e) { /* sem document */ }
   }
 
   function render(state) {
     if (!rootEl) return;
+    // Durante o tutorial a tela mostra um projeto de exemplo; o do jogador volta no fim.
+    if (MS.tutorial && MS.tutorial.active && state === MS.store.state) return;
     try { document.title = t('app.name'); document.documentElement.lang = MS.i18n.locale(); } catch (e) { /* sem document */ }
     // Cadeia de efeitos: compara com o projeto anterior (mesmo cenário).
     var prev = ui.local.prevState;
@@ -578,6 +586,7 @@
     stickHud();
     if (MS.viz && MS.viz.attachAll) MS.viz.attachAll(rootEl, state); // visual 3D (se a tela tiver um)
     if (MS.hangar) MS.hangar.attach(rootEl, state); // hangar 3D da coluna direita
+    if (ui.menuAttach) ui.menuAttach(rootEl, state); // Terra 3D do menu inicial
     if (MS.coach) MS.coach.attach(rootEl, state);   // balões de ensino
     if (state.phase !== lastPhase) {
       root.scrollTo(0, 0);
@@ -613,7 +622,7 @@
   }
 
   Object.assign(ui, {
-    render: render, renderHTML: renderHTML, mount: mount, actions: ACTIONS,
+    render: render, renderHTML: renderHTML, mount: mount, actions: ACTIONS, langSwitch: langSwitch,
     register: function (id, screen) { screens[id] = screen; },
     screens: screens, hudCards: HUD,
     dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,

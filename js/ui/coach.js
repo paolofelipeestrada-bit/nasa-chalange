@@ -140,6 +140,10 @@
 
   function attach(el, state) {
     rootEl = el;
+    // Nada de balões por cima do menu inicial ou do tour guiado (js/ui/tutorial.js).
+    // Quem fez o tour já viu cada parte da tela: os balões automáticos não voltam.
+    if (MS.tutorial && MS.tutorial.active) { close(false); lastPhase = null; var all = load(); all.off = true; save(all); return; }
+    if (MS.ui.local.menuOpen) { close(false); lastPhase = null; return; }
     if (lastPhase !== state.phase) {
       lastPhase = state.phase;
       close(false);

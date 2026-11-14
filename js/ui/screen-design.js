@@ -124,10 +124,12 @@
   ui.register('design', {
     nextLabel: 'scr.design.next',
     render: function (state, result) {
-      return '<div class="cockpit">' + partsPanel(state) + centerPanel(state) +
+      // .ck-right junta satélite + checagem: em telas médias vira uma coluna
+      // só, grudada na tela enquanto a lista de peças rola (ver style.css).
+      return '<div class="cockpit">' + partsPanel(state) + '<div class="ck-right">' + centerPanel(state) +
         '<aside class="ck-side"><div class="ck-panel"><div class="ck-head"><h2>' + h.icon('ok', { size: 16 }) + h.esc(t('ck.check')) + '</h2></div>' +
         '<p class="section-note ck-cust">' + h.esc(L(h.scenario(state).title)) + '</p>' + missionCheck(result) + '</div>' +
-        crewPanel(state, result) + '</aside></div>' +
+        crewPanel(state, result) + '</aside></div></div>' +
         '<details class="card ck-mel"><summary>' + h.esc(t('ck.mel')) + '</summary>' +
         '<p class="section-note">' + h.esc(t('mel.intro1')) + ' ' + h.term('contingency', t('mel.introTerm')) + '.</p>' +
         melTable(state, result) + '</details>';
