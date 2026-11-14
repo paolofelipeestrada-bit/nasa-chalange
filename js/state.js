@@ -54,7 +54,9 @@
     sc.slots.forEach(function (slot) { design[slot.id] = null; });
     var first = flow().phases[0].id;
     // period: janela de lançamento (clima espacial real); decisions: escolhas durante a missão
-    return { version: VERSION, scenarioId: sid, phase: first, reached: first, attempt: 1, seed: newSeed(), design: design, period: null, decisions: {} };
+    // prediction: palpite antes de lançar (PREDICTIONS); attempts: tentativas anteriores (só escolhas)
+    return { version: VERSION, scenarioId: sid, phase: first, reached: first, attempt: 1, seed: newSeed(), design: design, period: null, decisions: {},
+             prediction: null, attempts: [] };
   }
 
   // Escolhas que faltam para sair da fase indicada (inclui fases anteriores).
@@ -106,8 +108,27 @@
         if (validDecision(k, raw.decisions[k])) s.decisions[k] = raw.decisions[k];
       });
     }
+    if (PREDICTIONS.indexOf(raw.prediction) !== -1) s.prediction = raw.prediction;
+    if (Array.isArray(raw.attempts)) s.attempts = raw.attempts.map(cleanAttempt.bind(null, s)).filter(Boolean).slice(-MAX_ATTEMPTS);
     return clampPhases(s);
   }
+
+  // Tentativa guardada: só as escolhas (o resultado é sempre recalculado).
+  function cleanAttempt(s, a) {
+    if (!a || typeof a !== 'object' || !a.design) return null;
+    var out = { attempt: Math.max(1, Math.floor(+a.attempt || 1)), design: {}, period: validPeriod(a.period) ? a.period : null,
+                decisions: {}, seed: (+a.seed || 0) >>> 0, prediction: PREDICTIONS.indexOf(a.prediction) !== -1 ? a.prediction : null };
+    scenarioOf(s).slots.forEach(function (slot) {
+      var v = a.design[slot.id];
+      out.design[slot.id] = typeof v === 'string' && slot.options.indexOf(v) !== -1 ? v : null;
+    });
+    Object.keys(a.decisions || {}).forEach(function (k) { if (validDecision(k, a.decisions[k])) out.decisions[k] = a.decisions[k]; });
+    return out;
+  }
+
+  // Palpites possíveis antes do lançamento: quanto dos dados chega à Terra.
+  var PREDICTIONS = ['lt50', 'mid', 'most', 'all'];
+  var MAX_ATTEMPTS = 6;
 
   function validPeriod(p) {
     var sw = data().spaceWeather;
@@ -130,6 +151,7 @@
     var s = draft();
     s.design[slotId] = optionId == null ? null : optionId;
     s.decisions = {};    // outro satélite: a missão (e suas decisões) recomeça
+    s.prediction = null; // e o palpite também
     s.reached = s.phase; // projeto mudou: as fases seguintes precisam ser refeitas
     commit(clampPhases(s));
   }
@@ -152,6 +174,14 @@
     if (!validDecision(id, option)) throw new Error('Decisão inválida: ' + id + '=' + option);
     var s = draft();
     s.decisions[id] = option;
+    commit(s);
+  }
+
+  // Palpite antes de lançar ("prever antes de lançar"): null apaga.
+  function setPrediction(id) {
+    if (id != null && PREDICTIONS.indexOf(id) === -1) throw new Error('Palpite desconhecido: ' + id);
+    var s = draft();
+    s.prediction = id == null ? null : id;
     commit(s);
   }
 
@@ -212,9 +242,12 @@
   // "Ajustar e simular de novo": volta à fase de ajuste mantendo as escolhas.
   function retry() {
     var s = draft();
+    // guarda a tentativa que acabou para comparar lado a lado no relatório
+    s.attempts = (s.attempts || []).concat([{ attempt: s.attempt, design: s.design, period: s.period, decisions: s.decisions, seed: s.seed, prediction: s.prediction }]).slice(-MAX_ATTEMPTS);
     s.attempt += 1;
     s.seed = newSeed(); // imprevistos novos a cada tentativa
     s.decisions = {};
+    s.prediction = null;
     s.phase = flow().retryPhase || phaseIds()[0];
     s.reached = s.phase;
     commit(clampPhases(s));
@@ -317,7 +350,7 @@
     setOrbit: setOrbit, setLauncher: setLauncher, setGroundStation: setGroundStation,
     nextPhase: nextPhase, prevPhase: prevPhase, goToPhase: goToPhase,
     retry: retry, reset: reset, setSeed: setSeed, setScenario: setScenario,
-    setPeriod: setPeriod, decide: decide,
+    setPeriod: setPeriod, decide: decide, setPrediction: setPrediction, PREDICTIONS: PREDICTIONS,
     // multiplayer
     onChange: onChange, load: loadRemote, setPersistence: setPersistence,
     // consultas
