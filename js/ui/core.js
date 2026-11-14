@@ -198,16 +198,64 @@
       '<span>| = ' + esc(t('ui.legendMark')) + '</span></div>';
   }
 
+  // ---------------------------------------------------------- Ícones SVG
+  // Traços simples (do kit gráfico do canvas). icon('mass') → <svg>.
+  // Recursos, papéis da equipe e estados; todo estado vai com ícone + texto.
+  var ICONS = {
+    mass: ['M6.5 8h11l2.5 12H4z', 'M9 8a3 3 0 0 1 6 0'],
+    power: ['M13 2L4 14h7l-1 8 9-12h-7z'],
+    cost: ['M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z', 'M15 9.3c-.6-.9-1.7-1.3-3-1.3-1.7 0-3 .8-3 2s1.3 1.6 3 2 3 .8 3 2-1.3 2-3 2c-1.3 0-2.5-.5-3-1.4', 'M12 6v12'],
+    data: ['M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z', 'M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6', 'M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3'],
+    comms: ['M12 13v8', 'M8.5 9.5a5 5 0 0 1 7 0M5.6 6.6a9 9 0 0 1 12.8 0', 'M12 11.5a1 1 0 1 0 0 2 1 1 0 1 0 0-2z'],
+    time: ['M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z', 'M12 7v5l3 2'],
+    sci: ['M9 3h6', 'M10 3v6l-5.6 9.7A1.5 1.5 0 0 0 5.7 21h12.6a1.5 1.5 0 0 0 1.3-2.3L14 9V3', 'M7.5 15h9'],
+    eng: ['M14.7 6.3a4 4 0 0 0-5.4 5.4L3.6 17.4a1.4 1.4 0 0 0 0 2l1 1a1.4 1.4 0 0 0 2 0l5.7-5.7a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.3-.4-.4-2.3z'],
+    mgr: ['M4 20h16', 'M7 16v-4M12 16V8M17 16V5'],
+    com: ['M4 10a7.3 7.3 0 0 0 10 10z', 'M9 15l3-3', 'M17 13a6 6 0 0 0-6-6M21 13A10 10 0 0 0 11 3'],
+    dir: ['M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7z'],
+    ok: ['M5 12.5l4.5 4.5L19 7.5'],
+    warn: ['M12 3.5L2.5 20h19z', 'M12 10v4.5M12 17.3v.2'],
+    fail: ['M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z', 'M15 9l-6 6M9 9l6 6'],
+    pending: ['M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z', 'M8 12h.01M12 12h.01M16 12h.01'],
+    rocket: ['M12 2.5c3 2.2 4.8 6 4.5 10.5L15 16H9l-1.5-3C7.2 8.5 9 4.7 12 2.5z', 'M12 8.2a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 1 0 0-3.2z', 'M9 16l-2.5 4.5 3-1M15 16l2.5 4.5-3-1'],
+    team: ['M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 1 0 0 7z', 'M2.5 20.5c0-3.6 2.9-5.5 6.5-5.5s6.5 1.9 6.5 5.5', 'M16 4.3a3.5 3.5 0 0 1 0 6.4M18 15.2c2.2.6 3.5 2.4 3.5 5.3'],
+    book: ['M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z', 'M4 19V5', 'M8 7h7'],
+    info: ['M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z', 'M12 11v5', 'M12 7.5v.5'],
+    restart: ['M4 12a8 8 0 1 0 2.4-5.7', 'M4 4v4h4'],
+    arrow: ['M5 12h14', 'M13 6l6 6-6 6'],
+    back: ['M19 12H5', 'M11 6l-6 6 6 6'],
+    eye: ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z', 'M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6z'],
+    sun: ['M12 7a5 5 0 1 0 0 10 5 5 0 1 0 0-10z', 'M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8'],
+    card: ['M5 3h14v18H5z', 'M8 8h8M8 12h8M8 16h5']
+  };
+  function icon(name, opts) {
+    opts = opts || {};
+    var paths = ICONS[name] || ICONS.info, sz = opts.size || 20;
+    return '<svg class="ico' + (opts.cls ? ' ' + opts.cls : '') + '" width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (opts.stroke || 2) +
+      '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"' + (opts.color ? ' style="color:' + opts.color + '"' : '') + '>' +
+      paths.map(function (d) { return '<path d="' + d + '"/>'; }).join('') + '</svg>';
+  }
+  // Emblema do jogo (Terra com órbita e satélite), desenhado em SVG.
+  var EMBLEM = '<svg class="emblem" width="44" height="44" viewBox="0 0 48 48" aria-hidden="true"><defs><radialGradient id="emb" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#7CC0FF"/><stop offset="1" stop-color="#1D4FB8"/></radialGradient></defs>' +
+    '<circle cx="24" cy="24" r="15" fill="url(#emb)"/><path d="M13.5 21c3.5-2.5 6.5.5 10-1.5s6.5-.5 9.5 2.5" fill="none" stroke="#43C27A" stroke-width="3" stroke-linecap="round"/>' +
+    '<path d="M16 30c3-1 5 1 8 0" fill="none" stroke="#43C27A" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="24" cy="25" rx="22" ry="7" fill="none" stroke="#F59E2B" stroke-width="2.5" transform="rotate(-18 24 25)"/>' +
+    '<rect x="38" y="8" width="7" height="4.5" rx="1" fill="#EAF1FF"/><rect x="35" y="9.5" width="3" height="1.5" fill="#7FB2FF"/></svg>';
+  // Estado com ícone + palavra (nunca só a cor).
+  function stateIcon(status) { return status === 'ok' || status === 'warn' || status === 'fail' ? status : 'pending'; }
+  function stateTag(status, text) {
+    return '<span class="st-tag s-' + esc(status) + '">' + icon(stateIcon(status), { size: 14, stroke: 2.6 }) + esc(text || statusText(status)) + '</span>';
+  }
+
   // ------------------------------------------- Painel fixo: os 6 recursos
   // Os 6 recursos que o desafio pede, sempre visíveis no topo.
   //   res: recursos do motor que o cartão resume (o status é o pior deles)
   var HUD = [
-    { id: 'mass',  icon: '⚖️', res: ['mass', 'volume'] },
-    { id: 'power', icon: '⚡', res: ['power'] },
-    { id: 'cost',  icon: '💰', res: ['cost'] },
-    { id: 'data',  icon: '💾', res: ['storage'], metric: 'dataPerDay_Gbit' },
-    { id: 'comms', icon: '📡', res: ['downlink'] },
-    { id: 'time',  icon: '⏱️', res: ['time'] }
+    { id: 'mass',  res: ['mass', 'volume'] },
+    { id: 'power', res: ['power'] },
+    { id: 'cost',  res: ['cost'] },
+    { id: 'data',  res: ['storage'], metric: 'dataPerDay_Gbit' },
+    { id: 'comms', res: ['downlink'] },
+    { id: 'time',  res: ['time'] }
   ];
   function resById(result, id) { return result.resources.filter(function (r) { return r.id === id; })[0]; }
   function hudStatus(card, result) { return U.worst(card.res.map(function (id) { return resById(result, id).status; })); }
@@ -225,11 +273,12 @@
     var mark = r.recommendedMargin > 0 ? '<i class="mk" style="left:' + ((1 - r.recommendedMargin) * 100) + '%"></i>' : '';
     return '<button type="button" class="hud-card s-' + st + (open ? ' open' : '') + '" data-action="hud" data-hud="' + card.id + '" aria-expanded="' + !!open + '"' +
       ' title="' + esc(t('hud.' + card.id + '.what')) + '">' +
-      '<span class="hud-top"><span class="hud-ic" aria-hidden="true">' + card.icon + '</span><span class="hud-name">' + esc(t('hud.' + card.id)) + '</span>' +
-      '<span class="hud-st">' + esc(statusText(st)) + '</span></span>' +
+      '<span class="hud-ic">' + icon(card.id, { size: 22 }) + '</span><span class="hud-body">' +
+      '<span class="hud-top"><span class="hud-name">' + esc(t('hud.' + card.id)) + '</span>' +
+      '<span class="hud-st">' + icon(stateIcon(st), { size: 13, stroke: 2.6 }) + esc(statusText(st)) + '</span></span>' +
       '<span class="hud-val">' + esc(hudValue(card, result)) + '</span>' +
       '<span class="hud-bar"><i class="fl" style="width:' + use + '%"></i>' + mark + '</span>' +
-      '<span class="hud-delta" aria-hidden="true"></span></button>';
+      '<span class="hud-delta" aria-hidden="true"></span></span></button>';
   }
   function hudDetail(id, result) {
     var card = HUD.filter(function (c) { return c.id === id; })[0];
@@ -318,7 +367,7 @@
       var d = deltaText(prev, cur, card), a = hudStatus(card, prev), b = hudStatus(card, cur);
       if (!d && a === b) return;
       items.push({ rank: (b === 'fail' ? 3 : b === 'warn' ? 2 : 1) + (a !== b ? 3 : 0),
-        html: '<span class="cz s-' + b + '">' + card.icon + ' ' + esc(t('hud.' + card.id)) + ' ' + esc(d) +
+        html: '<span class="cz s-' + b + '">' + icon(card.id, { size: 15 }) + ' ' + esc(t('hud.' + card.id)) + ' ' + esc(d) +
           (a !== b ? ' <b>' + esc(statusText(a)) + ' → ' + esc(statusText(b)) + '</b>' : '') + '</span>' });
     });
     cur.requirements.forEach(function (r) {
@@ -354,17 +403,17 @@
       var dis = i > info.reachedIndex || (lock && i !== info.index);
       return '<li class="' + cls + (p.nasaStep ? '' : ' extra') + '" style="--i:' + i + '"><button type="button" data-action="goto" data-phase="' + esc(p.id) + '"' +
         (dis ? ' disabled' : '') + (i === info.index ? ' aria-current="step"' : '') + ' title="' + esc(L(p.title) + ' — ' + L(p.subtitle)) + '">' +
-        '<span class="num">' + (cls === 'done' && i !== info.index ? '✓' : p.nasaStep || '★') + '</span><span class="lbl">' + esc(L(p.title)) + '</span>' +
+        '<span class="num">' + (cls === 'done' && i !== info.index ? icon('ok', { size: 15, stroke: 3 }) : p.nasaStep || '★') + '</span><span class="lbl">' + esc(L(p.title)) + '</span>' +
         '<span class="lbl-s">' + esc(L(p.short)) + '</span></button></li>';
     }).join('');
     return '<header class="top"><div class="brand">' +
-      '<div class="logo"><span class="logo-mark" aria-hidden="true"></span><div><strong>' + esc(t('app.name')) + '</strong><span>' + esc(L(scenario(state).title)) + '</span></div></div>' +
+      '<div class="logo">' + EMBLEM + '<span class="logo-sep" aria-hidden="true"></span><div><strong class="pixel">' + esc(t('app.name')) + '</strong><span>' + esc(L(scenario(state).title)) + '</span></div></div>' +
       '<div class="top-actions">' + langSwitch() + '<span class="chip">' + esc(t('ui.attempt', { n: state.attempt })) + '</span>' +
-      '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' +
+      '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
-      '<button type="button" class="btn small" data-action="glossary">' + esc(t('ui.glossary')) + '</button>' +
-      '<button type="button" class="btn small" data-action="about">' + esc(t('ui.about')) + '</button>' +
-      '<button type="button" class="btn small" data-action="reset"' + (lock ? ' disabled' : '') + '>' + esc(t('ui.restart')) + '</button></div></div>' +
+      '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
+      '<button type="button" class="btn small" data-action="about">' + icon('info', { size: 16 }) + esc(t('ui.about')) + '</button>' +
+      '<button type="button" class="btn small" data-action="reset"' + (lock ? ' disabled' : '') + '>' + icon('restart', { size: 16 }) + esc(t('ui.restart')) + '</button></div></div>' +
       '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><span class="steps-cap">' + esc(t('ui.stepsCap')) + '</span><ol>' + steps + '</ol></nav>' +
       hud(state, result) + '</header>';
   }
@@ -550,7 +599,7 @@
     register: function (id, screen) { screens[id] = screen; },
     screens: screens, hudCards: HUD,
     dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,
-    h: { esc: esc, badge: badge, value: value, explain: explain, specs: specs, scenario: scenario,
+    h: { esc: esc, badge: badge, icon: icon, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
          term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
          choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel }
   });

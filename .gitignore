@@ -1,3 +1,12 @@
 .claude/
 .DS_Store
 Thumbs.db
+
+# Docs de planejamento da equipe (locais, não vão para o repo público)
+HANDOFF.md
+Contexto desáfio.md
+Perfil do jogo.md
+Plano de melhorias.md
+Recursos.md
+cockpits-por-papel.md
+pensamento-sistemico-no-jogo.md
