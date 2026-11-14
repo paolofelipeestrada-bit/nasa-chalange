@@ -103,7 +103,7 @@
       } else {
         text = fmtSpec(v, f[1], f[2]);
       }
-      return '<dt>' + esc(t('spec.' + f[0])) + '</dt><dd>' + esc(text) + '</dd>';
+      return '<dt class="sp-' + f[0] + '">' + esc(t('spec.' + f[0])) + '</dt><dd class="sp-' + f[0] + '">' + esc(text) + '</dd>';
     }).join('');
     return '<dl class="specs">' + rows + '</dl>';
   }
@@ -127,12 +127,12 @@
 
   // ---------------------------------------------------------- Componentes
   // Cartões de escolha para todos os slots da fase indicada (vem dos dados).
-  function choices(state, phaseId) {
+  function choices(state, phaseId, only) {
     var cat = MS.data.catalog;
     var structId = state.design.structure;
     var ff = structId && cat.components[structId] ? cat.components[structId].formFactor : null;
     var room = roomInfo(), sc = scenario(state);
-    return sc.slots.filter(function (s) { return s.phase === phaseId; }).map(function (slot) {
+    return sc.slots.filter(function (s) { return s.phase === phaseId && (!only || only.indexOf(s.id) >= 0); }).map(function (slot) {
       var cur = state.design[slot.id];
       var owner = room ? MS.team.slotOwner(sc, room.members, slot.id) : null;
       var locked = room && !MS.team.can(sc, room.members, room.me, 'select', [slot.id]).ok;
@@ -297,7 +297,8 @@
     return '<div class="hud-wrap"><div class="hud" role="group" aria-label="' + esc(t('hud.title')) + '">' +
       HUD.map(function (c) { return hudCard(c, result, open === c.id); }).join('') + '</div>' +
       (open ? hudDetail(open, result) : '') +
-      '<div class="cascade" aria-live="polite">' + (ui.local.cascade && ui.local.cascade.phase === state.phase ? ui.local.cascade.html : '') + '</div></div>';
+      // No Design a cadeia aparece no centro do cockpit (cartão "Ripple effect").
+      '<div class="cascade" aria-live="polite">' + (state.phase !== 'design' && ui.local.cascade && ui.local.cascade.phase === state.phase ? ui.local.cascade.html : '') + '</div></div>';
   }
 
   // Diferença de um recurso entre dois resultados, em texto ("+0,6 kg").
@@ -424,12 +425,13 @@
     var tips = (phase.tips || []).map(function (x) { return '<li>' + rich(x) + '</li>'; }).join('');
     var segs = (phase.segments || []).map(segmentChip).join('');
     var cml = MS.data.flow.cml && MS.data.flow.cml[phase.cml];
+    // Frase principal sempre à vista; dicas e "na NASA" abrem sob demanda (a tela fica para o jogo).
     return '<div class="guide"><span class="guide-icon" aria-hidden="true">?</span><div><strong>' + esc(t('ui.whatToDo')) + '</strong>' +
-      '<p>' + rich(phase.guide) + '</p>' + (tips ? '<ul>' + tips + '</ul>' : '') +
+      '<p>' + rich(phase.guide) + '</p><details class="guide-more"><summary>' + esc(t('ui.guideMore')) + '</summary>' + (tips ? '<ul>' + tips + '</ul>' : '') +
       (phase.nasa ? '<div class="nasa"><span class="nasa-tag">' + esc(phase.nasaStep ? t('ui.atNasaStep', { n: phase.nasaStep }) : t('ui.atNasa')) + '</span>' +
         '<p>' + rich(phase.nasa) + '</p><div class="nasa-meta"><span class="small muted">' + term('segments', t('ui.segments')) + ':</span> ' + segs +
         (cml ? ' <span class="cml" title="' + esc(L(MS.data.glossary.cml.text)) + '">' + esc(L(cml)) + '</span>' : '') + '</div></div>' : '') +
-      '</div></div>';
+      '</details></div></div>';
   }
 
   // Glossário completo (botão no topo).
@@ -527,7 +529,7 @@
 
   var rootEl = null, lastPhase = null;
   // Guarda qual botão estava em foco para devolver o foco depois de redesenhar.
-  var FOCUS_KEYS = ['action', 'slot', 'option', 'phase', 'hud', 'lang', 'id', 'role', 'choice'];
+  var FOCUS_KEYS = ['action', 'slot', 'option', 'phase', 'hud', 'lang', 'id', 'role', 'choice', 'tab'];
   function focusKey() {
     var a = root.document && root.document.activeElement;
     if (!a || !a.dataset || !a.dataset.action || !rootEl || !rootEl.contains(a)) return null;

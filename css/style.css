@@ -469,3 +469,92 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 /* Encontro e acoplamento com a ISS */
 .tl-status.st-dock { background: rgba(90, 160, 255, .2); color: #9cc4ff; }
 .lg-iss::before { background: #dfe6ff; }
+
+/* ------------------------------------------------ Cockpit (fase Design) */
+/* esquerda: peças · centro: satélite + cascata · direita: checagem + equipe */
+.cockpit { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, .95fr); gap: 16px; align-items: start; }
+.ck-panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.ck-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.ck-head h2 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+.ck-count { font-size: 13px; font-weight: 700; color: var(--muted); }
+.ck-center, .ck-side { position: sticky; top: 12px; }
+.ck-center .hangar-card { margin-bottom: 16px; }
+.ck-center .hangar3d { height: 340px; }
+.ck-empty { margin: 4px 0 0; }
+.cascade.ripple { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Abas de peças: uma por papel, na cor do papel */
+.ck-tabs { display: flex; gap: 6px; margin: 4px 0 14px; flex-wrap: wrap; }
+.ck-tab { --rc: var(--dir); display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 6px 12px; border-radius: 12px; cursor: pointer;
+  background: var(--surface-2); border: 1.5px solid var(--line); color: var(--muted); font-weight: 700; font-size: 15px; }
+.ck-tab .ico { color: var(--rc); }
+.ck-tab:hover { border-color: var(--rc); color: var(--text); }
+.ck-tab.on { background: color-mix(in srgb, var(--rc) 16%, var(--surface)); border: 2px solid var(--rc); color: #fff; }
+.ck-tab-n { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; padding: 1px 7px; border-radius: 99px; background: var(--pending-soft); color: var(--muted); }
+.ck-tab-n.full { background: var(--ok-soft); color: var(--ok); }
+.r-sci { --rc: var(--sci); } .r-eng { --rc: var(--eng); } .r-mgr { --rc: var(--mgr); } .r-com { --rc: var(--com); } .r-dir { --rc: var(--dir); }
+.ck-parts .options { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.ck-parts .slot:last-child { margin-bottom: 0; }
+
+/* Checagem da missão */
+.ck-cust { margin: 0 0 8px; font-weight: 600; color: var(--text); }
+.ck-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ck-checks li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-soft); }
+.ck-ci { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--pending-soft); color: var(--pending); }
+.ck-checks .s-ok .ck-ci { background: var(--ok-soft); color: var(--ok); }
+.ck-checks .s-fail .ck-ci { background: var(--fail-soft); color: var(--fail); }
+.ck-checks .s-fail { border-color: rgba(255, 107, 107, .5); }
+.ck-ct { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.ck-ct b { font-size: 15px; }
+.ck-cv { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ck-checks .s-ok .ck-cv { color: var(--ok); } .ck-checks .s-fail .ck-cv { color: var(--fail); }
+
+/* Conselhos da equipe (e voto Go/No-Go) */
+.crew { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.crew-item { --rc: var(--dir); display: flex; gap: 10px; padding: 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-soft); border-left: 3px solid var(--rc); }
+.crew-av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #0c1736; border: 2px solid var(--rc); color: var(--rc); }
+.crew-body { min-width: 0; flex: 1; }
+.crew-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.crew-top b { color: var(--rc); font-size: 15px; }
+.crew-body p { margin: 3px 0 2px; font-size: 15px; line-height: 1.4; }
+.crew-goal { font-size: 12.5px; color: var(--faint); }
+.vote { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 800; padding: 2px 9px; border-radius: 99px; letter-spacing: .04em; }
+.vote.v-go { background: var(--ok-soft); color: var(--ok); border: 1px solid rgba(74, 222, 128, .5); }
+.vote.v-nogo { background: var(--fail-soft); color: var(--fail); border: 1px solid rgba(255, 107, 107, .5); }
+
+.ck-mel summary { font-weight: 700; color: var(--accent); }
+.ck-mel[open] summary { margin-bottom: 10px; }
+@media (max-width: 1180px) {
+  .cockpit { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .ck-side { grid-column: 2; position: static; }
+  .ck-center { position: static; }
+  .ck-parts { grid-row: span 2; }
+}
+@media (max-width: 860px) {
+  .cockpit { grid-template-columns: 1fr; }
+  .ck-side, .ck-parts { grid-column: auto; grid-row: auto; }
+  .ck-center { order: -1; }
+}
+.guide-more { margin-top: 2px; font-size: 15px; }
+.guide-more summary { font-weight: 600; }
+.guide-more[open] summary { margin-bottom: 6px; }
+.guide p { margin: 0 0 2px; }
+.ck-tabs { flex-wrap: nowrap; }
+.ck-tab { flex: 1 1 0; min-width: 0; justify-content: center; padding: 6px 8px; font-size: 14px; }
+.ck-tab > span:not(.ck-tab-n) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Cartões compactos no cockpit: só massa, energia, volume e custo nas especificações */
+.cockpit { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .95fr); }
+.ck-parts .specs > :not(.sp-mass_kg):not(.sp-power_W):not(.sp-volume_U):not(.sp-cost_k):not(.sp-solarPower_W):not(.sp-dataRate_kbps):not(.sp-capacity_U) { display: none; }
+.ck-parts .option-thumb { height: 104px; }
+.ck-parts .option { padding: 12px; gap: 6px; }
+.ck-parts .option-thumb { margin: -12px -12px 2px; }
+.ck-parts .option.selected { padding: 11.5px; }
+.ck-parts .option.selected .option-thumb { margin: -11.5px -11.5px 2px; }
+.pc span { display: block; }
+.pc .pro::before, .pc .con::before { margin-right: 5px; }
+/* No centro do cockpit a cadeia desce em coluna: causa → efeito → efeito */
+.cascade.ripple { flex-direction: column; align-items: stretch; gap: 4px; }
+.cascade.ripple .cz-head { margin-bottom: 2px; }
+.cascade.ripple .cz-arrow { align-self: center; transform: rotate(90deg); line-height: 1; }
+.cascade.ripple .cz { justify-content: space-between; flex-wrap: wrap; border-radius: 12px; padding: 6px 10px; }
+.pc > span > span { display: inline; }
