@@ -23,7 +23,7 @@ arrows at the top of the screen:
 | 3. Define Requirements | Goals become measurable requirements, each with a way to verify it |
 | 4. Design | Choose the camera, structure, power, attitude control, radio and computer |
 | 5. Build & Verify | Every requirement is checked; see which risks the design is exposed to |
-| 6. Implement | Launch and watch the mission in 3D, with random surprises |
+| 6. Implement | Launch and watch the mission in 3D (stages separate, live telemetry, time warp, fullscreen), with random surprises |
 | Mission Report | Score, why things happened, and lessons for the next attempt |
 
 The 6 resources the challenge asks for are always on screen (the panel stays visible while you
@@ -125,7 +125,9 @@ js/viz/hangar3d.js    3D hangar in the right column: the satellite assembled fro
                       (Design) or the rocket on the pad / orbit / ground station (Concept)
 js/viz/earth.js       reads the 1° Earth map (pure, tested); data in js/data/earthmask.js
 js/viz/schedule.js    3D animation script (pure, tested)
-js/viz/mission3d.js   3D mission view (Three.js)
+js/viz/orbit.js       Keplerian orbit propagator, after NASA mission-viz's OrbitalPropagator (pure, tested)
+js/viz/mission3d.js   3D mission view (Three.js): staged launch, the player's satellite, flight telemetry,
+                      1×/5×/20× time warp, fullscreen and a trajectory colored by orbit status
 js/net/team.js        team mode rules: roles and permissions (pure, tested)
 js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state
 js/ui/team-panel.js   team panel and notifications

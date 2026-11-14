@@ -307,6 +307,10 @@
     V.renderer.render(V.scene, cam);
   }
 
+  // O mesmo satélite montado, para a simulação (js/viz/mission3d.js).
+  // Devolve { group, parts }; câmera apontando para -Y.
+  hangar.buildSatellite = function (design) { return satellite(design, null); };
+
   hangar.attach = function (rootEl, state) {
     var host = rootEl.querySelector('[data-viz="hangar"]');
     if (!host) {

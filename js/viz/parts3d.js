@@ -30,9 +30,11 @@
   function std(color, o) {
     o = Object.assign({ roughness: 0.55, metalness: 0.15, flatShading: true }, o || {});
     if (typeof o.emissive === 'number') o.emissive = lin(o.emissive);
-    return new THREE.MeshStandardMaterial(Object.assign(o, { color: lin(color) }));
+    var mt = new THREE.MeshStandardMaterial(Object.assign(o, { color: lin(color) }));
+    mt.userData.shared = true; // compartilhado: quem usa a peça não descarta
+    return mt;
   }
-  function basic(color, o) { return new THREE.MeshBasicMaterial(Object.assign({ color: lin(color) }, o || {})); }
+  function basic(color, o) { var mt = new THREE.MeshBasicMaterial(Object.assign({ color: lin(color) }, o || {})); mt.userData.shared = true; return mt; }
   function canvasTex(w, h, draw) {
     var c = document.createElement('canvas');
     c.width = w; c.height = h;
@@ -75,6 +77,7 @@
     var cells = cellTexture();
     cells.wrapS = cells.wrapT = THREE.RepeatWrapping;
     M = {
+      whiteDouble: std(0xe8ecf2, { side: THREE.DoubleSide }),
       white: std(0xe8ecf2), offwhite: std(0xd5dae2), grey: std(0x7d8696, { metalness: 0.45, roughness: 0.45 }),
       dark: std(0x2a303c), black: std(0x121419, { roughness: 0.4 }),
       innerBlack: std(0x06070a, { side: THREE.DoubleSide, roughness: 0.9 }),
@@ -89,6 +92,7 @@
       snow: std(0xf1f4f9), grass: std(0x5d9a4b), concrete: std(0xa9aeb6), leaf: std(0x3f8a45),
       ring: basic(0xffd36a)
     };
+    M.cells.userData.shared = true; M.pcb.userData.shared = true;
     return M;
   }
 
@@ -115,6 +119,7 @@
       var base = materials().cells, t = base.map.clone();
       t.needsUpdate = true; t.repeat.set(rx, ry);
       cellMats[key] = new THREE.MeshStandardMaterial({ map: t, roughness: 0.32, metalness: 0.45 });
+      cellMats[key].userData.shared = true;
     }
     return cellMats[key];
   }
@@ -359,40 +364,60 @@
   // carga; versão "rebocador" mostra o pequeno veículo ao lado.
   function rocket(L) {
     var m = materials(), g = new THREE.Group(), r = 0.2;
-    g.add(cyl(r, r, 1.5, m.white, 14, 0, 0.75, 0));
-    g.add(cyl(r * 1.01, r * 1.01, 0.12, m.orange, 14, 0, 1.12, 0));
-    g.add(cyl(r * 1.01, r * 1.01, 0.05, m.black, 14, 0, 0.3, 0));
+    // Estágio 1: corpo, faixa laranja, motores, aletas e chama.
+    var s1 = new THREE.Group();
+    s1.add(cyl(r, r, 1.5, m.white, 14, 0, 0.75, 0));
+    s1.add(cyl(r * 1.01, r * 1.01, 0.12, m.orange, 14, 0, 1.12, 0));
+    s1.add(cyl(r * 1.01, r * 1.01, 0.05, m.black, 14, 0, 0.3, 0));
     [[0, 0], [0.09, 0.05], [-0.09, 0.05], [0, -0.1]].forEach(function (p) {
-      g.add(cyl(0.035, 0.07, 0.14, m.dark, 10, p[0], -0.07, p[1]));
+      s1.add(cyl(0.035, 0.07, 0.14, m.dark, 10, p[0], -0.07, p[1]));
     });
     for (var k = 0; k < 4; k++) {
       var fin = box(0.025, 0.34, 0.16, m.red), a = k * Math.PI / 2;
       fin.position.set(Math.cos(a) * (r + 0.07), 0.17, Math.sin(a) * (r + 0.07));
-      fin.rotation.y = -a; g.add(fin);
+      fin.rotation.y = -a; s1.add(fin);
     }
-    var flame = cyl(0.11, 0.0, 0.42, m.flame, 10, 0, -0.35, 0);
-    g.add(flame);
-    g.add(cyl(r, r, 0.14, m.black, 14, 0, 1.57, 0)); // inter-estágio
-    g.add(cyl(r, r, 0.6, m.white, 14, 0, 1.94, 0));
+    var flame1 = cyl(0.11, 0.0, 0.42, m.flame, 10, 0, -0.35, 0);
+    s1.add(flame1);
+    g.add(s1);
+    // Estágio 2: inter-estágio, corpo e um motor pequeno (chama só em voo).
+    var s2 = new THREE.Group();
+    s2.add(cyl(r, r, 0.14, m.black, 14, 0, 1.57, 0));
+    s2.add(cyl(r, r, 0.6, m.white, 14, 0, 1.94, 0));
+    s2.add(cyl(0.05, 0.09, 0.12, m.dark, 10, 0, 1.58, 0));
+    var flame2 = cyl(0.07, 0.0, 0.3, m.flame, 10, 0, 1.38, 0);
+    flame2.visible = false;
+    s2.add(flame2);
+    g.add(s2);
+    // Topo: nave de carga ou carenagem em duas metades (que se abrem em voo).
+    var upper = new THREE.Group(), fairing = [];
     if (L.upper === 'capsule') {
-      g.add(cyl(r * 0.92, r, 0.24, m.offwhite, 14, 0, 2.36, 0));
-      g.add(cyl(r * 0.93, r * 0.93, 0.03, m.dark, 14, 0, 2.49, 0));
-      g.add(cyl(0.07, r * 0.9, 0.34, m.white, 12, 0, 2.67, 0));
-      [-1, 1].forEach(function (s) { var w = panel(0.42, 0.12, 3, 1); w.position.set(s * (r + 0.24), 2.36, 0); g.add(w); });
+      upper.add(cyl(r * 0.92, r, 0.24, m.offwhite, 14, 0, 2.36, 0));
+      upper.add(cyl(r * 0.93, r * 0.93, 0.03, m.dark, 14, 0, 2.49, 0));
+      upper.add(cyl(0.07, r * 0.9, 0.34, m.white, 12, 0, 2.67, 0));
+      [-1, 1].forEach(function (s) { var w = panel(0.42, 0.12, 3, 1); w.position.set(s * (r + 0.24), 2.36, 0); upper.add(w); });
     } else {
       var pts = [];
       for (var i = 0; i <= 10; i++) { var t = i / 10; pts.push(new THREE.Vector2(r * 1.04 * Math.sqrt(1 - t * t * 0.98), 0.62 * t)); }
-      g.add(mesh(new THREE.LatheGeometry(pts, 14), m.white, 0, 2.24, 0));
-      g.add(cyl(r * 1.05, r * 1.05, 0.02, m.black, 14, 0, 2.25, 0));
+      [0, Math.PI].forEach(function (phi) {
+        var half = mesh(new THREE.LatheGeometry(pts, 8, phi, Math.PI), m.white, 0, 2.24, 0);
+        half.material = m.whiteDouble;
+        fairing.push(half); upper.add(half);
+      });
+      upper.add(cyl(r * 1.05, r * 1.05, 0.02, m.black, 14, 0, 2.25, 0));
     }
+    g.add(upper);
+    var tug = null;
     if (L.tug) {
-      var tug = new THREE.Group();
+      tug = new THREE.Group();
       tug.add(box(0.2, 0.2, 0.2, m.gold));
       tug.add(cyl(0.04, 0.08, 0.1, m.dark, 10, 0, -0.15, 0));
       [-1, 1].forEach(function (s) { var w = panel(0.3, 0.14, 2, 1); w.position.set(s * 0.26, 0, 0); tug.add(w); });
       tug.position.set(0.62, 2.55, 0); tug.rotation.z = -0.5;
       g.add(tug);
     }
+    // Para a simulação separar os estágios (js/viz/mission3d.js).
+    g.userData = { s1: s1, s2: s2, upper: upper, fairing: fairing, flame1: flame1, flame2: flame2, tug: tug, height: 2.9 };
     return g;
   }
 
