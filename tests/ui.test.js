@@ -26,6 +26,24 @@
     });
   });
 
+  test('menu inicial: botões, "continuar" com progresso e volta ao jogo', function () {
+    var local = MS.ui.local, was = local.menuOpen;
+    try {
+      local.menuOpen = true;
+      var fresh = MS.store.createState();
+      var html = MS.ui.renderHTML(fresh);
+      ['menu-play', 'menu-team', 'menu-how', 'menu-about'].forEach(function (a) { T.assert.includes(html, 'data-action="' + a + '"'); });
+      assert(html.indexOf('data-action="menu-new"') === -1, 'sem progresso não há "Nova missão"');
+      assert(html.indexOf('class="top"') === -1, 'o menu cobre a tela toda (sem topo do jogo)');
+      var going = Object.assign(MS.store.createState(), { phase: 'design', reached: 'design', design: Object.assign({}, fresh.design, GOOD) });
+      html = MS.ui.renderHTML(going);
+      T.assert.includes(html, MS.ui.h.esc(MS.i18n.t('menu.continue')));
+      T.assert.includes(html, 'data-action="menu-new"');
+      local.menuOpen = false;
+      T.assert.includes(MS.ui.renderHTML(going), 'data-action="menu-open"');
+    } finally { local.menuOpen = was; }
+  });
+
   test('fluxo completo por cliques até o relatório e de volta ao Design', function () {
     var el = document.createElement('div');
     MS.ui.mount(el);

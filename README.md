@@ -134,6 +134,7 @@ js/viz/mission3d.js   3D mission view (Three.js): staged launch, the player's sa
 js/net/team.js        team mode rules: roles and permissions (pure, tested)
 js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state
 js/ui/team-panel.js   team panel and notifications
+js/ui/menu.js         start menu (play solo / team / how it works) with a light 3D Earth behind it
 js/ui/mission-life.js launch date, decision cards, day-by-day charts and mission diary
 js/main.js            connects interface and state
 ```
