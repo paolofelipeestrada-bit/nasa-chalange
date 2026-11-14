@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes</title>
+<style>
+  :root { color-scheme: light dark; --ok: #1a7f37; --fail: #d32f2f; --muted: #777; }
+  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 860px; margin: 24px auto; padding: 0 16px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 14px; margin: 20px 0 4px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  #summary { font-weight: 600; margin: 8px 0 12px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { padding: 2px 0; }
+  li.ok::before { content: "✓  "; color: var(--ok); }
+  li.fail { color: var(--fail); }
+  li.fail::before { content: "✗  "; }
+  .err { margin: 0 0 8px 22px; font: 13px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; color: var(--fail); }
+</style>
+</head>
+<body>
+<h1>Testes do motor e do estado</h1>
+<div id="summary">Rodando…</div>
+<div id="out"></div>
+
+<script>
+  // Erros ao carregar os arquivos (ex.: vírgula faltando nos dados) viram testes falhos.
+  window.__loadErrors = [];
+  window.addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'SCRIPT') window.__loadErrors.push('Não carregou: ' + t.getAttribute('src'));
+    else window.__loadErrors.push((e.filename || '').split('/').pop() + ':' + e.lineno + ' — ' + e.message);
+  }, true);
+</script>
+
+<!-- Mesma ordem que o index.html vai usar -->
+<script src="js/data/phases.js"></script>
+<script src="js/data/catalog.js"></script>
+<script src="js/data/scenarios.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/state.js"></script>
+
+<!-- Testes -->
+<script src="tests/runner.js"></script>
+<script src="tests/sim.test.js"></script>
+<script src="tests/state.test.js"></script>
+
+<script>
+  (function () {
+    var out = document.getElementById('out');
+    var summary = document.getElementById('summary');
+    var results = window.__loadErrors.map(function (msg) {
+      return { group: 'Carregamento', name: 'Erro ao carregar arquivo', ok: false, error: msg };
+    });
+    if (window.T) results = results.concat(T.run());
+
+    var failed = results.filter(function (r) { return !r.ok; }).length;
+    var group = null, list = null;
+    results.forEach(function (r) {
+      if (r.group !== group) {
+        group = r.group;
+        var h = document.createElement('h2');
+        h.textContent = group || 'Geral';
+        out.appendChild(h);
+        list = document.createElement('ul');
+        out.appendChild(list);
+      }
+      var li = document.createElement('li');
+      li.className = r.ok ? 'ok' : 'fail';
+      li.textContent = r.name;
+      list.appendChild(li);
+      if (!r.ok && r.error) {
+        var err = document.createElement('div');
+        err.className = 'err';
+        err.textContent = r.error;
+        list.appendChild(err);
+      }
+    });
+
+    summary.textContent = failed
+      ? failed + ' de ' + results.length + ' testes falharam'
+      : 'Todos os ' + results.length + ' testes passaram';
+    summary.style.color = failed ? 'var(--fail)' : 'var(--ok)';
+    document.title = (failed ? '✗ ' : '✓ ') + 'Testes';
+    window.__testResults = { total: results.length, failed: failed, results: results };
+  })();
+</script>
+</body>
+</html>
