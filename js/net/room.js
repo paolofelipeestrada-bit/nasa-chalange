@@ -16,6 +16,7 @@
 (function (root) {
   'use strict';
   var MS = root.MS, team = MS.team;
+  var t = MS.i18n.t;
   var PREFIX = 'nasa-chalange-sim-';
   var CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var JOIN_TIMEOUT_MS = 15000;
@@ -35,13 +36,11 @@
   }
   function errorText(err) {
     var map = {
-      'peer-unavailable': 'Sala não encontrada. Confira o código.',
-      'network': 'Sem conexão com o servidor de salas.',
-      'server-error': 'O servidor de salas não respondeu. Tente de novo.',
-      'browser-incompatible': 'Este navegador não suporta conexão direta (WebRTC).',
-      'unavailable-id': 'Código de sala em uso.'
+      'peer-unavailable': 'net.err.notFound', 'network': 'net.err.network', 'server-error': 'net.err.server',
+      'browser-incompatible': 'net.err.browser', 'unavailable-id': 'net.err.inUse'
     };
-    return map[err && err.type] || ('Erro de conexão: ' + (err && (err.type || err.message) || 'desconhecido'));
+    var key = map[err && err.type];
+    return key ? t(key) : t('net.err.other', { e: err && (err.type || err.message) || '?' });
   }
   function fail(msg) {
     lastError = msg;
@@ -58,7 +57,7 @@
 
   // -------------------------------------------------------------- Anfitrião
   function host(name) {
-    if (!root.Peer) return fail('O modo equipe precisa de internet (a biblioteca PeerJS não carregou).');
+    if (!root.Peer) return fail(t('net.noPeer'));
     if (R) leave();
     lastError = '';
     var code = newCode(), myName = team.cleanName(name);
@@ -85,7 +84,7 @@
   function send(conn, msg) { try { if (conn && conn.open) conn.send(msg); } catch (e) { /* conexão caiu */ } }
   function broadcast(msg) { Object.keys(R.conns).forEach(function (id) { send(R.conns[id], msg); }); }
   function broadcastRoom() { broadcast({ t: 'room', code: R.code, members: R.members }); notify(); }
-  function nameOf(id) { var m = team.member(R.members, id); return m ? m.name : 'Alguém'; }
+  function nameOf(id) { var m = team.member(R.members, id); return m ? m.name : t('net.someone'); }
 
   function onHostMessage(conn, msg) {
     if (!R || !R.isHost || !msg || typeof msg !== 'object') return;
@@ -98,7 +97,7 @@
       send(conn, { t: 'welcome', you: id });
       send(conn, { t: 'state', state: MS.store.state });
       broadcastRoom();
-      toast(nameOf(id) + ' entrou na sala.');
+      toast(t('net.joined', { name: nameOf(id) }));
       return;
     }
     if (!R.conns[id]) return; // não se apresentou
@@ -122,10 +121,10 @@
     args = Array.isArray(args) ? args : [];
     var chk = team.can(scenario(), R.members, id, name, args);
     if (!chk.ok) { deny(id, chk.reason); return; }
-    R.pending = { by: nameOf(id), byId: id, what: team.describe(scenario(), name, args) };
+    R.pending = { by: nameOf(id), byId: id, action: name, args: args, what: team.describe(scenario(), name, args) };
     try {
       var changed = MS.store[name].apply(null, args);
-      if (changed === false) deny(id, 'Ainda não dá: complete as escolhas desta fase.');
+      if (changed === false) deny(id, t('net.notYet'));
     } catch (e) { deny(id, e.message); }
     R.pending = null;
   }
@@ -136,36 +135,37 @@
     delete R.conns[id];
     R.members = R.members.filter(function (m) { return m.id !== id; });
     broadcastRoom();
-    toast(who + ' saiu da sala.');
+    toast(t('net.left', { name: who }));
   }
 
   // A cada mudança no anfitrião, a sala recebe o state novo.
   MS.store.onChange(function (state) {
     if (!R || !R.isHost) return;
     var p = R.pending;
-    broadcast({ t: 'state', state: state, by: p ? p.by : R.myName, byId: p ? p.byId : 'host', what: p ? p.what : null });
+    broadcast({ t: 'state', state: state, by: p ? p.by : R.myName, byId: p ? p.byId : 'host', what: p ? p.what : null,
+      action: p ? p.action : null, args: p ? p.args : null });
     if (p && p.byId !== 'host') toast(p.by + ' ' + p.what + '.');
   });
 
   // -------------------------------------------------------------- Convidado
   function join(code, name) {
-    if (!root.Peer) return fail('O modo equipe precisa de internet (a biblioteca PeerJS não carregou).');
+    if (!root.Peer) return fail(t('net.noPeer'));
     code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (code.length !== 6) return fail('O código da sala tem 6 letras/números.');
+    if (code.length !== 6) return fail(t('net.codeLen'));
     if (R) leave();
     lastError = '';
     var myName = team.cleanName(name);
     var peer = new root.Peer();
     R = { isHost: false, code: code, me: null, myName: myName, peer: peer, conn: null, status: 'connecting', members: [] };
     var session = R;
-    var timer = setTimeout(function () { if (R === session && R.status !== 'online') fail('Não foi possível entrar na sala ' + code + '.'); }, JOIN_TIMEOUT_MS);
+    var timer = setTimeout(function () { if (R === session && R.status !== 'online') fail(t('net.cantJoin', { code: code })); }, JOIN_TIMEOUT_MS);
     peer.on('open', function () {
       if (R !== session) return;
       var conn = peer.connect(PREFIX + code, { reliable: true });
       R.conn = conn;
       conn.on('open', function () { send(conn, { t: 'hello', name: myName }); });
       conn.on('data', function (msg) { if (R === session) onGuestMessage(msg, timer); });
-      conn.on('close', function () { if (R === session) fail('A sala acabou: o anfitrião saiu.'); });
+      conn.on('close', function () { if (R === session) fail(t('net.hostLeft')); });
     });
     peer.on('error', function (err) { if (R === session) fail(errorText(err)); });
     notify();
@@ -183,12 +183,16 @@
       notify();
     } else if (msg.t === 'state') {
       MS.store.load(msg.state);
-      if (msg.what && msg.byId !== R.me) toast(msg.by + ' ' + msg.what + '.');
+      if (msg.what && msg.byId !== R.me) {
+        // Descreve no idioma de quem recebe (o anfitrião pode usar outro idioma).
+        var what = msg.action ? team.describe(scenario(), msg.action, msg.args || []) : msg.what;
+        toast(msg.by + ' ' + what + '.');
+      }
     } else if (msg.t === 'denied') {
       toast(msg.reason);
     } else if (msg.t === 'full') {
       clearTimeout(timer);
-      fail('A sala está cheia.');
+      fail(t('net.full'));
     }
   }
 

@@ -8,11 +8,16 @@
  *
  * O motor não toca no DOM, no localStorage nem no state: só calcula.
  * Regras físicas ficam aqui; números e textos ficam em /js/data.
+ * Textos do motor: chaves de MS.i18n (js/i18n/en.js, pt.js, es.js).
+ * Cada métrica traz "plain" (frase simples) e "explanation" (a conta).
  * Status usados em tudo: 'ok' | 'warn' | 'fail' | 'pending'.
  * ===================================================================== */
 (function (root) {
   'use strict';
   var MS = root.MS = root.MS || {};
+  var I = MS.i18n || { t: function (k) { return k; }, L: function (v) { return v; }, sep: function () { return { thousands: '.', decimal: ',' }; }, isText: function () { return false; } };
+  function t(key, params) { return I.t(key, params); }
+  function L(v) { return I.L(v); }
 
   // ------------------------------------------------- Constantes físicas
   var R_EARTH_KM = 6371;         // raio médio da Terra
@@ -23,72 +28,56 @@
 
   // ------------------------------------------------------------ Métricas
   // Tudo o que o motor calcula. Requisitos e eventos usam estas chaves.
+  // Rótulo: t('m.<chave>'). unitKey = unidade traduzida (t('u.<unitKey>')).
   var METRICS = {
-    altitude_km:          { label: 'Altitude',                    unit: 'km',       decimals: 0 },
-    period_min:           { label: 'Período orbital',             unit: 'min',      decimals: 1 },
-    orbitsPerDay:         { label: 'Órbitas por dia',             unit: '',         decimals: 1 },
-    eclipse_pct:          { label: 'Tempo na sombra',             unit: '%',        decimals: 1 },
-    lifetime_years:       { label: 'Vida orbital',                unit: 'anos',     decimals: 1 },
-    gsd_m:                { label: 'Resolução no solo (GSD)',     unit: 'm',        decimals: 1 },
-    swath_km:             { label: 'Largura da faixa',            unit: 'km',       decimals: 1 },
-    revisit_days:         { label: 'Revisita da área',            unit: 'dias',     decimals: 1 },
-    areaPerDay_km2:       { label: 'Área fotografada por dia',    unit: 'km²',      decimals: 0 },
-    dataPerDay_Gbit:      { label: 'Dados gerados por dia',       unit: 'Gbit',     decimals: 2 },
-    passesPerDay:         { label: 'Passagens pela estação',      unit: 'por dia',  decimals: 1 },
-    contactMinPerDay:     { label: 'Tempo de contato',            unit: 'min/dia',  decimals: 0 },
-    downlink_Gbit_day:    { label: 'Capacidade de envio ao solo', unit: 'Gbit/dia', decimals: 2 },
-    powerGen_W:           { label: 'Geração média de energia',    unit: 'W',        decimals: 1 },
-    powerUse_W:           { label: 'Consumo médio',               unit: 'W',        decimals: 1 },
-    mass_kg:              { label: 'Massa (com contingência)',    unit: 'kg',       decimals: 2 },
-    massLimit_kg:         { label: 'Massa máxima no lançador',    unit: 'kg',       decimals: 1 },
-    volume_U:             { label: 'Volume ocupado',              unit: 'U',        decimals: 1 },
-    volumeCapacity_U:     { label: 'Volume útil da estrutura',    unit: 'U',        decimals: 1 },
-    storageNeed_Gbit:     { label: 'Memória necessária',          unit: 'Gbit',     decimals: 1 },
-    storage_Gbit:         { label: 'Memória a bordo',             unit: 'Gbit',     decimals: 0 },
-    pointingAccuracy_deg: { label: 'Precisão de apontamento',     unit: '°',        decimals: 2 },
-    pointingRequired_deg: { label: 'Apontamento exigido',         unit: '°',        decimals: 2 },
-    cost_k:               { label: 'Custo total',                 unit: 'k$',       decimals: 0 },
-    budget_k:             { label: 'Orçamento',                   unit: 'k$',       decimals: 0 }
+    altitude_km:          { unit: 'km',   decimals: 0 },
+    period_min:           { unit: 'min',  decimals: 1 },
+    orbitsPerDay:         { unit: '',     decimals: 1 },
+    eclipse_pct:          { unit: '%',    decimals: 1 },
+    lifetime_years:       { unitKey: 'years', decimals: 1 },
+    gsd_m:                { unit: 'm',    decimals: 1 },
+    swath_km:             { unit: 'km',   decimals: 1 },
+    revisit_days:         { unitKey: 'days', decimals: 1 },
+    areaPerDay_km2:       { unit: 'km²',  decimals: 0 },
+    dataPerDay_Gbit:      { unit: 'Gbit', decimals: 2 },
+    passesPerDay:         { unitKey: 'perDay', decimals: 1 },
+    contactMinPerDay:     { unitKey: 'minPerDay', decimals: 0 },
+    downlink_Gbit_day:    { unitKey: 'gbitPerDay', decimals: 2 },
+    powerGen_W:           { unit: 'W',    decimals: 1 },
+    powerUse_W:           { unit: 'W',    decimals: 1 },
+    mass_kg:              { unit: 'kg',   decimals: 2 },
+    massLimit_kg:         { unit: 'kg',   decimals: 1 },
+    volume_U:             { unit: 'U',    decimals: 1 },
+    volumeCapacity_U:     { unit: 'U',    decimals: 1 },
+    storageNeed_Gbit:     { unit: 'Gbit', decimals: 1 },
+    storage_Gbit:         { unit: 'Gbit', decimals: 0 },
+    pointingAccuracy_deg: { unit: '°',    decimals: 2 },
+    pointingRequired_deg: { unit: '°',    decimals: 2 },
+    cost_k:               { unit: 'k$',   decimals: 0 },
+    budget_k:             { unit: 'k$',   decimals: 0 },
+    devTime_months:       { unitKey: 'months', decimals: 0 },
+    launchWait_months:    { unitKey: 'months', decimals: 0 },
+    schedule_months:      { unitKey: 'months', decimals: 0 },
+    deadline_months:      { unitKey: 'months', decimals: 0 }
   };
+  function unitOf(def) { return def.unitKey ? t('u.' + def.unitKey) : def.unit; }
 
-  // Recursos do painel: demanda × capacidade (ambas métricas acima).
+  // Recursos: demanda × capacidade (ambas métricas acima). Rótulo: t('res.<id>').
   var RESOURCES = [
-    { id: 'mass',     label: 'Massa',          demand: 'mass_kg',          capacity: 'massLimit_kg' },
-    { id: 'volume',   label: 'Volume',         demand: 'volume_U',         capacity: 'volumeCapacity_U' },
-    { id: 'power',    label: 'Energia',        demand: 'powerUse_W',       capacity: 'powerGen_W' },
-    { id: 'downlink', label: 'Envio de dados', demand: 'dataPerDay_Gbit',  capacity: 'downlink_Gbit_day' },
-    { id: 'storage',  label: 'Memória',        demand: 'storageNeed_Gbit', capacity: 'storage_Gbit' },
-    { id: 'cost',     label: 'Custo',          demand: 'cost_k',           capacity: 'budget_k' }
+    { id: 'mass',     demand: 'mass_kg',          capacity: 'massLimit_kg' },
+    { id: 'volume',   demand: 'volume_U',         capacity: 'volumeCapacity_U' },
+    { id: 'power',    demand: 'powerUse_W',       capacity: 'powerGen_W' },
+    { id: 'downlink', demand: 'dataPerDay_Gbit',  capacity: 'downlink_Gbit_day' },
+    { id: 'storage',  demand: 'storageNeed_Gbit', capacity: 'storage_Gbit' },
+    { id: 'cost',     demand: 'cost_k',           capacity: 'budget_k' },
+    { id: 'time',     demand: 'schedule_months',  capacity: 'deadline_months' }
   ];
 
-  // Verificações de projeto (checks): rótulo e dica para falha/alerta.
+  // Verificações de projeto (checks). Textos: t('chk.<id>.label|fail|warn').
   var CHECKS = {
-    mass:     { label: 'Massa dentro do limite do lançador',
-                fail: 'Reduza a massa (componentes mais leves) ou use um lançador que aceite mais massa.',
-                warn: 'Massa perto do limite: pouca reserva para imprevistos.' },
-    volume:   { label: 'Componentes cabem na estrutura',
-                fail: 'Os componentes não cabem: use uma estrutura maior ou componentes menores.',
-                warn: 'Quase sem espaço livre na estrutura.' },
-    power:    { label: 'Balanço de energia',
-                fail: 'O satélite consome mais do que gera: use painéis abertos, uma estrutura maior ou componentes mais econômicos.',
-                warn: 'Margem de energia abaixo da recomendada: com o envelhecimento dos painéis pode faltar energia.' },
-    downlink: { label: 'Margem de envio de dados',
-                fail: 'O satélite gera mais dados do que consegue enviar: rádio mais rápido, estação com mais passagens ou mais compressão a bordo.',
-                warn: 'Envio de dados no limite: qualquer passagem perdida acumula imagens na memória.' },
-    storage:  { label: 'Memória a bordo',
-                fail: 'A memória não guarda os dias de dados exigidos: use um computador com mais memória ou mais compressão.',
-                warn: 'Memória quase cheia.' },
-    cost:     { label: 'Dentro do orçamento',
-                fail: 'Acima do orçamento: procure escolhas caras que não ajudam a cumprir os requisitos.',
-                warn: 'Orçamento quase todo usado: pouca reserva para imprevistos.' },
-    pointing: { label: 'Apontamento do instrumento',
-                fail: 'Este instrumento precisa de um controle de atitude mais preciso (rodas de reação).' },
-    launch:   { label: 'Compatibilidade com o lançador',
-                fail: 'Escolha um lançador que vá para a órbita escolhida e aceite o formato do satélite.' },
-    contact:  { label: 'Contato com a estação em solo',
-                fail: 'A estação nunca vê o satélite nesta órbita: troque a estação ou a órbita.' },
-    band:     { label: 'Banda de rádio compatível',
-                fail: 'Escolha um rádio numa banda que a estação opera.' }
+    mass: { warn: true }, volume: { warn: true }, power: { warn: true }, downlink: { warn: true },
+    storage: { warn: true }, cost: { warn: true }, time: { warn: true },
+    pointing: {}, launch: {}, contact: {}, band: {}
   };
   var CHECK_IDS = Object.keys(CHECKS);
 
@@ -117,15 +106,16 @@
   // ---------------------------------------------------------- Utilitários
   function isNum(x) { return typeof x === 'number' && !isNaN(x); }
 
-  // Número no padrão brasileiro: 1234.5 → "1.234,5".
+  // Número no padrão do idioma: en 1,234.5 · pt/es 1.234,5.
   function fmt(x, decimals) {
     if (!isNum(x)) return '—';
     if (!isFinite(x)) return x > 0 ? '∞' : '-∞';
+    var sep = I.sep();
     var a = Math.abs(x);
     var d = decimals == null ? (a >= 100 ? 0 : a >= 10 ? 1 : 2) : decimals;
     var parts = a.toFixed(d).split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return (x < 0 && Number(a.toFixed(d)) !== 0 ? '-' : '') + parts.join(',');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, sep.thousands);
+    return (x < 0 && Number(a.toFixed(d)) !== 0 ? '-' : '') + parts.join(sep.decimal);
   }
   function withUnit(x, unit, decimals) {
     var n = fmt(x, decimals);
@@ -173,8 +163,13 @@
       var id = design ? design[slot.id] : null;
       var section = catalog[slot.source] || {};
       var ok = id && slot.options.indexOf(id) !== -1 && section[id];
-      sel[slot.id] = ok ? Object.assign({ id: id }, section[id]) : null;
-      if (!ok) missing.push(slot.id);
+      if (ok) {
+        sel[slot.id] = Object.assign({ id: id }, section[id]);
+        sel[slot.id].name = L(section[id].name);
+      } else {
+        sel[slot.id] = null;
+        missing.push(slot.id);
+      }
     });
     return { sel: sel, missing: missing };
   }
@@ -206,8 +201,9 @@
       var duty = isNum(c.duty) ? c.duty : 1;
       var avg = isNum(power) ? power * duty : null;
       items.push({
-        slot: slot.id, slotLabel: slot.label, id: c.id, name: c.name,
-        maturity: c.maturity, maturityLabel: mat.label, contingency: k,
+        slot: slot.id, slotLabel: L(slot.label), id: c.id, name: c.name,
+        maturity: c.maturity, maturityLabel: L(mat.label), contingency: k,
+        devMonths: isNum(mat.devMonths) ? mat.devMonths : 0,
         mass_kg: mass, massTotal_kg: isNum(mass) ? mass * (1 + k) : null,
         power_W: power, duty: duty, avgPower_W: avg, avgPowerTotal_W: isNum(avg) ? avg * (1 + k) : null,
         volume_U: val(c, 'volume_U'), cost_k: val(c, 'cost_k')
@@ -265,36 +261,45 @@
   }
 
   // ------------------------------------------------------------- Métricas
-  // Cada métrica: valor, unidade e explicação (com a conta feita). Quando
-  // faltam escolhas, o valor fica null e a explicação diz o que falta.
-  // "partial" = soma parcial (alguns componentes ainda não escolhidos).
+  // Cada métrica: valor, unidade, frase simples (plain) e a conta
+  // (explanation). Faltando escolhas, o valor fica null e a explicação
+  // diz o que falta. "partial" = soma parcial (faltam componentes).
   function computeMetrics(ctx, mel) {
     var sel = ctx.sel, sc = ctx.scenario, p = sc.params || {};
     var m = {};
 
-    function set(key, value, explanation, partial) {
+    function set(key, value, explanation, partial, plain) {
       var def = METRICS[key];
       m[key] = {
-        key: key, label: def.label, unit: def.unit, decimals: def.decimals,
-        value: isNum(value) ? value : null, partial: !!partial, explanation: explanation
+        key: key, label: t('m.' + key), unit: unitOf(def), decimals: def.decimals,
+        value: isNum(value) ? value : null, partial: !!partial, explanation: explanation, plain: plain || ''
       };
     }
-    function pend(keys, slots) {
-      var miss = slots.filter(function (s) { return !sel[s]; })
-        .map(function (s) { return ctx.slotLabel[s] || s; });
-      keys.forEach(function (k) { set(k, null, 'Falta escolher: ' + miss.join(', ') + '.'); });
+    function missingText(slots) {
+      return t('eng.missing', { list: slots.filter(function (s) { return !sel[s]; })
+        .map(function (s) { return ctx.slotLabel[s] || s; }).join(', ') });
     }
-    var soFar = mel.partial ? ' (até agora)' : '';
+    function pend(keys, slots) {
+      var txt = missingText(slots);
+      keys.forEach(function (k) { set(k, null, txt); });
+    }
+    var soFar = mel.partial ? t('eng.soFar') : '';
 
     // Órbita
     var o = sel.orbit, om = o ? orbitModel(o) : null;
     var ff = sel.structure ? sel.structure.formFactor : null;
     if (om) {
-      set('altitude_km', o.altitude_km, `Altitude da órbita escolhida (${o.name}).`);
-      set('period_min', om.period_min, `Período = 2π·√(a³/μ), com a = ${fmt(R_EARTH_KM, 0)} + ${fmt(o.altitude_km, 0)} = ${fmt(om.a_km, 0)} km → ${fmt(om.period_min, 1)} min.`);
-      set('orbitsPerDay', om.orbitsPerDay, `${fmt(MIN_PER_DAY, 0)} min por dia ÷ ${fmt(om.period_min, 1)} min = ${fmt(om.orbitsPerDay, 1)} órbitas por dia.`);
-      set('eclipse_pct', om.eclipseFraction * 100, `Pior caso: fração na sombra = arcsen(R ÷ a) ÷ 180° = ${pct(om.eclipseFraction, 1)} da órbita (${fmt(om.eclipseFraction * om.period_min, 0)} min sem sol por volta).`);
-      set('lifetime_years', o.lifetime_years, `A ${fmt(o.altitude_km, 0)} km o arrasto da atmosfera derruba um CubeSat em cerca de ${fmt(o.lifetime_years, 1)} ano(s).`);
+      var shadowMin = om.eclipseFraction * om.period_min;
+      set('altitude_km', o.altitude_km, t('x.altitude', { name: o.name }), false,
+        t('p.altitude', { h: fmt(o.altitude_km, 0) }));
+      set('period_min', om.period_min, t('x.period', { r: fmt(R_EARTH_KM, 0), h: fmt(o.altitude_km, 0), a: fmt(om.a_km, 0), T: fmt(om.period_min, 1) }), false,
+        t('p.period', { T: fmt(om.period_min, 0), n: fmt(om.orbitsPerDay, 0) }));
+      set('orbitsPerDay', om.orbitsPerDay, t('x.orbitsPerDay', { min: fmt(MIN_PER_DAY, 0), T: fmt(om.period_min, 1), n: fmt(om.orbitsPerDay, 1) }), false,
+        t('p.orbitsPerDay', { n: fmt(om.orbitsPerDay, 1) }));
+      set('eclipse_pct', om.eclipseFraction * 100, t('x.eclipse', { pct: pct(om.eclipseFraction, 1), min: fmt(shadowMin, 0) }), false,
+        t('p.eclipse', { min: fmt(shadowMin, 0) }));
+      set('lifetime_years', o.lifetime_years, t('x.lifetime', { h: fmt(o.altitude_km, 0), y: fmt(o.lifetime_years, 1) }), false,
+        t('p.lifetime', { h: fmt(o.altitude_km, 0), y: fmt(o.lifetime_years, 1) }));
     } else {
       pend(['altitude_km', 'period_min', 'orbitsPerDay', 'eclipse_pct', 'lifetime_years'], ['orbit']);
     }
@@ -310,14 +315,17 @@
       var circ = EQUATOR_KM * Math.cos(lat * DEG);
       var revisit = reaches ? circ / (om.orbitsPerDay * swath * light) : Infinity;
       area = reaches ? sc.aoi.area_km2 / revisit : 0;
-      set('gsd_m', gsd, `GSD = altitude × pixel ÷ focal = ${fmt(o.altitude_km, 0)} km × ${fmt(cam.pixel_um, 2)} µm ÷ ${fmt(cam.focal_mm, 0)} mm = ${fmt(gsd, 1)} m.`);
-      set('swath_km', swath, `Faixa = GSD × pixels por linha = ${fmt(gsd, 1)} m × ${fmt(cam.pixelsAcross, 0)} = ${fmt(swath, 1)} km.`);
+      set('gsd_m', gsd, t('x.gsd', { h: fmt(o.altitude_km, 0), px: fmt(cam.pixel_um, 2), f: fmt(cam.focal_mm, 0), gsd: fmt(gsd, 1) }), false,
+        t('p.gsd', { gsd: fmt(gsd, 1) }));
+      set('swath_km', swath, t('x.swath', { gsd: fmt(gsd, 1), px: fmt(cam.pixelsAcross, 0), sw: fmt(swath, 1) }), false,
+        t('p.swath', { sw: fmt(swath, 0) }));
       set('revisit_days', revisit, reaches
-        ? `Revisita = volta da Terra na latitude da área (${fmt(circ, 0)} km) ÷ (${fmt(om.orbitsPerDay, 1)} órbitas/dia × faixa de ${fmt(swath, 1)} km × ${pct(light)} das passagens com boa luz) = ${fmt(revisit, 1)} dias.`
-        : `A órbita (inclinação ${fmt(o.inclination_deg, 1)}°) nunca passa sobre a latitude da área (${fmtLat(lat)}).`);
+        ? t('x.revisit', { circ: fmt(circ, 0), n: fmt(om.orbitsPerDay, 1), sw: fmt(swath, 1), light: pct(light), r: fmt(revisit, 1) })
+        : t('x.revisitNever', { i: fmt(o.inclination_deg, 1), lat: fmtLat(lat) }), false,
+        reaches ? t('p.revisit', { r: fmt(revisit, 0) }) : t('p.revisitNever'));
       set('areaPerDay_km2', area, reaches
-        ? `Área por dia = ${fmt(sc.aoi.area_km2, 0)} km² ÷ ${fmt(revisit, 1)} dias = ${fmt(area, 0)} km²/dia.`
-        : 'A área de interesse nunca fica sob o satélite.');
+        ? t('x.areaDay', { area: fmt(sc.aoi.area_km2, 0), r: fmt(revisit, 1), a: fmt(area, 0) })
+        : t('x.areaNever'));
     } else {
       pend(['gsd_m', 'swath_km', 'revisit_days', 'areaPerDay_km2'], ['orbit', 'payload']);
     }
@@ -327,7 +335,8 @@
     if (om && cam && obc) {
       var raw = (area * 1e6 / (gsd * gsd)) * cam.bands * cam.bitDepth / 1e9;
       data = raw / obc.compressionRatio;
-      set('dataPerDay_Gbit', data, `Dados = área ÷ GSD² × ${cam.bands} bandas × ${cam.bitDepth} bits = ${fmt(raw, 2)} Gbit brutos; com compressão ${fmt(obc.compressionRatio, 0)}:1 no computador = ${fmt(data, 2)} Gbit/dia.`);
+      set('dataPerDay_Gbit', data, t('x.data', { b: cam.bands, bits: cam.bitDepth, raw: fmt(raw, 2), c: fmt(obc.compressionRatio, 0), d: fmt(data, 2) }), false,
+        t('p.data', { d: fmt(data, 2) }));
     } else {
       pend(['dataPerDay_Gbit'], ['orbit', 'payload', 'obc']);
     }
@@ -337,9 +346,11 @@
     var cm = (om && gs) ? contactModel(om, gs) : null;
     if (cm) {
       set('passesPerDay', cm.passesPerDay, cm.passesPerDay > 0
-        ? `A estação (${fmtLat(gs.latitude_deg)}) vê o satélite num círculo de ${fmt(cm.lambda_deg, 1)}° ao seu redor; ${pct(cm.perOrbit)} das ${fmt(om.orbitsPerDay, 1)} órbitas diárias passam por ele = ${fmt(cm.passesPerDay, 1)} passagens/dia.`
-        : `A órbita só chega a ${fmt(om.maxLat_deg, 1)}° de latitude (+${fmt(cm.lambda_deg, 1)}° de visada): a estação a ${fmtLat(gs.latitude_deg)} nunca vê o satélite.`);
-      set('contactMinPerDay', cm.contactMinPerDay, `${fmt(cm.passesPerDay, 1)} passagens × ${fmt(cm.avgPass_min, 1)} min em média (máx. ${fmt(cm.maxPass_min, 1)} min) = ${fmt(cm.contactMinPerDay, 0)} min/dia.`);
+        ? t('x.passes', { lat: fmtLat(gs.latitude_deg), lam: fmt(cm.lambda_deg, 1), pct: pct(cm.perOrbit), n: fmt(om.orbitsPerDay, 1), p: fmt(cm.passesPerDay, 1) })
+        : t('x.passesNever', { max: fmt(om.maxLat_deg, 1), lam: fmt(cm.lambda_deg, 1), lat: fmtLat(gs.latitude_deg) }), false,
+        cm.passesPerDay > 0 ? t('p.passes', { p: fmt(cm.passesPerDay, 1) }) : t('p.passesNever'));
+      set('contactMinPerDay', cm.contactMinPerDay, t('x.contact', { p: fmt(cm.passesPerDay, 1), avg: fmt(cm.avgPass_min, 1), max: fmt(cm.maxPass_min, 1), c: fmt(cm.contactMinPerDay, 0) }), false,
+        t('p.contact', { c: fmt(cm.contactMinPerDay, 0) }));
     } else {
       pend(['passesPerDay', 'contactMinPerDay'], ['orbit', 'groundStation']);
     }
@@ -348,73 +359,99 @@
       var eff = isNum(p.contactEfficiency) ? p.contactEfficiency : 1;
       var cap = bandOk ? com.dataRate_kbps * 1000 * cm.contactMinPerDay * 60 * eff / 1e9 : 0;
       set('downlink_Gbit_day', cap, bandOk
-        ? `Capacidade = ${fmtRate(com.dataRate_kbps)} × ${fmt(cm.contactMinPerDay, 0)} min × 60 s × ${pct(eff)} de aproveitamento = ${fmt(cap, 2)} Gbit/dia.`
-        : `A estação não opera na banda ${com.band} do rádio: nada é recebido.`);
+        ? t('x.downlink', { rate: fmtRate(com.dataRate_kbps), c: fmt(cm.contactMinPerDay, 0), eff: pct(eff), cap: fmt(cap, 2) })
+        : t('x.downlinkBand', { band: com.band }), false,
+        bandOk ? t('p.downlink', { cap: fmt(cap, 2) }) : t('p.downlinkBand'));
     } else {
       pend(['downlink_Gbit_day'], ['orbit', 'groundStation', 'comms']);
     }
 
     // Energia
     var useW = mel.totals.avgPowerTotal_W;
-    set('powerUse_W', useW, `Soma da potência média da MEL (potência × tempo ligado + contingência) = ${fmt(useW, 2)} W${soFar}.`, mel.partial);
+    set('powerUse_W', useW, t('x.powerUse', { w: fmt(useW, 2), soFar: soFar }), mel.partial, t('p.powerUse', { w: fmt(useW, 1) }));
     var pw = sel.power;
     if (om && pw && ff) {
       var solar = byFF(pw.solarPower_W, ff);
       var sun = 1 - om.eclipseFraction;
-      var eta = isNum(p.powerStorageEfficiency) ? p.powerStorageEfficiency : 1;
-      var gen = isNum(solar) ? solar * sun * eta : null;
+      var etaS = isNum(p.powerStorageEfficiency) ? p.powerStorageEfficiency : 1;
+      var gen = isNum(solar) ? solar * sun * etaS : null;
       set('powerGen_W', gen, isNum(solar)
-        ? `Painéis: ${fmt(solar, 1)} W ao sol × ${pct(sun)} do tempo iluminado × ${pct(eta)} (perdas na bateria e conversão) = ${fmt(gen, 2)} W em média.`
-        : `Estes painéis não existem para o formato ${ff}.`);
+        ? t('x.powerGen', { s: fmt(solar, 1), sun: pct(sun), eta: pct(etaS), g: fmt(gen, 2) })
+        : t('x.powerNoFF', { ff: ff }), false,
+        isNum(solar) ? t('p.powerGen', { g: fmt(gen, 1) }) : '');
     } else {
       pend(['powerGen_W'], ['orbit', 'structure', 'power']);
     }
 
     // Massa e volume
-    set('mass_kg', mel.totals.massTotal_kg, `Soma da MEL: ${fmt(mel.totals.mass_kg, 2)} kg + contingência por maturidade = ${fmt(mel.totals.massTotal_kg, 2)} kg${soFar}.`, mel.partial);
-    var L = sel.launcher;
-    if (L && ff) {
-      var limit = byFF(L.maxMass_kg, ff);
+    set('mass_kg', mel.totals.massTotal_kg, t('x.mass', { m: fmt(mel.totals.mass_kg, 2), mt: fmt(mel.totals.massTotal_kg, 2), soFar: soFar }), mel.partial,
+      t('p.mass', { mt: fmt(mel.totals.massTotal_kg, 2) }));
+    var Ln = sel.launcher;
+    if (Ln && ff) {
+      var limit = byFF(Ln.maxMass_kg, ff);
       set('massLimit_kg', limit, isNum(limit)
-        ? `O lançador "${L.name}" aceita até ${fmt(limit, 1)} kg para um satélite ${ff}.`
-        : `O lançador "${L.name}" não aceita satélites ${ff}.`);
+        ? t('x.massLimit', { name: Ln.name, lim: fmt(limit, 1), ff: ff })
+        : t('x.massLimitNo', { name: Ln.name, ff: ff }), false,
+        isNum(limit) ? t('p.massLimit', { lim: fmt(limit, 1) }) : '');
     } else {
       pend(['massLimit_kg'], ['launcher', 'structure']);
     }
-    set('volume_U', mel.totals.volume_U, `Soma dos volumes da MEL = ${fmt(mel.totals.volume_U, 1)} U${soFar}.`, mel.partial);
+    set('volume_U', mel.totals.volume_U, t('x.volume', { v: fmt(mel.totals.volume_U, 1), soFar: soFar }), mel.partial);
     if (sel.structure) {
-      set('volumeCapacity_U', sel.structure.capacity_U, `A estrutura ${ff} tem ${fmt(sel.structure.capacity_U, 1)} U úteis (o resto vai para trilhos e fixações).`);
+      set('volumeCapacity_U', sel.structure.capacity_U, t('x.volCap', { ff: ff, c: fmt(sel.structure.capacity_U, 1) }));
     } else {
       pend(['volumeCapacity_U'], ['structure']);
     }
 
     // Memória
     var days = isNum(p.storageDays) ? p.storageDays : 1;
-    if (obc) set('storage_Gbit', obc.storage_GB * 8, `${fmt(obc.storage_GB, 0)} GB × 8 bits = ${fmt(obc.storage_GB * 8, 0)} Gbit.`);
+    if (obc) set('storage_Gbit', obc.storage_GB * 8, t('x.storage', { gb: fmt(obc.storage_GB, 0), gbit: fmt(obc.storage_GB * 8, 0) }));
     else pend(['storage_Gbit'], ['obc']);
-    if (isNum(data)) set('storageNeed_Gbit', data * days, `Guardar ${fmt(days, 0)} dia(s) de dados, caso passagens sejam perdidas: ${fmt(data, 2)} × ${fmt(days, 0)} = ${fmt(data * days, 1)} Gbit.`);
+    if (isNum(data)) set('storageNeed_Gbit', data * days, t('x.storageNeed', { days: fmt(days, 0), d: fmt(data, 2), need: fmt(data * days, 1) }));
     else pend(['storageNeed_Gbit'], ['orbit', 'payload', 'obc']);
 
     // Apontamento
-    if (sel.adcs) set('pointingAccuracy_deg', sel.adcs.accuracy_deg, `"${sel.adcs.name}" aponta com precisão de ${fmt(sel.adcs.accuracy_deg, 2)}°.`);
+    if (sel.adcs) set('pointingAccuracy_deg', sel.adcs.accuracy_deg, t('x.pointAcc', { name: sel.adcs.name, acc: fmt(sel.adcs.accuracy_deg, 2) }));
     else pend(['pointingAccuracy_deg'], ['adcs']);
-    if (cam) set('pointingRequired_deg', cam.requiredPointing_deg, `"${cam.name}" precisa de apontamento melhor que ${fmt(cam.requiredPointing_deg, 2)}° para não borrar as imagens.`);
+    if (cam) set('pointingRequired_deg', cam.requiredPointing_deg, t('x.pointReq', { name: cam.name, req: fmt(cam.requiredPointing_deg, 2) }));
     else pend(['pointingRequired_deg'], ['payload']);
 
     // Custo
-    var launchCost = (L && ff) ? byFF(L.cost_k, ff) : null;
+    var launchCost = (Ln && ff) ? byFF(Ln.cost_k, ff) : null;
     var gsCost = gs ? gs.cost_k : null;
     var cost = mel.totals.cost_k + (isNum(launchCost) ? launchCost : 0) + (isNum(gsCost) ? gsCost : 0);
-    set('cost_k', cost, `Satélite (MEL) ${fmt(mel.totals.cost_k, 0)} k$ + lançamento ${isNum(launchCost) ? fmt(launchCost, 0) + ' k$' : '(a definir)'} + estação ${isNum(gsCost) ? fmt(gsCost, 0) + ' k$' : '(a definir)'} = ${fmt(cost, 0)} k$.`,
-      mel.partial || !isNum(launchCost) || !isNum(gsCost));
-    set('budget_k', sc.budget_k, 'Orçamento total definido pelo cliente.');
+    set('cost_k', cost, t('x.cost', {
+      mel: fmt(mel.totals.cost_k, 0),
+      launch: isNum(launchCost) ? fmt(launchCost, 0) + ' k$' : t('eng.tbd'),
+      gs: isNum(gsCost) ? fmt(gsCost, 0) + ' k$' : t('eng.tbd'),
+      total: fmt(cost, 0)
+    }), mel.partial || !isNum(launchCost) || !isNum(gsCost), t('p.cost', { total: fmt(cost, 0) }));
+    set('budget_k', sc.budget_k, t('x.budget'));
+
+    // Prazo: construir e testar (a peça mais lenta manda) + espera do lançador
+    var base = isNum(p.baseDev_months) ? p.baseDev_months : 12;
+    var slowest = null;
+    mel.items.forEach(function (it) { if (!slowest || it.devMonths > slowest.devMonths) slowest = it; });
+    var extra = slowest ? slowest.devMonths : 0;
+    var dev = base + extra;
+    set('devTime_months', dev, extra > 0
+      ? t('x.devTime', { base: fmt(base, 0), extra: fmt(extra, 0), name: slowest.name, mat: slowest.maturityLabel, dev: fmt(dev, 0), soFar: soFar })
+      : t('x.devTimeBase', { base: fmt(base, 0), soFar: soFar }), mel.partial, t('p.devTime', { dev: fmt(dev, 0) }));
+    var wait = Ln ? (isNum(Ln.waitMonths) ? Ln.waitMonths : 0) : null;
+    if (Ln) set('launchWait_months', wait, t('x.launchWait', { name: Ln.name, w: fmt(wait, 0) }), false, t('p.launchWait', { w: fmt(wait, 0) }));
+    else pend(['launchWait_months'], ['launcher']);
+    var sched = dev + (isNum(wait) ? wait : 0);
+    set('schedule_months', sched, t('x.schedule', { dev: fmt(dev, 0), w: isNum(wait) ? fmt(wait, 0) : t('eng.tbd'), s: fmt(sched, 0) }),
+      mel.partial || !Ln, t('p.schedule', { s: fmt(sched, 0) }));
+    var deadline = isNum(p.deadline_months) ? p.deadline_months : 24;
+    set('deadline_months', deadline, t('x.deadline', { d: fmt(deadline, 0) }));
 
     return m;
   }
 
   // Troca {métrica} no texto pelo valor formatado (sem unidade).
   function fill(text, metrics) {
-    return String(text || '').replace(/\{(\w+)\}/g, function (all, key) {
+    return String(L(text) || '').replace(/\{(\w+)\}/g, function (all, key) {
       var mt = metrics[key];
       return mt ? fmt(mt.value, mt.decimals) : all;
     });
@@ -425,11 +462,12 @@
   function evalResource(def, metrics, margins) {
     var d = metrics[def.demand], c = metrics[def.capacity];
     var rec = isNum(margins[def.id]) ? margins[def.id] : 0;
+    var label = t('res.' + def.id);
     var r = {
-      id: def.id, label: def.label, unit: d.unit, decimals: d.decimals,
+      id: def.id, label: label, unit: d.unit, decimals: d.decimals,
       demand: d.value, capacity: c.value, partial: d.partial || c.partial,
       usage: null, margin: null, recommendedMargin: rec, status: 'pending',
-      details: [d.explanation, c.explanation]
+      details: [d.explanation, c.explanation], plain: [d.plain, c.plain].filter(Boolean).join(' ')
     };
     var u = function (x) { return withUnit(x, r.unit, r.decimals); };
     if (!isNum(r.demand) || !isNum(r.capacity)) {
@@ -443,14 +481,14 @@
     else r.status = r.margin >= rec - 1e-9 ? 'ok' : 'warn';
 
     if (r.capacity <= 0) {
-      r.explanation = `${d.label}: ${u(r.demand)}, mas a capacidade é zero.`;
+      r.explanation = t('eng.resZero', { label: d.label, demand: u(r.demand) });
     } else if (r.status === 'fail') {
-      var over = r.usage >= 2 ? `${fmt(r.usage, 1)} vezes a capacidade` : `${pct(r.usage - 1)} acima da capacidade`;
-      r.explanation = `${d.label}: ${u(r.demand)} de ${withUnit(r.capacity, r.unit, c.decimals)} — ${over}.`;
+      var over = r.usage >= 2 ? t('eng.resOverTimes', { n: fmt(r.usage, 1) }) : t('eng.resOverPct', { pct: pct(r.usage - 1) });
+      r.explanation = t('eng.resFail', { label: d.label, demand: u(r.demand), cap: withUnit(r.capacity, r.unit, c.decimals), over: over });
     } else {
-      r.explanation = `${d.label}: ${u(r.demand)} de ${withUnit(r.capacity, r.unit, c.decimals)} — folga de ${pct(r.margin)}` +
-        (rec > 0 ? ` (recomendado ≥ ${pct(rec)}).` : '.') +
-        (r.partial && r.status !== 'fail' ? ' Soma parcial: faltam escolhas.' : '');
+      r.explanation = t('eng.resOk', { label: d.label, demand: u(r.demand), cap: withUnit(r.capacity, r.unit, c.decimals), pct: pct(r.margin) }) +
+        (rec > 0 ? t('eng.resRec', { pct: pct(rec) }) : '.') +
+        (r.partial && r.status !== 'fail' ? t('eng.partialSum') : '');
     }
     return r;
   }
@@ -461,13 +499,13 @@
     function add(id, status, explanation) {
       var def = CHECKS[id];
       out.push({
-        id: id, label: def.label, status: status, explanation: explanation,
-        hint: status === 'fail' ? def.fail : status === 'warn' ? (def.warn || null) : null
+        id: id, label: t('chk.' + id + '.label'), status: status, explanation: explanation,
+        hint: status === 'fail' ? t('chk.' + id + '.fail') : status === 'warn' && def.warn ? t('chk.' + id + '.warn') : null
       });
     }
     function missing(slots) {
-      return 'Falta escolher: ' + slots.filter(function (s) { return !sel[s]; })
-        .map(function (s) { return ctx.slotLabel[s] || s; }).join(', ') + '.';
+      return t('eng.missing', { list: slots.filter(function (s) { return !sel[s]; })
+        .map(function (s) { return ctx.slotLabel[s] || s; }).join(', ') });
     }
 
     resources.forEach(function (r) { add(r.id, r.status, r.explanation); });
@@ -475,17 +513,17 @@
     var acc = metrics.pointingAccuracy_deg.value, req = metrics.pointingRequired_deg.value;
     if (isNum(acc) && isNum(req)) {
       var okP = acc <= req + tol(req);
-      add('pointing', okP ? 'ok' : 'fail', `Controle de atitude: ${withUnit(acc, '°', 2)} ${okP ? '≤' : '>'} exigência do instrumento: ${withUnit(req, '°', 2)}.`);
+      add('pointing', okP ? 'ok' : 'fail', t('x.pointing', { acc: withUnit(acc, '°', 2), op: okP ? '≤' : '>', req: withUnit(req, '°', 2) }));
     } else {
       add('pointing', 'pending', missing(['adcs', 'payload']));
     }
 
-    var L = sel.launcher, o = sel.orbit, st = sel.structure;
-    if (L && o) {
-      if (L.orbits.indexOf(o.id) === -1) add('launch', 'fail', `O lançador "${L.name}" não vai para a órbita "${o.name}".`);
-      else if (!st) add('launch', 'pending', `O lançador vai para a órbita escolhida. ${missing(['structure'])}`);
-      else if (!isNum(byFF(L.maxMass_kg, st.formFactor))) add('launch', 'fail', `O lançador "${L.name}" não aceita satélites ${st.formFactor}.`);
-      else add('launch', 'ok', `O lançador "${L.name}" leva satélites ${st.formFactor} até a órbita "${o.name}".`);
+    var Ln = sel.launcher, o = sel.orbit, st = sel.structure;
+    if (Ln && o) {
+      if (Ln.orbits.indexOf(o.id) === -1) add('launch', 'fail', t('x.launchNoOrbit', { name: Ln.name, orbit: o.name }));
+      else if (!st) add('launch', 'pending', t('x.launchPending', { missing: missing(['structure']) }));
+      else if (!isNum(byFF(Ln.maxMass_kg, st.formFactor))) add('launch', 'fail', t('x.launchNoFF', { name: Ln.name, ff: st.formFactor }));
+      else add('launch', 'ok', t('x.launchOk', { name: Ln.name, ff: st.formFactor, orbit: o.name }));
     } else {
       add('launch', 'pending', missing(['launcher', 'orbit']));
     }
@@ -497,8 +535,8 @@
     if (gs && com) {
       var okB = (gs.bands || []).indexOf(com.band) !== -1;
       add('band', okB ? 'ok' : 'fail', okB
-        ? `A estação opera na banda ${com.band} do rádio.`
-        : `O rádio usa a banda ${com.band}, mas a estação só opera em ${(gs.bands || []).join(', ')}.`);
+        ? t('x.bandOk', { band: com.band })
+        : t('x.bandFail', { band: com.band, bands: (gs.bands || []).join(', ') }));
     } else {
       add('band', 'pending', missing(['groundStation', 'comms']));
     }
@@ -509,19 +547,20 @@
   // Compara uma métrica com um valor fixo (value) ou com outra métrica (ref).
   function compareMetric(spec, metrics) {
     var mt = metrics[spec.metric];
-    if (!mt) return { status: 'fail', value: null, threshold: null, explanation: `Métrica desconhecida: ${spec.metric}.` };
+    if (!mt) return { status: 'fail', value: null, threshold: null, explanation: t('eng.unknownMetric', { m: spec.metric }) };
     var ref = spec.ref ? metrics[spec.ref] : null;
-    if (spec.ref && !ref) return { status: 'fail', value: null, threshold: null, explanation: `Métrica desconhecida: ${spec.ref}.` };
+    if (spec.ref && !ref) return { status: 'fail', value: null, threshold: null, explanation: t('eng.unknownMetric', { m: spec.ref }) };
     var threshold = ref ? ref.value : spec.value;
     if (!isNum(mt.value)) return { status: 'pending', value: null, threshold: threshold, unit: mt.unit, explanation: mt.explanation };
-    if (!isNum(threshold)) return { status: 'pending', value: mt.value, threshold: null, unit: mt.unit, explanation: ref ? ref.explanation : 'Valor de referência ausente.' };
+    if (!isNum(threshold)) return { status: 'pending', value: mt.value, threshold: null, unit: mt.unit, explanation: ref ? ref.explanation : t('eng.noRef') };
     var pass = OPS[spec.op] ? OPS[spec.op](mt.value, threshold) : false;
     var u = function (x) { return withUnit(x, mt.unit, mt.decimals); };
-    var target = ref ? `${ref.label.toLowerCase()}: ${u(threshold)}` : u(threshold);
+    var target = ref ? ref.label.toLowerCase() + ': ' + u(threshold) : u(threshold);
     return {
       status: pass ? 'ok' : 'fail', value: mt.value, threshold: threshold, unit: mt.unit,
-      explanation: `${mt.label}: ${u(mt.value)} — ${pass ? 'atende' : 'não atende'} (precisa ${OP_TEXT[spec.op] || spec.op} ${target}). ${mt.explanation}` +
-        (ref ? ' ' + ref.explanation : '')
+      explanation: t('eng.reqExpl', { label: mt.label, value: u(mt.value), verdict: t(pass ? 'eng.meets' : 'eng.notMeets'), op: OP_TEXT[spec.op] || spec.op, target: target }) +
+        ' ' + mt.explanation + (ref ? ' ' + ref.explanation : ''),
+      plain: mt.plain
     };
   }
 
@@ -529,10 +568,10 @@
     return (sc.requirements || []).map(function (rq) {
       var r = compareMetric(rq, metrics);
       return {
-        id: rq.id, title: rq.title, text: rq.text, goal: rq.goal || null, rationale: rq.rationale || '',
+        id: rq.id, title: L(rq.title), text: L(rq.text), goal: rq.goal || null, rationale: L(rq.rationale) || '',
         weight: isNum(rq.weight) ? rq.weight : 1, metric: rq.metric, op: rq.op,
         status: r.status, value: r.value, threshold: r.threshold, unit: r.unit || '',
-        explanation: r.explanation, hint: r.status === 'fail' ? (rq.hint || null) : null
+        explanation: r.explanation, plain: r.plain || '', hint: r.status === 'fail' ? (L(rq.hint) || null) : null
       };
     });
   }
@@ -546,16 +585,16 @@
         var r = R[id];
         items.push(r
           ? { kind: 'requirement', id: id, label: id + ' ' + r.title, status: r.status, explanation: r.explanation }
-          : { kind: 'requirement', id: id, label: id, status: 'fail', explanation: 'Requisito desconhecido.' });
+          : { kind: 'requirement', id: id, label: id, status: 'fail', explanation: t('eng.unknownReq') });
       });
       (v.checks || []).forEach(function (id) {
         var c = C[id];
         items.push(c
           ? { kind: 'check', id: id, label: c.label, status: c.status, explanation: c.explanation }
-          : { kind: 'check', id: id, label: id, status: 'fail', explanation: 'Verificação desconhecida.' });
+          : { kind: 'check', id: id, label: id, status: 'fail', explanation: t('eng.unknownCheck') });
       });
       return {
-        id: v.id, title: v.title, method: v.method || '', description: v.description || '',
+        id: v.id, title: L(v.title), method: L(v.method) || '', description: L(v.description) || '',
         status: worst(items.map(function (i) { return i.status; })), items: items
       };
     });
@@ -569,35 +608,36 @@
   function evalCondition(c, env) {
     if (c.check) {
       var k = env.C[c.check];
-      if (!k) return { status: 'fail', explanation: `Verificação desconhecida: ${c.check}.` };
-      return { status: k.status === 'warn' ? 'ok' : k.status, explanation: `${k.label}: ${k.explanation}` };
+      if (!k) return { status: 'fail', explanation: t('eng.unknownCheckX', { id: c.check }) };
+      return { status: k.status === 'warn' ? 'ok' : k.status, explanation: k.label + ': ' + k.explanation };
     }
     if (c.requirement) {
       var r = env.R[c.requirement];
-      if (!r) return { status: 'fail', explanation: `Requisito desconhecido: ${c.requirement}.` };
-      return { status: r.status, explanation: `${r.id} ${r.title}: ${r.explanation}` };
+      if (!r) return { status: 'fail', explanation: t('eng.unknownReqX', { id: c.requirement }) };
+      return { status: r.status, explanation: r.id + ' ' + r.title + ': ' + r.explanation };
     }
     if (c.metric) return compareMetric(c, env.metrics);
     if (c.slot) {
       var item = env.sel[c.slot], want = [].concat(c.is || []);
       var label = env.slotLabel[c.slot] || c.slot;
-      if (!item) return { status: 'pending', explanation: `${label}: ainda não escolhido.` };
+      if (!item) return { status: 'pending', explanation: t('eng.slotNotChosen', { label: label }) };
       var okSlot = want.indexOf(item.id) !== -1;
       return {
         status: okSlot ? 'ok' : 'fail',
-        explanation: `${label}: "${item.name}"` + (okSlot ? '.' : ` — precisaria ser ${want.map(function (id) {
-          return '"' + env.optionName(c.slot, id) + '"';
-        }).join(' ou ')}.`)
+        explanation: okSlot ? t('eng.slotIs', { label: label, name: item.name })
+          : t('eng.slotNeeds', { label: label, name: item.name, list: want.map(function (id) {
+            return '"' + env.optionName(c.slot, id) + '"';
+          }).join(t('eng.or')) })
       };
     }
     if (c.margin) {
       var res = env.res[c.margin];
-      if (!res) return { status: 'fail', explanation: `Recurso desconhecido: ${c.margin}.` };
+      if (!res) return { status: 'fail', explanation: t('eng.unknownRes', { id: c.margin }) };
       if (!isNum(res.margin)) return { status: 'pending', explanation: res.explanation };
       var okM = OPS[c.op] ? OPS[c.op](res.margin, c.value) : false;
       return {
         status: okM ? 'ok' : 'fail',
-        explanation: `Folga de ${res.label.toLowerCase()}: ${pct(res.margin)} (precisa ${OP_TEXT[c.op] || c.op} ${pct(c.value)}).`
+        explanation: t('eng.marginCond', { label: res.label.toLowerCase(), pct: pct(res.margin), op: OP_TEXT[c.op] || c.op, val: pct(c.value) })
       };
     }
     return { status: 'ok', explanation: '' };
@@ -614,16 +654,16 @@
   function roll(seed, id) {
     var a = (seed ^ hashStr(String(id))) >>> 0;
     a = a + 0x6D2B79F5 | 0;
-    var t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    var t1 = Math.imul(a ^ a >>> 15, 1 | a);
+    t1 = t1 + Math.imul(t1 ^ t1 >>> 7, 61 | t1) ^ t1;
+    return ((t1 ^ t1 >>> 14) >>> 0) / 4294967296;
   }
   function effectText(eff) {
-    if (eff === 'abort') return 'a missão termina';
+    if (eff === 'abort') return t('eng.effAbort');
     if (eff && typeof eff === 'object' && isNum(eff.degrade)) {
-      return eff.degrade === 0 ? 'nenhum mapa útil' : `o resultado cai para ${pct(eff.degrade)}`;
+      return eff.degrade === 0 ? t('eng.effZero') : t('eng.effDegrade', { pct: pct(eff.degrade) });
     }
-    return 'sem efeito no resultado';
+    return t('eng.effNone');
   }
 
   // Registro de riscos: para cada imprevisto, se se aplica, se o projeto
@@ -639,18 +679,17 @@
       var occurs = doesApply && hasSeed && r < re.chance;
       var status = !doesApply ? 'na' : mitigated ? 'ok' : 'warn';
       var why = !doesApply
-        ? 'Não se aplica a este projeto: ' + applies.filter(function (x) { return x.status !== 'ok'; })
-            .map(function (x) { return x.explanation; }).join(' ')
+        ? t('eng.riskNA', { why: applies.filter(function (x) { return x.status !== 'ok'; }).map(function (x) { return x.explanation; }).join(' ') })
         : mitigated
-          ? 'Projeto protegido: ' + mit.map(function (x) { return x.explanation; }).join(' ')
+          ? t('eng.riskProtected', { why: mit.map(function (x) { return x.explanation; }).join(' ') })
           : mit.length
-            ? 'Projeto exposto: ' + mit.filter(function (x) { return x.status !== 'ok'; }).map(function (x) { return x.explanation; }).join(' ')
-            : 'Não há como evitar: só dá para ter sorte ou absorver o impacto.';
+            ? t('eng.riskExposed', { why: mit.filter(function (x) { return x.status !== 'ok'; }).map(function (x) { return x.explanation; }).join(' ') })
+            : t('eng.riskUnavoidable');
       return {
-        id: re.id, title: re.title, when: re.when || '', after: re.after || null,
-        description: re.description || '', chance: re.chance,
+        id: re.id, title: L(re.title), when: L(re.when) || '', after: re.after || null,
+        description: L(re.description) || '', chance: re.chance,
         applies: doesApply, mitigated: mitigated, occurs: occurs, roll: r, status: status,
-        impact: mitigated ? 'nenhum (mitigado)' : effectText(re.effect),
+        impact: mitigated ? t('eng.mitigatedImpact') : effectText(re.effect),
         explanation: why, def: re, mitigationResults: mit
       };
     });
@@ -662,9 +701,9 @@
     if (ctx.missing.length) {
       return {
         status: 'pending', aborted: null, outcome: null,
-        explanation: 'Complete todas as escolhas para simular a missão.',
+        explanation: t('eng.completeToSim'),
         events: events.map(function (ev) {
-          return { id: ev.id, when: ev.when || '', title: ev.title, status: 'pending', text: '', causes: [], random: false };
+          return { id: ev.id, when: L(ev.when) || '', title: L(ev.title), status: 'pending', text: '', causes: [], random: false };
         })
       };
     }
@@ -683,16 +722,16 @@
     var log = [], aborted = null, factor = 1;
     seq.forEach(function (step) {
       var ev = step.ev, risk = step.risk;
-      var base = { id: ev.id, when: ev.when || '', title: ev.title, random: !!risk, fx: ev.fx || null };
+      var base = { id: ev.id, when: L(ev.when) || '', title: L(ev.title), random: !!risk, fx: ev.fx || null };
       if (aborted) {
-        log.push(Object.assign(base, { status: 'skipped', text: `Não aconteceu: a missão terminou em "${aborted.title}".`, causes: [] }));
+        log.push(Object.assign(base, { status: 'skipped', text: t('eng.skipped', { title: L(aborted.title) }), causes: [] }));
         return;
       }
       var failed, success, failure, eff;
       if (risk) {
         failed = risk.mitigated ? [] : (risk.mitigationResults.filter(function (x) { return x.status !== 'ok'; }).length
           ? risk.mitigationResults.filter(function (x) { return x.status !== 'ok'; })
-          : [{ explanation: 'Não havia como evitar este imprevisto.' }]);
+          : [{ explanation: t('eng.noAvoid') }]);
         success = ev.mitigatedText || ev.text;
         failure = ev.text;
         eff = ev.effect || 'none';
@@ -734,8 +773,8 @@
       days: days, dataFraction: dataFraction, opsFactor: factor,
       maps: maps, target: target, value: value,
       explanation: aborted
-        ? `A missão terminou em "${aborted.title}": nenhum mapa foi entregue.`
-        : `Mapas úteis = ${fmt(days, 0)} dias de operação ÷ ${fmt(revisit, 1)} dias por mapa × ${pct(dataFraction)} dos dados entregues × ${pct(factor)} de aproveitamento = ${fmt(maps, 1)} de ${fmt(target, 0)} mapas previstos.`
+        ? t('eng.outcomeAborted', { title: L(aborted.title) })
+        : t('eng.outcome', { days: fmt(days, 0), rev: fmt(revisit, 1), data: pct(dataFraction), ops: pct(factor), maps: fmt(maps, 1), target: fmt(target, 0) })
     };
     return {
       status: aborted ? 'fail' : value >= 1 - 1e-9 ? 'ok' : value > 0 ? 'warn' : 'fail',
@@ -755,25 +794,25 @@
     var okRes = resources.filter(function (r) { return r.status === 'ok'; }).length;
     var o = mission.outcome;
     var parts = [
-      { id: 'requirements', label: 'Requisitos atendidos', max: w.requirements,
+      { id: 'requirements', label: t('s.requirements'), max: w.requirements,
         points: totalW ? w.requirements * okW / totalW : 0,
-        explanation: `${okN} de ${reqs.length} requisitos atendidos.` },
-      { id: 'mission', label: 'Resultado da missão', max: w.mission,
+        explanation: t('s.requirementsX', { ok: okN, n: reqs.length }) },
+      { id: 'mission', label: t('s.mission'), max: w.mission,
         points: w.mission * (o ? o.value : 0),
         explanation: o ? o.explanation : '' },
-      { id: 'budget', label: 'Orçamento', max: w.budget,
+      { id: 'budget', label: t('s.budget'), max: w.budget,
         points: within ? w.budget : 0,
-        explanation: cost ? `Custo de ${fmt(cost.demand, 0)} k$ ${within ? 'dentro' : 'acima'} do orçamento de ${fmt(cost.capacity, 0)} k$.` : '' },
-      { id: 'margins', label: 'Margens de projeto', max: w.margins,
+        explanation: cost ? t('s.budgetX', { cost: fmt(cost.demand, 0), within: t(within ? 'eng.within' : 'eng.above'), budget: fmt(cost.capacity, 0) }) : '' },
+      { id: 'margins', label: t('s.margins'), max: w.margins,
         points: resources.length ? w.margins * okRes / resources.length : 0,
-        explanation: `${okRes} de ${resources.length} recursos com a folga recomendada.` }
+        explanation: t('s.marginsX', { ok: okRes, n: resources.length }) }
     ];
     var total = Math.round(parts.reduce(function (s, x) { return s + x.points; }, 0));
     var max = parts.reduce(function (s, x) { return s + x.max; }, 0);
     var grade = (sc.grades || []).slice()
       .sort(function (a, b) { return b.min - a.min; })
       .filter(function (g) { return total >= g.min; })[0];
-    return { status: 'ok', total: total, max: max, parts: parts, grade: grade ? grade.label : null };
+    return { status: 'ok', total: total, max: max, parts: parts, grade: grade ? L(grade.label) : null };
   }
 
   // Lições: dicas das falhas (requisitos, verificações, imprevistos sofridos).
@@ -784,7 +823,7 @@
     }
     reqs.forEach(function (r) { if (r.status === 'fail') add(r.id, r.hint); });
     checks.forEach(function (c) { if (c.status === 'fail') add(c.id, c.hint); });
-    (risks || []).forEach(function (r) { if (r.occurs && !r.mitigated) add(r.id, r.def.lesson); });
+    (risks || []).forEach(function (r) { if (r.occurs && !r.mitigated) add(r.id, L(r.def.lesson)); });
     checks.forEach(function (c) { if (c.status === 'warn') add(c.id, c.hint); });
     return out;
   }
@@ -798,7 +837,7 @@
     var catalog = data.catalog || {};
     var r = resolveSelection(state.design, sc, catalog);
     var slotLabel = {};
-    sc.slots.forEach(function (s) { slotLabel[s.id] = s.label; });
+    sc.slots.forEach(function (s) { slotLabel[s.id] = L(s.label); });
     var ctx = { scenario: sc, catalog: catalog, sel: r.sel, missing: r.missing, slotLabel: slotLabel };
 
     var mel = buildMEL(ctx);
@@ -814,7 +853,7 @@
       optionName: function (slotId, id) {
         var slot = sc.slots.filter(function (s) { return s.id === slotId; })[0];
         var item = slot && (catalog[slot.source] || {})[id];
-        return item ? item.name : id;
+        return item ? L(item.name) : id;
       }
     };
     // Sem semente (state.seed), os imprevistos aparecem como riscos mas não são sorteados.
@@ -839,12 +878,27 @@
 
   // ------------------------------------------------------------ Validação
   // Confere os dados de /js/data e devolve problemas legíveis ([] = ok).
+  // (Mensagens para quem edita os dados; ficam em português.)
   function validate(data) {
     var errs = [];
     function err(msg) { errs.push(msg); }
     function need(obj, fields, where) {
       fields.forEach(function (f) {
         if (obj[f] === undefined || obj[f] === null) err(`${where}: falta o campo "${f}".`);
+      });
+    }
+    // Todas as versões de um texto (string ou { en, pt, es }).
+    function versions(v) {
+      if (v == null) return [];
+      if (typeof v === 'object' && !Array.isArray(v)) return Object.keys(v).map(function (k) { return v[k]; });
+      return [v];
+    }
+    function checkPlaceholders(text, w) {
+      versions(text).forEach(function (s) {
+        String(s || '').replace(/\{(\w+)\}/g, function (all, key) {
+          if (!METRICS[key]) err(`${w}: {${key}} não é uma métrica.`);
+          return all;
+        });
       });
     }
     if (!data) return ['MS.data não existe.'];
@@ -977,12 +1031,7 @@
         if (!validEffect(re.effect)) err(`${w}: effect inválido.`);
         (re.appliesIf || []).concat(re.mitigatedBy || []).forEach(function (c) { checkCond(c, w); });
         if ((re.mitigatedBy || []).length && !re.mitigatedText) err(`${w}: falta o texto "mitigatedText".`);
-        [re.text, re.mitigatedText].forEach(function (t) {
-          String(t || '').replace(/\{(\w+)\}/g, function (all, key) {
-            if (!METRICS[key]) err(`${w}: {${key}} não é uma métrica.`);
-            return all;
-          });
-        });
+        [re.text, re.mitigatedText].forEach(function (tx) { checkPlaceholders(tx, w); });
       });
 
       (sc.events || []).forEach(function (ev) {
@@ -991,15 +1040,19 @@
         (ev.conditions || []).forEach(function (c) { checkCond(c, w); });
         if (!validEffect(ev.onFail)) err(`${w}: onFail inválido.`);
         if ((ev.conditions || []).length && !ev.failure) err(`${w}: falta o texto "failure".`);
-        [ev.success, ev.failure].forEach(function (t) {
-          String(t || '').replace(/\{(\w+)\}/g, function (all, key) {
-            if (!METRICS[key]) err(`${w}: {${key}} não é uma métrica.`);
-            return all;
-          });
-        });
+        [ev.success, ev.failure].forEach(function (tx) { checkPlaceholders(tx, w); });
       });
     });
     return errs;
+  }
+
+  // Métricas com rótulo traduzido (para requisitos/eventos e para a tela).
+  function metricDefs() {
+    var out = {};
+    Object.keys(METRICS).forEach(function (k) {
+      out[k] = { label: t('m.' + k), unit: unitOf(METRICS[k]), decimals: METRICS[k].decimals };
+    });
+    return out;
   }
 
   // ----------------------------------------------------------- Exportação
@@ -1007,6 +1060,7 @@
     run: run,
     validate: validate,
     metricDefs: METRICS,      // métricas disponíveis para requisitos/eventos
+    metricInfo: metricDefs,   // idem, com rótulo e unidade no idioma atual
     checkIds: CHECK_IDS,      // verificações disponíveis
     resourceDefs: RESOURCES,  // recursos do painel
     roleFields: ROLE_FIELDS,  // campos exigidos por papel de componente

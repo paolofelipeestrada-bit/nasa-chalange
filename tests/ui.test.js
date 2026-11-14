@@ -20,8 +20,8 @@
         var s = Object.assign(MS.store.createState(), { phase: p.id, reached: p.id, design: Object.assign({}, MS.store.createState().design, design) });
         var html = MS.ui.renderHTML(s);
         assert(html.indexOf('Erro ao montar') === -1, p.id + ': erro ao montar');
-        assert(html.indexOf('não foi registrada') === -1, p.id + ': tela ausente');
-        T.assert.includes(html, MS.ui.h.esc(p.title));
+        assert(html.indexOf('não está registrada') === -1, p.id + ': tela ausente');
+        T.assert.includes(html, MS.ui.h.esc(MS.i18n.L(p.title)));
       });
     });
   });

@@ -1,64 +1,123 @@
-# Simulador de missão espacial — base
+# Space Mission Designer
 
-HTML + JavaScript puro, sem build e sem dependências.
+An educational game for the **NASA Space Apps Challenge 2026 — "Space Mission Design Game"**.
+Players design a small Earth-observation satellite (a CubeSat) for a real customer need and
+learn that every choice costs something somewhere else: mass, power, budget, data, comms and time.
 
-## Jogar e testar
-- Jogo: abra `index.html` no navegador (duplo clique serve).
-- Testes: abra `tests.html`. Erros de sintaxe nos dados também aparecem lá
-  como teste falho.
+- For anyone aged 10 and up. No prior space knowledge needed: every number has a plain-language
+  sentence, a "See the math" box, and glossary tips on the technical words.
+- In **English** by default, also in **Português** and **Español** (flag buttons at the top).
+- Solo or **cooperative team mode** (2 to 4 players, each one owns some subsystems).
 
-## Estrutura
-```
-index.html            o jogo
-css/style.css         visual (cores em variáveis no topo; claro/escuro automático)
-js/data/phases.js     fases do fluxo (ordem, títulos, fase do "ajustar e simular de novo")
-js/data/catalog.js    órbitas, lançadores, estações em solo e componentes
-js/data/scenarios.js  cenários: necessidade, escolhas, requisitos, verificação, eventos, pontuação
-js/sim.js             motor puro: MS.sim.run(state) → resultados + explicações
-js/state.js           estado único + ações + localStorage (MS.store)
-js/ui/core.js         render(), cliques (data-action) e peças reutilizáveis
-js/ui/screen*.js      uma tela por fase, registrada com MS.ui.register(id, tela)
-js/viz/schedule.js    roteiro da animação 3D (puro, testado)
-js/viz/mission3d.js   visual 3D da missão (Three.js via CDN; sem internet o jogo funciona sem o 3D)
-js/net/team.js        regras do modo equipe: papéis e permissões (puro, testado)
-js/net/room.js        sala multiplayer por código (PeerJS): anfitrião valida e repassa o state
-js/ui/team-panel.js   painel da equipe e avisos na tela
-js/main.js            liga interface e estado
-tests.html, tests/    testes do motor, do estado e das telas
-```
+## How to play
 
-Regra da arquitetura: as telas só **leem** `MS.store.state`, só **mudam** o
-estado chamando ações (`MS.store.setOrbit`, `selectComponent`, `nextPhase`…)
-e calculam resultados com `MS.sim.run(state)`. O state guarda só escolhas
-e progresso; resultados são sempre recalculados.
+Open `index.html` in a browser (double-click works). No install, no build, no login.
 
-## Modo equipe (multiplayer cooperativo)
-Botão "Jogar em equipe" no topo. Um cria a sala e passa o código de 6
-letras; os outros entram com ele. Cada um assume papéis (Gerente de
-missão, Carga útil e dados, Plataforma) e só mexe nas escolhas dos seus
-papéis; o Gerente conduz as fases. Quem cria a sala é o anfitrião: guarda
-o state oficial e manda para todos. Se ele sair, a sala acaba. Precisa
-de internet (servidor público do PeerJS só para apresentar os navegadores;
-os dados vão direto de um para o outro).
+The game follows the 6 steps NASA uses to design and develop a science mission, shown as the
+arrows at the top of the screen:
 
-## Onde acrescentar cada coisa
-| Coisa nova | Onde |
+| NASA step | In the game |
 |---|---|
-| Componente, órbita, lançador, estação | `catalog.js` + o id em `options` do slot em `scenarios.js` |
-| Requisito | `scenarios.js` → `requirements` (métricas em `MS.sim.metricDefs`) |
-| Evento da missão | `scenarios.js` → `events` (condição: `check`, `requirement` ou `metric`) |
-| Imprevisto (evento aleatório) | `scenarios.js` → `randomEvents` (chance, `appliesIf`, `mitigatedBy`, `effect`, `after`). Sorteio pela semente `state.seed`: mesma semente, mesmos imprevistos |
-| Efeito visual de um evento no 3D | campo `fx` do evento em `scenarios.js` (lista em `MS.vizSchedule.FX`); efeito novo de verdade: `update()` em `js/viz/mission3d.js` |
-| Texto de ajuda de uma fase ("O que fazer aqui") | `phases.js` → `guide` e `tips` |
-| Termo do glossário (dica ao passar o mouse) | `js/data/glossary.js`; nos textos dos dados use `[[chave]]` ou `[[chave\|texto]]` |
-| Vantagem/Cuidado de uma opção | `catalog.js` → `pros` e `cons` do item; ajuda de uma escolha: `help` do slot em `scenarios.js` |
-| Papel do modo equipe | `scenarios.js` → `team.roles` (`slots` que o papel controla, `canAdvance` para conduzir as fases) |
-| Linha do plano de verificação | `scenarios.js` → `verification` |
-| Cenário | copiar o bloco `eo_cubesat` em `scenarios.js` e trocar o id |
-| Fase | `phases.js` + uma tela nova com `MS.ui.register('id', { render })` num arquivo em `js/ui/` (e a tag `<script>` no `index.html`) |
-| Campo novo aparecendo nos cartões de opção | `SPEC_FIELDS` em `js/ui/core.js` |
-| Ação nova de botão | `ACTIONS` em `js/ui/core.js` + a função em `state.js` |
-| Regra física, métrica ou tipo de verificação novo | `sim.js` (`METRICS` + `computeMetrics`, `CHECKS` + `computeChecks`): único caso que mexe no motor |
+| 1. Identify Need & Goals | Pick a customer (deforestation, fire scars or urban growth) and read the goals |
+| 2. Define Concept | Choose orbit, launcher and ground station |
+| 3. Define Requirements | Goals become measurable requirements, each with a way to verify it |
+| 4. Design | Choose the camera, structure, power, attitude control, radio and computer |
+| 5. Build & Verify | Every requirement is checked; see which risks the design is exposed to |
+| 6. Implement | Launch and watch the mission in 3D, with random surprises |
+| Mission Report | Score, why things happened, and lessons for the next attempt |
 
-Depois de mexer nos dados, rode `tests.html`: o teste de validação aponta
-campos faltando ou ids errados.
+The 6 resources the challenge asks for are always on screen (the panel stays visible while you
+scroll). Hover or focus an option to preview how it would change each resource before choosing.
+After each choice, a short "chain of effects" line shows what that choice changed.
+
+Each customer needs a different satellite: every scenario has at least two different winning
+designs (checked by an automatic test), so players have to trade off rather than find one answer.
+
+### Team mode
+"Play as a team" at the top. One person creates a room and shares the 6-letter code; the others
+join with it. Each player takes a role (Mission manager, Payload scientist, Spacecraft engineer,
+Communications and ground) and can only change the choices of that role; the Mission manager moves the
+team between phases. The person who created the room is the host and keeps the official game state.
+Needs internet (PeerJS public broker, only to introduce the browsers; game data goes directly
+between players).
+
+## NASA resources used
+
+- **Design and Develop Science Missions** (NASA, 2025): the 6-step process, the 4 mission segments
+  (launch, space, ground, user) and "every requirement comes with a verification".
+  https://www.nasa.gov/wp-content/uploads/2025/04/250323-design-and-develop-science-mission.pdf
+- **CubeSat 101** (NASA CubeSat Launch Initiative): CubeSat sizes, typical 18–24-month schedule,
+  budget reserve. https://www.nasa.gov/wp-content/uploads/2017/03/nasa_csli_cubesat_101_508.pdf
+- **Concept Maturity Levels** (NASA JPL): the CML 1–4 tag shown at each step.
+- **Build It Yourself: Satellite** (NASA Webb): inspiration for goal-driven design and self-explaining options.
+  https://science.nasa.gov/mission/webb/game-build-it-yourself/
+- **GMAT — General Mission Analysis Tool** (NASA): reference for the orbital mechanics
+  (period, shadow, ground-station contacts). https://software.nasa.gov/software/GSC-19468-1
+
+## What we simplified
+
+Numbers are realistic in order of magnitude but simplified for play: circular orbits, worst-case
+shadow, approximate 2026 prices, rough orbital lifetimes. The game teaches trade-offs, not exact
+engineering. Every formula is visible in the game under "See the math".
+
+## Use of AI
+
+Our team built this game with help from AI assistants (Claude, by Anthropic) for code and text,
+which we reviewed and tested. The game uses no AI-generated images, video or audio, and no NASA logos.
+
+## Open-source libraries
+
+- [Three.js](https://threejs.org/) 0.147 (MIT) — 3D mission view, loaded from a CDN.
+  Without internet the game still works, with a timeline instead of the 3D view.
+- [PeerJS](https://peerjs.com/) 1.5 (MIT) — team rooms.
+
+## For developers
+
+Plain HTML + JavaScript, no build step and no dependencies to install.
+
+- Tests: open `tests.html` (engine, state, screens, team rules, languages and game balance).
+  Data typos also show up there as failed tests.
+- Publish: any static host works (for example GitHub Pages from the repository root).
+
+```
+index.html            the game
+css/style.css         look and feel (colors in variables at the top; light/dark follows the system)
+js/i18n/i18n.js       languages: MS.i18n.t('key'), MS.i18n.L({en,pt,es}), setLang('pt')
+js/i18n/en|pt|es.js   interface and engine texts (same keys in all three; a test checks it)
+js/data/phases.js     the phases: NASA step, segments, concept maturity, help texts
+js/data/catalog.js    orbits, launchers, ground stations and components
+js/data/scenarios.js  customers (scenarios): need, choices, requirements, verification, events, roles
+js/data/glossary.js   glossary terms (tips on dotted words)
+js/sim.js             pure engine: MS.sim.run(state) → metrics, checks, requirements, mission, score
+js/state.js           single state + actions + localStorage (MS.store)
+js/ui/core.js         header, steps, resource panel, previews, reusable pieces, clicks (data-action)
+js/ui/screen*.js      one screen per phase, registered with MS.ui.register(id, screen)
+js/viz/schedule.js    3D animation script (pure, tested)
+js/viz/mission3d.js   3D mission view (Three.js)
+js/net/team.js        team mode rules: roles and permissions (pure, tested)
+js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state
+js/ui/team-panel.js   team panel and notifications
+js/main.js            connects interface and state
+```
+
+Architecture rule: screens only **read** `MS.store.state`, only **change** it through actions,
+and compute results with `MS.sim.run(state)`. The state stores choices and progress only;
+results are always recomputed. The language belongs to each player and is not part of the state.
+
+### Where to add things
+
+| New thing | Where |
+|---|---|
+| Text shown in the interface | a key in `js/i18n/en.js`, `pt.js` and `es.js` |
+| Text inside the data | `T('english', 'português', 'español')` |
+| Component, orbit, launcher, station | `catalog.js` + its id in the slot `options` in `scenarios.js` |
+| Requirement | `scenarios.js` → `requirements` (metrics in `MS.sim.metricDefs`) |
+| Mission event / random event | `scenarios.js` → `events` / `randomEvents` (drawn from `state.seed`) |
+| Customer (scenario) | `variant('id', {...})` in `scenarios.js` (changes only what differs from the base) |
+| Help text of a phase | `phases.js` → `guide`, `tips`, `nasa` |
+| Glossary term | `glossary.js`; in data texts use `[[key]]` or `[[key\|text]]` |
+| Team role | `scenarios.js` → `team.roles` |
+| New physics, metric or check type | `sim.js` (`METRICS` + `computeMetrics`, `CHECKS` + `computeChecks`) |
+
+After changing data, run `tests.html`: the validation test points to missing fields or wrong ids,
+and the balance test checks that each customer still has at least two winning designs.
