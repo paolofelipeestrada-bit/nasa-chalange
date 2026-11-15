@@ -125,7 +125,8 @@
 
   // "Todos prontos?": rodada nova; quem pergunta já conta como pronto.
   function startReady(id) {
-    R.ready = { round: (R.ready ? R.ready.round : 0) + 1, by: nameOf(id), byId: id, phase: MS.store.state.phase, answers: {} };
+    // key: o projeto que está sendo votado; se mudar, o GO vale de novo do zero.
+    R.ready = { round: (R.ready ? R.ready.round : 0) + 1, by: nameOf(id), byId: id, phase: MS.store.state.phase, key: readyKey(MS.store.state), answers: {} };
     R.ready.answers[id] = true;
     sendReady();
   }
@@ -287,6 +288,8 @@
     if (R.isHost) setReady('host', ok); else send(R.conn, { t: 'ready-ans', ok: !!ok });
   }
 
+  function readyKey(s) { return JSON.stringify([s.design, s.period || null]); }
+  net.readyKey = readyKey;
   net.shout = shout;
   net.askReady = askReady;
   net.answerReady = answerReady;

@@ -887,7 +887,9 @@
     if (!V.mission) return;
     var S = V.mission.schedule;
     if (V.cine) {
-      var cd = V.playing ? dt * V.speed : 0;
+      // Ritmo das cenas: a contagem anda em segundos reais; o resto vai mais
+      // devagar para dar tempo de ver (plataforma, votação, decolagem, subida).
+      var cd = V.playing ? dt * V.speed * (CINE_PACE[MS.launchScene.chapterAt(V.cine.t)] || 1) : 0;
       V.cine.t += cd;
       var res = V.cine.obj.update(V.cine.t, cd, V.camera);
       if (res.done) endCine(false);
@@ -966,6 +968,7 @@
   // Antes da vista orbital, o lançamento é contado em cenas (js/viz/launchscene.js):
   // plataforma, votação Go/No-Go, contagem, decolagem e subida. Depois corta
   // para a órbita com o foguete já subindo. Pulada com "menos movimento".
+  var CINE_PACE = { pad: 0.6, poll: 0.4, count: 1, liftoff: 0.6, ascent: 0.65 };
   function countdown() { startCine(); }
   function startCine(force) {
     endCine(true);
@@ -986,6 +989,11 @@
     }
     var look = MS.looks.resolve('launchers', V.mission.result.selection.launcher);
     var crew = MS.advice ? MS.advice.crew(V.mission.state, V.mission.result) : [];
+    // Em equipe, quem vota são as pessoas da sala (todas disseram GO para lançar).
+    var room = MS.net && MS.net.active() ? MS.net.info() : null;
+    if (room && room.members.length > 1 && MS.ui.teamGo) {
+      crew = room.members.map(function (m) { return { key: MS.ui.teamGo.charOf(m), name: m.name, vote: 'go' }; });
+    }
     V.cine = { t: 0, obj: MS.launchScene.create(look), crew: crew, key: '' };
     V.wrap.classList.add('cine-on');
     var el = V.wrap.querySelector('.viz-cine');

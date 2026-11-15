@@ -45,6 +45,41 @@
       '<p class="section-note">' + h.esc(t('pred.note')) + '</p></div>';
   }
 
+  // ------------------------------------------------- GO da equipe (sala)
+  // Em equipe, o lançamento só sai quando TODOS dizem GO para este projeto
+  // (usa o "Todos prontos?" de js/net/room.js; mudou o projeto, vota de novo).
+  var ROLE_CHAR = { payload: 'sci', bus: 'eng', ground: 'com', manager: 'mgr' };
+  function charOf(m) { var r = (m.roles || [])[0]; return ROLE_CHAR[r] || 'dir'; }
+  ui.teamGo = function (state) {
+    var inf = MS.net && MS.net.active() ? MS.net.info() : null;
+    if (!inf || (inf.members || []).length < 2) return { need: false };
+    var rd = inf.ready, valid = !!(rd && rd.phase === state.phase && rd.key === MS.net.readyKey(state));
+    var ans = valid ? rd.answers || {} : {};
+    var yes = inf.members.filter(function (m) { return ans[m.id] === true; }).length;
+    var no = inf.members.filter(function (m) { return ans[m.id] === false; }).length;
+    return { need: true, asked: valid, yes: yes, no: no, total: inf.members.length, all: yes === inf.members.length, answers: ans, members: inf.members, me: inf.me };
+  };
+  ui.teamGo.charOf = charOf;
+  function goPanel(state) {
+    var g = ui.teamGo(state);
+    if (!g.need) return '';
+    var seats = g.members.map(function (m) {
+      var a = g.answers[m.id], cls = a === true ? 'go' : a === false ? 'nogo' : 'wait';
+      return '<li class="gp-seat gp-' + cls + (m.id === g.me ? ' me' : '') + '">' + h.character(charOf(m), 72, { anim: true }) +
+        '<b>' + h.esc(m.name) + '</b><span class="gp-st pixel">' + h.esc(a === true ? t('ck.go') : a === false ? t('go.no') : t('go.waitOne')) + '</span></li>';
+    }).join('');
+    var mine = g.answers[g.me];
+    var btns = !g.asked
+      ? '<button type="button" class="btn primary big-go" data-action="next">' + h.icon('rocket', { size: 18 }) + h.esc(t('go.ask')) + '</button>'
+      : '<button type="button" class="btn big-go go-yes' + (mine === true ? ' on' : '') + '" data-action="ready-yes">' + h.esc(t('go.yes')) + '</button>' +
+        '<button type="button" class="btn big-go go-no' + (mine === false ? ' on' : '') + '" data-action="ready-no">' + h.esc(t('go.no')) + '</button>' +
+        (g.no ? '<button type="button" class="btn big-go" data-action="next">' + h.esc(t('go.again')) + '</button>' : '');
+    var line = !g.asked ? t('go.notAsked') : g.all ? t('go.all') : g.no ? t('go.someNo', { n: g.no }) : t('go.wait', { n: g.yes, total: g.total });
+    return '<section class="go-panel' + (g.all ? ' all' : '') + '" aria-live="polite"><div class="gp-head"><h2>' + h.icon('team', { size: 18 }) + h.esc(t('go.title')) + '</h2>' +
+      '<span class="gp-count pixel">' + g.yes + ' / ' + g.total + '</span></div><p class="section-note">' + h.esc(t('go.note')) + '</p>' +
+      '<ul class="gp-seats">' + seats + '</ul><p class="gp-line">' + h.esc(line) + '</p><div class="gp-btns">' + btns + '</div></section>';
+  }
+
   // ------------------------------------------------------ Build & Verify
   ui.register('build', {
     nextLabel: 'scr.build.next',
@@ -67,7 +102,7 @@
       }).join('');
       var lock = ui.phaseLock ? ui.phaseLock(state) : null;
       var hasLife = !!(MS.life && MS.data.spaceWeather);
-      return '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + predictPanel(state, !!lock) +
+      return goPanel(state) + '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + predictPanel(state, !!lock) +
         (hasLife ? '<div class="launch-window">' + ui.life.periodPicker(state, !!lock) + '</div>' : '') + '</div></div>' +
         alert + '<details class="fold"' + (fails ? ' open' : '') + '><summary>' + h.esc(t('build.seeChecks', { n: v.length, f: fails })) + '</summary>' +
         '<div class="verif-grid">' + rows + '</div></details>' +
@@ -232,6 +267,7 @@
         '<div class="card"><h2>' + h.esc(t('rep.score')) + '</h2><div class="table-wrap"><table><tbody>' + parts + '</tbody></table></div></div>' +
         '<div class="card"><h2>' + h.esc(t('scr.design.reqs')) + '</h2>' + h.statusRows(result.requirements, { prefixId: true }) + '</div>' + luck +
         '<p class="small muted">' + h.esc(t('rep.realWorld')) + '</p></details>' +
+        '<details class="card sources sources-rep"><summary>' + h.icon('info', { size: 18 }) + h.esc(t('src.title')) + '</summary>' + h.sourcesBody(state, result) + '</details>' +
         '<details class="card credits"><summary>' + h.icon('book', { size: 18 }) + h.esc(t('rep.credits')) + '</summary>' + h.credits() + '</details>';
     }
   });

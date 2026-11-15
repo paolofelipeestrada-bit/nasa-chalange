@@ -478,7 +478,6 @@
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
       '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
-      '<button type="button" class="btn small" data-action="sources">' + icon('info', { size: 16 }) + esc(t('src.btn')) + '</button>' +
       '<button type="button" class="btn small" data-action="coach">' + icon('info', { size: 16 }) + esc(t('coach.tips')) + '</button>' +
       '</div></div>' +
       '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><ol>' + steps + '</ol></nav>' +
@@ -515,8 +514,14 @@
     { id: 'power', metric: 'powerGen_W' }, { id: 'contact', metric: 'contactMinPerDay' }, { id: 'downlink', metric: 'downlink_Gbit_day' },
     { id: 'mass', metric: 'mass_kg' }, { id: 'cost', metric: 'cost_k' }, { id: 'science', metric: null }
   ];
+  // O conteúdo vai no relatório final (screens-end), em "Fontes e contas":
+  // é lá, depois de jogar, que as contas fazem sentido.
   function sourcesPanel(state, result) {
     if (!ui.local.sourcesOpen) return '';
+    return '<div class="card sources"><div class="row-head"><h2>' + esc(t('src.title')) + '</h2><button type="button" class="btn small" data-action="sources">' + esc(t('ui.close')) + '</button></div>' +
+      sourcesBody(state, result) + '</div>';
+  }
+  function sourcesBody(state, result) {
     var nasa = SRC_NASA.map(function (k) {
       return '<li><b>' + esc(t('about.' + k + '.name')) + '</b><span>' + esc(t('about.' + k + '.use')) + '</span>' +
         '<a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + ' ↗</a></li>';
@@ -529,11 +534,10 @@
         '<p>' + esc(t('src.f.' + f.id + '.plain')) + '</p>' +
         (live ? '<p class="sf-live"><span>' + esc(t('src.live')) + '</span> ' + esc(live) + '</p>' : '') + '</li>';
     }).join('');
-    return '<div class="card sources"><div class="row-head"><h2>' + esc(t('src.title')) + '</h2><button type="button" class="btn small" data-action="sources">' + esc(t('ui.close')) + '</button></div>' +
-      '<p class="section-note">' + esc(t('src.intro')) + '</p>' +
+    return '<p class="section-note">' + esc(t('src.intro')) + '</p>' +
       '<h3>' + esc(t('about.nasaTitle')) + '</h3><ul class="src-nasa">' + nasa + '</ul>' +
       '<h3>' + esc(t('src.mathTitle')) + '</h3><p class="section-note">' + esc(t('src.mathNote')) + '</p><ul class="src-math">' + math + '</ul>' +
-      '<p class="small muted">' + esc(t('about.simple')) + '</p></div>';
+      '<p class="small muted">' + esc(t('about.simple')) + '</p>';
   }
 
   // Glossário completo (botão no topo).
@@ -579,6 +583,15 @@
     var can = MS.store.canAdvance(state);
     var next = info.phases[info.index + 1];
     var lock = phaseLock(state);
+    // Em equipe, "Lançar" primeiro pede o GO de todos (ui.teamGo, screens-end.js).
+    var go = screen && screen.nextClass === 'launch' && ui.teamGo ? ui.teamGo(state) : { need: false };
+    if (go.need && !go.all && can.ok) {
+      return '<footer class="nav"><div class="nav-inner">' +
+        '<button type="button" class="btn" data-action="prev"' + (info.index === 0 || lock ? ' disabled' : '') + '>← ' + esc(t('ui.back')) + '</button>' +
+        '<span class="missing todo">' + esc(t('go.needAll')) + '</span>' +
+        '<button type="button" class="btn primary launch" data-action="next"' + (go.asked && !go.no ? ' disabled' : '') + '>' + icon('team', { size: 20 }) +
+        esc(go.asked && !go.no ? t('go.wait', { n: go.yes, total: go.total }) : go.no ? t('go.again') : t('go.ask')) + '</button></div></footer>';
+    }
     var right = can.isLast
       ? '<button type="button" class="btn primary" data-action="retry"' + (lock ? ' disabled' : '') + '>' + esc(t('ui.retry')) + '</button>'
       : '<button type="button" class="btn primary' + (screen && screen.nextClass ? ' ' + screen.nextClass : '') + '" data-action="next"' + (can.ok && !lock ? '' : ' disabled') + '>' +
@@ -635,7 +648,12 @@
     scenario: function (d) { dispatch('setScenario', [d.id]); },
     level: function (d) { ui.local.hints = {}; dispatch('setDifficulty', [d.level]); },
     hint: function (d) { ui.local.hints = ui.local.hints || {}; ui.local.hints[d.slot] = true; rerender(); },
-    next: function () { dispatch('nextPhase'); },
+    next: function () {
+      var st = MS.store.state, scr = st && screens[MS.store.phaseInfo(st).current.screen];
+      var go = scr && scr.nextClass === 'launch' && ui.teamGo ? ui.teamGo(st) : { need: false };
+      if (go.need && !go.all) { if (!go.asked || go.no) MS.net.askReady(); return; }
+      dispatch('nextPhase');
+    },
     prev: function () { dispatch('prevPhase'); },
     goto: function (d) { dispatch('goToPhase', [d.phase]); },
     retry: function () { dispatch('retry'); },
@@ -699,6 +717,7 @@
     if (MS.hangar) MS.hangar.attach(rootEl, state); // hangar 3D da coluna direita
     if (ui.menuAttach) ui.menuAttach(rootEl, state); // Terra 3D do menu inicial
     if (MS.coach) MS.coach.attach(rootEl, state);   // balões de ensino
+    if (ui.sceneAfter) ui.sceneAfter(rootEl, state); // modo cena: prévia da opção em foco (js/ui/scene.js)
     if (state.phase !== lastPhase) {
       root.scrollTo(0, 0);
       lastPhase = state.phase;
@@ -737,7 +756,7 @@
     register: function (id, screen) { screens[id] = screen; },
     screens: screens, hudCards: HUD,
     dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,
-    h: { esc: esc, badge: badge, icon: icon, credits: credits, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
+    h: { esc: esc, badge: badge, icon: icon, credits: credits, sourcesBody: sourcesBody, sciValue: sciValue, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
          term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
          choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel, levelPicker: levelPicker, byMode: byMode, uiMode: function () { return uiMode; } }
   });
