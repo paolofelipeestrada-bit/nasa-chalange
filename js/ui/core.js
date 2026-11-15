@@ -24,7 +24,7 @@
   var MS = root.MS = root.MS || {};
   var ui = MS.ui = MS.ui || {};
   ui.local = ui.local || {};
-  ['teamOpen', 'glossaryOpen', 'aboutOpen'].forEach(function (k) { if (!(k in ui.local)) ui.local[k] = false; });
+  ['teamOpen', 'glossaryOpen', 'aboutOpen', 'sourcesOpen'].forEach(function (k) { if (!(k in ui.local)) ui.local[k] = false; });
   var screens = {};
   var U = MS.sim.util;
   var t = MS.i18n.t, L = MS.i18n.L;
@@ -429,6 +429,7 @@
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
       '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
+      '<button type="button" class="btn small" data-action="sources">' + icon('info', { size: 16 }) + esc(t('src.btn')) + '</button>' +
       '<button type="button" class="btn small" data-action="coach">' + icon('info', { size: 16 }) + esc(t('coach.tips')) + '</button>' +
       '</div></div>' +
       '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><ol>' + steps + '</ol></nav>' +
@@ -448,6 +449,37 @@
         '<p>' + rich(phase.nasa) + '</p><div class="nasa-meta"><span class="small muted">' + term('segments', t('ui.segments')) + ':</span> ' + segs +
         (cml ? ' <span class="cml" title="' + esc(L(MS.data.glossary.cml.text)) + '">' + esc(L(cml)) + '</span>' : '') + '</div></div>' : '') +
       '</details></div></div>';
+  }
+
+  // Fontes e cálculos (botão no topo): os recursos da NASA usados e as contas
+  // do motor, cada uma com a fórmula, o que quer dizer e a conta ao vivo
+  // com os números do projeto atual (explicação que o próprio motor escreve).
+  var SRC_NASA = ['nasa1', 'nasa2', 'nasa5', 'nasa6', 'nasa7', 'nasa3', 'nasa4'];
+  var SRC_MATH = [
+    { id: 'gsd', metric: 'gsd_m' }, { id: 'swath', metric: 'swath_km' }, { id: 'revisit', metric: 'revisit_days' },
+    { id: 'period', metric: 'period_min' }, { id: 'eclipse', metric: 'eclipse_pct' }, { id: 'lifetime', metric: 'lifetime_years' },
+    { id: 'power', metric: 'powerGen_W' }, { id: 'contact', metric: 'contactMinPerDay' }, { id: 'downlink', metric: 'downlink_Gbit_day' },
+    { id: 'mass', metric: 'mass_kg' }, { id: 'cost', metric: 'cost_k' }, { id: 'science', metric: null }
+  ];
+  function sourcesPanel(state, result) {
+    if (!ui.local.sourcesOpen) return '';
+    var nasa = SRC_NASA.map(function (k) {
+      return '<li><b>' + esc(t('about.' + k + '.name')) + '</b><span>' + esc(t('about.' + k + '.use')) + '</span>' +
+        '<a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + ' ↗</a></li>';
+    }).join('');
+    var math = SRC_MATH.map(function (f) {
+      var m = f.metric && result ? result.metrics[f.metric] : null;
+      var live = m ? (m.value != null ? m.explanation : t('src.liveWait')) : '';
+      return '<li><div class="sf-head"><b>' + esc(t('src.f.' + f.id + '.name')) + '</b>' + (m && m.value != null ? '<span class="sf-val">' + esc(value(m)) + '</span>' : '') + '</div>' +
+        '<code class="sf-formula">' + esc(t('src.f.' + f.id + '.formula')) + '</code>' +
+        '<p>' + esc(t('src.f.' + f.id + '.plain')) + '</p>' +
+        (live ? '<p class="sf-live"><span>' + esc(t('src.live')) + '</span> ' + esc(live) + '</p>' : '') + '</li>';
+    }).join('');
+    return '<div class="card sources"><div class="row-head"><h2>' + esc(t('src.title')) + '</h2><button type="button" class="btn small" data-action="sources">' + esc(t('ui.close')) + '</button></div>' +
+      '<p class="section-note">' + esc(t('src.intro')) + '</p>' +
+      '<h3>' + esc(t('about.nasaTitle')) + '</h3><ul class="src-nasa">' + nasa + '</ul>' +
+      '<h3>' + esc(t('src.mathTitle')) + '</h3><p class="section-note">' + esc(t('src.mathNote')) + '</p><ul class="src-math">' + math + '</ul>' +
+      '<p class="small muted">' + esc(t('about.simple')) + '</p></div>';
   }
 
   // Glossário completo (botão no topo).
@@ -525,7 +557,7 @@
     var ph = info.current;
     var eyebrow = ph.nasaStep ? t('ui.stepOf', { n: ph.nasaStep, total: 6 }) : t('ui.finalStep');
     return (result ? header(state, info, result) : '') + '<main>' + warn + (ui.teamPanel ? ui.teamPanel(state) : '') +
-      aboutPanel() + glossaryPanel() +
+      aboutPanel() + sourcesPanel(state, result) + glossaryPanel() +
       '<div class="phase-head"><span class="eyebrow">' + esc(eyebrow) + '</span>' +
       '<h1>' + esc(L(ph.title)) + '</h1><p class="muted">' + esc(L(ph.subtitle) || '') + '</p></div>' +
       (ui.clientLine ? ui.clientLine(state, result) : '') + guide(ph) + body + '</main>' + footer(state, info, screen) +
@@ -552,6 +584,7 @@
     lang: function (d) { MS.i18n.setLang(d.lang); ui.local.cascade = null; rerender(); },
     hud: function (d) { ui.local.hudOpen = ui.local.hudOpen === d.hud ? null : d.hud; rerender(); },
     glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; rerender(); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },
+    sources: function () { ui.local.sourcesOpen = !ui.local.sourcesOpen; rerender(); if (ui.local.sourcesOpen) root.scrollTo(0, 0); },
     about: function () { ui.local.aboutOpen = !ui.local.aboutOpen; rerender(); if (ui.local.aboutOpen) root.scrollTo(0, 0); },
     coach: function () { if (MS.coach && MS.store.state) MS.coach.start(MS.store.state.phase); },
     reset: function () {
