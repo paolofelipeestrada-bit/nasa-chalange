@@ -45,6 +45,41 @@
       '<p class="section-note">' + h.esc(t('pred.note')) + '</p></div>';
   }
 
+  // ------------------------------------------------- GO da equipe (sala)
+  // Em equipe, o lançamento só sai quando TODOS dizem GO para este projeto
+  // (usa o "Todos prontos?" de js/net/room.js; mudou o projeto, vota de novo).
+  var ROLE_CHAR = { payload: 'sci', bus: 'eng', ground: 'com', manager: 'mgr' };
+  function charOf(m) { var r = (m.roles || [])[0]; return ROLE_CHAR[r] || 'dir'; }
+  ui.teamGo = function (state) {
+    var inf = MS.net && MS.net.active() ? MS.net.info() : null;
+    if (!inf || (inf.members || []).length < 2) return { need: false };
+    var rd = inf.ready, valid = !!(rd && rd.phase === state.phase && rd.key === MS.net.readyKey(state));
+    var ans = valid ? rd.answers || {} : {};
+    var yes = inf.members.filter(function (m) { return ans[m.id] === true; }).length;
+    var no = inf.members.filter(function (m) { return ans[m.id] === false; }).length;
+    return { need: true, asked: valid, yes: yes, no: no, total: inf.members.length, all: yes === inf.members.length, answers: ans, members: inf.members, me: inf.me };
+  };
+  ui.teamGo.charOf = charOf;
+  function goPanel(state) {
+    var g = ui.teamGo(state);
+    if (!g.need) return '';
+    var seats = g.members.map(function (m) {
+      var a = g.answers[m.id], cls = a === true ? 'go' : a === false ? 'nogo' : 'wait';
+      return '<li class="gp-seat gp-' + cls + (m.id === g.me ? ' me' : '') + '">' + h.character(charOf(m), 72, { anim: true }) +
+        '<b>' + h.esc(m.name) + '</b><span class="gp-st pixel">' + h.esc(a === true ? t('ck.go') : a === false ? t('go.no') : t('go.waitOne')) + '</span></li>';
+    }).join('');
+    var mine = g.answers[g.me];
+    var btns = !g.asked
+      ? '<button type="button" class="btn primary big-go" data-action="next">' + h.icon('rocket', { size: 18 }) + h.esc(t('go.ask')) + '</button>'
+      : '<button type="button" class="btn big-go go-yes' + (mine === true ? ' on' : '') + '" data-action="ready-yes">' + h.esc(t('go.yes')) + '</button>' +
+        '<button type="button" class="btn big-go go-no' + (mine === false ? ' on' : '') + '" data-action="ready-no">' + h.esc(t('go.no')) + '</button>' +
+        (g.no ? '<button type="button" class="btn big-go" data-action="next">' + h.esc(t('go.again')) + '</button>' : '');
+    var line = !g.asked ? t('go.notAsked') : g.all ? t('go.all') : g.no ? t('go.someNo', { n: g.no }) : t('go.wait', { n: g.yes, total: g.total });
+    return '<section class="go-panel' + (g.all ? ' all' : '') + '" aria-live="polite"><div class="gp-head"><h2>' + h.icon('team', { size: 18 }) + h.esc(t('go.title')) + '</h2>' +
+      '<span class="gp-count pixel">' + g.yes + ' / ' + g.total + '</span></div><p class="section-note">' + h.esc(t('go.note')) + '</p>' +
+      '<ul class="gp-seats">' + seats + '</ul><p class="gp-line">' + h.esc(line) + '</p><div class="gp-btns">' + btns + '</div></section>';
+  }
+
   // ------------------------------------------------------ Build & Verify
   ui.register('build', {
     nextLabel: 'scr.build.next',
@@ -67,13 +102,22 @@
       }).join('');
       var lock = ui.phaseLock ? ui.phaseLock(state) : null;
       var hasLife = !!(MS.life && MS.data.spaceWeather);
-      return '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + predictPanel(state, !!lock) +
-        (hasLife ? '<div class="launch-window">' + ui.life.periodPicker(state, !!lock) + '</div>' : '') + '</div></div>' +
-        alert + '<details class="fold"' + (fails ? ' open' : '') + '><summary>' + h.esc(t('build.seeChecks', { n: v.length, f: fails })) + '</summary>' +
+      var checks = alert + '<details class="fold"' + (fails ? ' open' : '') + '><summary>' + h.esc(t('build.seeChecks', { n: v.length, f: fails })) + '</summary>' +
         '<div class="verif-grid">' + rows + '</div></details>' +
         (result.risks.length ? '<details class="fold"><summary>' + h.esc(t('build.seeRisks', { n: count(result.risks, 'warn') })) + '</summary>' + riskCard(result) + '</details>' : '');
+      var parts = {
+        check: '<div class="sc-check">' + checks + goNoGo(state, result) + '</div>',
+        predict: predictPanel(state, !!lock),
+        window: hasLife ? '<div class="launch-window">' + ui.life.periodPicker(state, !!lock) + '</div>' : '',
+        go: goPanel(state), fails: fails
+      };
+      if (this && this.parts) return parts; // modo cena (js/ui/scene.js) monta uma parte por cena
+      return parts.go + '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + parts.predict + parts.window + '</div></div>' + checks;
     }
   });
+  // As partes da Construção, para o modo cena (checar → palpite → data → lançar).
+  var buildRender = ui.screens.build.render; // o original (scene.js embrulha o render da tela)
+  ui.buildParts = function (state, result) { return buildRender.call({ parts: true }, state, result); };
 
   // ----------------------------------------------------------- Implement
   ui.register('implement', {
@@ -214,10 +258,25 @@
           }).join('') + '</ul>'
         : '<p>' + h.esc(t('rep.noRandom')) + '</p>') + '</div>';
       var ringColor = s.total >= 70 ? 'var(--ok)' : s.total >= 40 ? 'var(--warn)' : 'var(--fail)';
+      // Estrelas: 1 a partir de 40%, 2 a partir de 70%, 3 a partir de 90% da nota.
+      var GOLD_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="rs-gold" x1="0" y1="0" x2=".35" y2="1">' +
+        '<stop offset="0" stop-color="#fff6c2"/><stop offset=".38" stop-color="#ffd84a"/><stop offset=".7" stop-color="#f2b01e"/><stop offset="1" stop-color="#b9780a"/></linearGradient></defs>' +
+        '<path class="rs-fill" d="M12 2.4l2.95 6.07 6.65.86-4.88 4.6 1.25 6.6L12 17.3l-5.97 3.23 1.25-6.6-4.88-4.6 6.65-.86z"/>' +
+        '<path class="rs-shine" d="M12 4.6l1.9 3.95 3.1.42c-2.6.5-5.1 1.6-7.3 3.3l-.9-.85 1.3-.17z"/></svg>';
+      var pct = s.total / s.max * 100, nStars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0;
+      var confetti = '';
+      if (nStars >= 2) for (var ci = 0; ci < 28; ci++) {
+        confetti += '<i style="left:' + ((ci * 37) % 100) + '%;animation-delay:' + ((ci % 7) * 0.12).toFixed(2) + 's;background:' +
+          ['#ffd23f', '#4ade80', '#7fb2ff', '#ff7ac6', '#ff9a3c'][ci % 5] + '"></i>';
+      }
+      var stars = '<div class="rep-stars n-' + nStars + '" aria-label="' + h.esc(t('rep.stars', { n: nStars })) + '">' +
+        (confetti ? '<div class="rep-confetti" aria-hidden="true">' + confetti + '</div>' : '') +
+        '<div class="rs-row">' + [1, 2, 3].map(function (k) { return '<span class="rs-star' + (k <= nStars ? ' on' : '') + '" style="animation-delay:' + (0.25 + k * 0.3).toFixed(2) + 's">' + GOLD_STAR + '</span>'; }).join('') + '</div>' +
+        '<p class="rs-line">' + h.esc(t('rep.starsLine.' + nStars)) + '</p></div>';
       // Ordem pensada para ler de cima para baixo: nota → por quê → o que
       // tentar agora. O resto (contas, requisitos, sorte, diário) fica em
       // "Ver todos os detalhes", aberto só por quem quiser.
-      return '<div class="card"><div class="score"><div class="score-ring" style="--p:' + Math.round(s.total / s.max * 100) + ';--ring:' + ringColor + '">' +
+      return stars + '<div class="card"><div class="score"><div class="score-ring" style="--p:' + Math.round(s.total / s.max * 100) + ';--ring:' + ringColor + '">' +
         '<span>' + s.total + '</span></div><div><div class="small muted">' + h.esc(t('rep.of', { max: s.max })) + '</div><h2 style="margin:2px 0 0">' + h.esc(s.grade || '') + '</h2></div></div>' +
         '<p class="small muted">' + h.esc(t('rep.line', { n: state.attempt, cost: h.value(cost), sched: h.value(result.metrics.schedule_months) })) + '</p>' +
         h.explain(result.mission.explanation, t('ui.seeMath')) + sciLine(state) + '</div>' +
@@ -232,6 +291,7 @@
         '<div class="card"><h2>' + h.esc(t('rep.score')) + '</h2><div class="table-wrap"><table><tbody>' + parts + '</tbody></table></div></div>' +
         '<div class="card"><h2>' + h.esc(t('scr.design.reqs')) + '</h2>' + h.statusRows(result.requirements, { prefixId: true }) + '</div>' + luck +
         '<p class="small muted">' + h.esc(t('rep.realWorld')) + '</p></details>' +
+        '<details class="card sources sources-rep"><summary>' + h.icon('info', { size: 18 }) + h.esc(t('src.title')) + '</summary>' + h.sourcesBody(state, result) + '</details>' +
         '<details class="card credits"><summary>' + h.icon('book', { size: 18 }) + h.esc(t('rep.credits')) + '</summary>' + h.credits() + '</details>';
     }
   });

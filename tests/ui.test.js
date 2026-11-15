@@ -9,6 +9,8 @@
   };
 
   T.group('Interface');
+  // Estes testes usam o painel completo (cartões); o modo cena tem testes próprios abaixo.
+  MS.ui.local.sceneMode = false;
 
   test('toda fase de phases.js tem uma tela registrada', function () {
     MS.data.flow.phases.forEach(function (p) { assert(MS.ui.screens[p.screen], 'sem tela: ' + p.screen); });
@@ -104,6 +106,122 @@
     click('[data-action="retry"]');
     assert.equal(MS.store.state.phase, 'design');
     assert.equal(MS.store.state.attempt, 2);
+  });
+
+  test('modo cena: uma escolha por vez; girar só mostra, confirmar escolhe e avança', function () {
+    var local = MS.ui.local;
+    var el = document.createElement('div');
+    MS.ui.mount(el);
+    MS.store.init({ storage: null, render: MS.ui.render });
+    local.sceneMode = true; local.sceneSlot = {}; local.sceneIdx = {};
+    try {
+      MS.store.nextPhase();
+      assert.equal(MS.store.state.phase, 'concept');
+      assert(el.querySelector('.scene'), 'o Conceito deveria abrir em modo cena');
+      assert(!el.querySelector('[data-action="select"]'), 'no modo cena não há cartões soltos');
+      T.assert.includes(el.querySelector('.sc-rail .on').textContent, MS.i18n.L(MS.data.scenarios.eo_cubesat.slots.filter(function (s) { return s.id === 'orbit'; })[0].label));
+      // Órbita é uma alavanca: da mais baixa (índice 0) à mais alta.
+      assert(el.querySelector('.sc-lever'), 'a órbita usa a alavanca de subir/descer');
+      var before = JSON.stringify(MS.store.state.design);
+      el.querySelector('.lv-notch[data-i="2"]').click();
+      assert.equal(JSON.stringify(MS.store.state.design), before, 'girar/mover não muda o projeto');
+      var press = el.querySelector('.sc-press');
+      var opt = press.dataset.option;
+      press.click();
+      assert.equal(MS.store.state.design.orbit, opt, 'confirmar escolhe a opção em foco');
+      assert(el.querySelector('.sc-dial'), 'a próxima escolha (foguete) usa o botão giratório');
+      assert(el.querySelector('.sc-rail .on').textContent.length > 0);
+      // O botão "Ver painel completo" volta aos cartões de antes.
+      el.querySelector('[data-action="scene-mode"]').click();
+      assert(el.querySelector('[data-action="select"]'), 'painel completo mostra os cartões');
+      assert(!el.querySelector('.scene'));
+    } finally {
+      local.sceneMode = false;
+      try { localStorage.removeItem('st.sceneMode'); } catch (e) { /* sem storage */ } // o clique no botão grava a preferência
+    }
+  });
+
+  test('GO da equipe: sem sala não muda nada; em sala, lançar pede o GO de todos', function () {
+    var st = Object.assign(MS.store.createState(), { phase: 'build', reached: 'build', design: Object.assign({}, MS.store.createState().design, GOOD) });
+    assert.equal(MS.ui.teamGo(st).need, false, 'sozinho não há votação');
+    var net = MS.net;
+    var ready = null;
+    MS.net = {
+      active: function () { return true; },
+      info: function () { return { inRoom: true, me: 'host', members: [{ id: 'host', name: 'Ana', roles: ['manager'] }, { id: 'p2', name: 'Bia', roles: ['payload'] }], ready: ready }; },
+      readyKey: function (s) { return JSON.stringify([s.design, s.period || null]); },
+      dispatch: function () {}
+    };
+    try {
+      var g = MS.ui.teamGo(st);
+      assert(g.need && !g.asked && !g.all, 'ainda ninguém pediu');
+      var html = MS.ui.renderHTML(st);
+      T.assert.includes(html, 'go-panel');
+      T.assert.includes(html, MS.ui.h.esc(MS.i18n.t('go.ask')));
+      ready = { phase: 'build', key: MS.net.readyKey(st), answers: { host: true } };
+      g = MS.ui.teamGo(st);
+      assert(g.asked && g.yes === 1 && !g.all);
+      ready.answers.p2 = true;
+      assert(MS.ui.teamGo(st).all, 'todos GO');
+      // Projeto mudou depois do GO: vale de novo do zero.
+      var st2 = Object.assign({}, st, { design: Object.assign({}, st.design, { payload: 'cam_wide' }) });
+      assert(!MS.ui.teamGo(st2).asked, 'GO antigo não vale para outro projeto');
+    } finally { MS.net = net; }
+  });
+
+  test('modo cena na Construção: checar → palpite → data → botão vermelho de lançar', function () {
+    var local = MS.ui.local;
+    var st = Object.assign(MS.store.createState(), { phase: 'build', reached: 'build', design: Object.assign({}, MS.store.createState().design, GOOD) });
+    local.sceneMode = true; local.buildStep = null;
+    try {
+      var html = MS.ui.renderHTML(st);
+      T.assert.includes(html, 'sc-build');
+      assert.equal((html.match(/data-action="build-step" data-step="/g) || []).length >= 4, true, 'trilha com as etapas');
+      local.buildStep = 'launch';
+      html = MS.ui.renderHTML(st);
+      assert(/class="sc-press sc-big" data-action="next"/.test(html), 'a última cena tem o botão grande de lançar');
+    } finally { local.sceneMode = false; local.buildStep = null; }
+  });
+
+  test('modo cena nos Requisitos: uma carta por requisito; virar libera a próxima', function () {
+    var local = MS.ui.local, el = document.createElement('div');
+    MS.ui.mount(el);
+    MS.store.init({ storage: null, render: MS.ui.render });
+    local.sceneMode = true; local.reqIdx = 0; local.reqFlip = {};
+    try {
+      MS.store.nextPhase();
+      ['orbit', 'launcher', 'groundStation'].forEach(function (k) { MS.store.select(k, GOOD[k]); });
+      MS.store.nextPhase();
+      assert.equal(MS.store.state.phase, 'requirements');
+      var card = el.querySelector('.rc-card');
+      assert(card && !card.classList.contains('flipped'), 'começa pela frente');
+      var next = el.querySelector('[data-action="req-go"][data-i="1"].big-go');
+      assert(next && next.disabled, 'a próxima carta só depois de virar');
+      card.click();
+      assert(el.querySelector('.rc-card').classList.contains('flipped'), 'clique vira a carta');
+      el.querySelector('[data-action="req-go"][data-i="1"].big-go').click();
+      assert.equal(local.reqIdx, 1);
+    } finally { local.sceneMode = false; local.reqIdx = 0; local.reqFlip = {}; }
+  });
+
+  test('sons: um botão de som no topo liga e desliga tudo (e fica lembrado)', function () {
+    assert(MS.sfx && typeof MS.sfx.play === 'function', 'módulo de sons carregado');
+    var was = MS.sfx.muted();
+    try {
+      var html = MS.ui.renderHTML(MS.store.createState());
+      assert(/data-action="sfx-mute"/.test(html), 'botão de som no topo');
+      MS.sfx.toggle();
+      assert.equal(MS.sfx.muted(), !was);
+      assert.equal(MS.ui.local.shoutMute, !was, 'mesmo mudo dos gritos da equipe');
+      MS.sfx.play('nao-existe'); MS.sfx.play('fanfare'); // não quebra
+    } finally { if (MS.sfx.muted() !== was) MS.sfx.toggle(); }
+  });
+
+  test('relatório: 0 a 3 estrelas pela nota', function () {
+    var st = Object.assign(MS.store.createState(), { phase: 'report', reached: 'report', period: 'y2019', decisions: { storm: 'safe', memory: 'compress', power: 'reduce' },
+      design: Object.assign({}, MS.store.createState().design, GOOD) });
+    var html = MS.ui.renderHTML(st);
+    assert(/rep-stars n-[0-3]/.test(html), 'mostra as estrelas');
   });
 
   test('textos dos dados são escapados (sem injetar HTML)', function () {

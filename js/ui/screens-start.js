@@ -87,18 +87,34 @@
       var lat = sc.aoi.latitude_deg;
       var limits = sc.constraints.map(function (c) { return '<li>' + h.rich(c) + '</li>'; }).join('') +
         '<li>' + h.esc(t('scr.need.aoi', { name: L(sc.aoi.name), area: U.withUnit(sc.aoi.area_km2, 'km²', 0), lat: U.fmt(Math.abs(lat), 0) + '° ' + (lat >= 0 ? 'N' : 'S') })) + '</li>';
-      return '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2>' + scenarioCards(state) + '</div>' +
-        '<div class="card mission-brief"><h2>' + h.esc(t('scr.need.goals')) + '</h2>' +
-        '<p class="brief-need">' + h.rich(sc.need) + '</p>' +
-        '<ul class="goal-list">' + goals + '</ul>' +
-        '<details class="brief-limits"><summary>' + h.esc(t('scr.need.constraints')) + '</summary><ul>' + limits + '</ul></details></div>' +
-        '<div class="card how-play"><h2>' + h.esc(t('scr.need.howPlay')) + '</h2>' +
-        '<div class="hp-row"><span class="hp-cap">' + h.esc(t('lvl.title')) + '</span>' + h.levelPicker(state) + '</div>' +
-        '<div class="hp-row"><span class="hp-cap">' + h.esc(t('lobby.title')) + '</span>' + lobby() + '</div>' +
-        (h.crewRoster ? '<details class="hp-crew"><summary>' + h.esc(t('scr.need.meetCrew')) + '</summary>' + h.crewRoster(state) + '</details>' : '') +
-        '</div>';
+      var p = needParts(state, sc, goals, limits);
+      return p.client + p.brief + p.play;
     }
   });
+  // As 3 partes da fase 1, separadas para o modo cena (js/ui/scene.js mostra
+  // uma por vez: cliente → missão → como jogar).
+  function needParts(state, sc, goals, limits, scene) {
+    return {
+      client: '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2>' + scenarioCards(state) + '</div>',
+      brief: '<div class="card mission-brief"><h2>' + h.esc(t('scr.need.goals')) + '</h2>' +
+        '<p class="brief-need">' + h.rich(sc.need) + '</p>' +
+        '<ul class="goal-list">' + goals + '</ul>' +
+        '<details class="brief-limits"' + (scene ? ' open' : '') + '><summary>' + h.esc(t('scr.need.constraints')) + '</summary><ul>' + limits + '</ul></details></div>',
+      play: '<div class="card how-play"><h2>' + h.esc(t('scr.need.howPlay')) + '</h2>' +
+        '<div class="hp-row"><span class="hp-cap">' + h.esc(t('lvl.title')) + '</span>' + h.levelPicker(state) + '</div>' +
+        '<div class="hp-row"><span class="hp-cap">' + h.esc(t('lobby.title')) + '</span>' + lobby() + '</div>' +
+        (h.crewRoster ? (scene ? h.crewRoster(state) : '<details class="hp-crew"><summary>' + h.esc(t('scr.need.meetCrew')) + '</summary>' + h.crewRoster(state) + '</details>') : '') +
+        '</div>'
+    };
+  }
+  ui.needParts = function (state) {
+    var sc = h.scenario(state);
+    var goals = sc.goals.map(function (g) { return '<li><span class="gid">' + h.esc(g.id) + '</span><span>' + h.rich(g.text) + '</span></li>'; }).join('');
+    var lat = sc.aoi.latitude_deg;
+    var limits = sc.constraints.map(function (c) { return '<li>' + h.rich(c) + '</li>'; }).join('') +
+      '<li>' + h.esc(t('scr.need.aoi', { name: L(sc.aoi.name), area: U.withUnit(sc.aoi.area_km2, 'km²', 0), lat: U.fmt(Math.abs(lat), 0) + '° ' + (lat >= 0 ? 'N' : 'S') })) + '</li>';
+    return needParts(state, sc, goals, limits, true);
+  };
 
   // ------------------------------------------------------------ Concept
   // Comparação das órbitas: 4 efeitos em palavras simples, uma coluna por órbita.

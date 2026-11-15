@@ -14,6 +14,9 @@
  *            um pouco antes do zero
  *   liftoff  decolagem vista do chão, com fumaça e tremor
  *   ascent   câmera persegue o foguete; o céu escurece e as estrelas aparecem
+ * Lançamento impossível (opts.scrub: pesado demais, não cabe, foguete não
+ * chega à órbita): a contagem PARA em 3, alarme vermelho, o braço da torre
+ * volta e o foguete fica na plataforma (capítulo 'scrub'). Não decola.
  * Depois disso, js/viz/mission3d.js corta para a vista orbital (estágios,
  * carenagem e entrada em órbita). Só desenho: nada aqui muda o resultado.
  * ===================================================================== */
@@ -30,6 +33,7 @@
     { id: 'ascent', t0: 15, t1: 18.6 }
   ];
   var T0 = 11.5, IGNITION = 10.6, END = 18.6;
+  var SCRUB_T = 8.6, SCRUB_END = 15;   // contagem para em 3; cena de cancelamento
   var K = 3.5;                    // escala do foguete (2,9 unidades → ~10)
   var H = 2.9 * K;                // altura do foguete na cena
 
@@ -85,7 +89,8 @@
     return g;
   }
 
-  function create(look) {
+  function create(look, opts) {
+    var scrub = !!(opts && opts.scrub);
     var scene = new THREE.Scene();
     var horizon = new THREE.Color(0xe39a68);
     scene.fog = new THREE.Fog(horizon.getHex(), 130, 330);
@@ -192,11 +197,17 @@
 
     function update(t, dt, cam) {
       var ch = chapterAt(t), f = flight(t), out = { chapter: ch, done: t >= END, count: null, ignition: t >= IGNITION };
+      if (scrub) {
+        // Cancelado: nunca acende, nunca sai do chão.
+        f = flight(0);
+        out = { chapter: t < SCRUB_T ? ch : 'scrub', done: t >= SCRUB_END, count: null, ignition: false, scrub: true };
+        ch = out.chapter;
+      }
       // ---- Foguete
       base.position.set(f.x, f.y, 0);
       base.rotation.z = f.pitch;
       var nozzle = base.localToWorld(tmp.set(0, 1.0, 0)).clone();
-      var burning = t >= IGNITION;
+      var burning = !scrub && t >= IGNITION;
       if (ud.flame1) {
         ud.flame1.visible = burning;
         var big = t < T0 + 0.6 ? 1.2 + (t - IGNITION) * 1.5 : 2.4;
@@ -211,7 +222,13 @@
       else if (burning) puff(nozzle.clone(), Math.round(dt * 70), 0.8, -1.5, 0.95);
       stepSmoke(dt);
       // ---- Braço da torre recua durante a contagem
-      tw.userData.arm.rotation.y = -1.4 * smooth((t - 7.2) / 1.4);
+      tw.userData.arm.rotation.y = -1.4 * smooth((t - 7.2) / 1.4) * (scrub ? 1 - smooth((t - SCRUB_T - 1) / 2) : 1);
+      // Cancelado: luzes vermelhas de alarme piscando na plataforma.
+      if (scrub && ch === 'scrub') {
+        fireLight.color.setHex(0xff2a2a);
+        fireLight.position.set(0, H * 0.3, 0);
+        fireLight.intensity = Math.floor(t * 3) % 2 ? 6 : 0.5;
+      }
       // ---- Céu escurece com a altura, estrelas aparecem
       var space = smooth((f.y - H * 2) / (H * 14));
       dome.material.color.copy(white).lerp(spaceCol, space);
@@ -220,6 +237,7 @@
       stars.material.opacity = smooth((space - 0.2) / 0.6);
       // ---- Contagem
       if (ch === 'count') out.count = Math.max(1, Math.ceil(T0 - t));
+      if (ch === 'scrub') out.count = null;
       // ---- Câmera de cada cena
       var rc = new THREE.Vector3(f.x, f.y + H * 0.5, 0);
       if (ch === 'pad') {
@@ -230,6 +248,11 @@
         var pp = (t - 3.5) / 3;
         cam.position.set(H * (0.75 - 0.15 * pp), H * (0.98 + 0.05 * pp), H * (0.55 + 0.1 * pp));
         look0.set(0, H * 0.86, 0);
+      } else if (ch === 'scrub') {
+        // Câmera se afasta devagar: o foguete parado na plataforma, alarme piscando.
+        var sp = smooth((t - SCRUB_T) / (SCRUB_END - SCRUB_T));
+        cam.position.set(H * (1.05 + 1.3 * sp), H * (0.1 + 0.35 * sp), H * (0.85 + 1.6 * sp));
+        look0.set(0, H * 0.45, 0);
       } else if (ch === 'count' || ch === 'liftoff') {
         cam.position.set(H * 1.05, H * 0.07, H * 0.85);
         look0.copy(ch === 'count' ? tmp.set(0, H * 0.55, 0) : rc);
@@ -254,8 +277,8 @@
       });
     }
 
-    return { scene: scene, update: update, dispose: dispose, rocketHeight: H };
+    return { scene: scene, update: update, dispose: dispose, rocketHeight: H, end: scrub ? SCRUB_END : END };
   }
 
-  MS.launchScene = { create: create, CHAPTERS: CHAPTERS, END: END, T0: T0, chapterAt: chapterAt };
+  MS.launchScene = { create: create, CHAPTERS: CHAPTERS, END: END, T0: T0, SCRUB_T: SCRUB_T, SCRUB_END: SCRUB_END, chapterAt: chapterAt };
 })(globalThis);

@@ -21,11 +21,11 @@ arrows at the top of the screen:
 
 | NASA step | In the game |
 |---|---|
-| 1. Identify Need & Goals | Pick one of 6 missions (Amazon deforestation, Cerrado fire scars, urban growth, floods and weather in southern Brazil with a weather imager, a lunar south pole mapper and a small lunar lander with a descent engine), meet your crew and read the goals. Mars and space-telescope missions are shown as "coming soon" |
-| 2. Define Concept | A cockpit to choose orbit, launcher and ground station, with **Compare the orbits**: coverage, image detail, contact with Earth and lifetime in plain words |
+| 1. Identify Need & Goals | In three scenes (customer → the mission → how to play), pick one of 6 missions (Amazon deforestation, Cerrado fire scars, urban growth, floods and weather in southern Brazil with a weather imager, a lunar south pole mapper and a small lunar lander with a descent engine), meet your crew and read the goals. Mars and space-telescope missions are shown as "coming soon" |
+| 2. Define Concept | **Scene mode**: one choice per scene, explained by the crew member in charge, with cockpit controls (an altitude lever for the orbit, a knob for the rest, a big CONFIRM button) and a live 3D preview. Or the full cockpit to choose orbit, launcher and ground station, with **Compare the orbits**: coverage, image detail, contact with Earth and lifetime in plain words |
 | 3. Define Requirements | Each requirement as a chain: what the customer wants → the number that proves it → the choices that move that number → how it will be verified |
-| 4. Design | The Mission Director's cockpit: parts in tabs by crew role (Science, Satellite, Comms), the satellite and its *ripple effect* in the center, the customer's goals and **crew advice** on the right. Each instrument shows its **science value** for this customer (0–100) |
-| 5. Build & Verify | Every requirement is checked; the four crew members vote **Go / No-Go** from their own goals; **predict** how much data will reach Earth before you launch |
+| 4. Design | Scene mode (one part per scene, knob + CONFIRM) or the Mission Director's cockpit: parts in tabs by crew role (Science, Satellite, Comms), the satellite and its *ripple effect* in the center, the customer's goals and **crew advice** on the right. Each instrument shows its **science value** for this customer (0–100) |
+| 5. Build & Verify | Every requirement is checked; the four crew members vote **Go / No-Go** from their own goals; in a team room, **every player must say Go** before the launch; **predict** how much data will reach Earth before you launch |
 | 6. Implement | The launch plays in scenes (pad, Go/No-Go poll, countdown, liftoff, climb), then the mission runs in 3D (stages separate, live telemetry, time warp, fullscreen), with random surprises. When a problem comes up, **mission control calls inside the 3D view with a 10-second countdown**. The ISS is always in orbit; with the Station cargo ride, the cargo ship climbs by Hohmann transfer, docks and the CubeSat is released from the Station |
 | Mission Report | Score, why things happened, your prediction vs. the result, a side-by-side comparison with your previous attempt, and **learning cards** (systems-thinking laws after Peter Senge) unlocked by what you just lived |
 
@@ -72,8 +72,16 @@ between players).
 - **Concept Maturity Levels** (NASA JPL): the CML 1–4 tag shown at each step.
 - **Build It Yourself: Satellite** (NASA Webb): inspiration for goal-driven design and self-explaining options.
   https://science.nasa.gov/mission/webb/game-build-it-yourself/
+- **VIIRS** (NASA Earthdata): model for the wide-swath weather imager in the floods mission.
+  https://www.earthdata.nasa.gov/data/instruments/viirs
+- **Lunar Reconnaissance Orbiter** (NASA): model for the polar lunar mapping orbits.
+  https://science.nasa.gov/mission/lro/
+- **Deep Space Network** (NASA): the big antennas used as ground station in the Moon missions.
+  https://www.nasa.gov/communicating-with-missions/dsn/
+- **Artemis I** (NASA): carried 10 CubeSats toward the Moon; model for the Artemis ride.
+  https://www.nasa.gov/mission/artemis-i/
 
-In the game, the **Sources & math** button (top bar) lists every NASA resource used and the 12 formulas
+In the game, **Sources & math** (in the Mission Report) lists every NASA resource used and the 12 formulas
 the engine calculates, each with what it means and the calculation for the player's own design.
 
 ### Optional NASA data we also use
@@ -142,7 +150,13 @@ js/data/spaceweather.js  real NASA DONKI events (2019–2020, 2024–2025)
 js/state.js           single state + actions + localStorage (MS.store)
 js/ui/core.js         header, steps, resource panel, previews, reusable pieces, clicks (data-action),
                       glossary and the "Sources & math" panel
-js/ui/characters.js   the 5 crew characters drawn in SVG and the crew roster cards
+js/ui/characters.js   the 5 crew characters drawn in SVG (with light, shadow, breathing and blinking) and the crew roster
+js/ui/scene.js        scene mode: phase 1 in 3 scenes; Concept and Design one choice per scene with knob,
+                      altitude lever and CONFIRM button (the full cockpit stays one click away)
+js/ui/sfx.js          game sounds made live with WebAudio (no audio files): knob, CONFIRM, card flip, phase,
+                      countdown, engine, abort siren, stars; one 🔊/🔇 button for the whole game
+js/ui/chat.js         team text chat (only in a room): 140 letters, 1 message per second, last 30 kept by the host
+                      for late joiners; nothing saved on any server
 js/ui/coach.js        short teaching bubbles the first time each phase opens
 js/ui/screen*.js      one screen per phase, registered with MS.ui.register(id, screen)
 js/viz/looks.js       3D look of each catalog item, derived from its data (pure, tested)

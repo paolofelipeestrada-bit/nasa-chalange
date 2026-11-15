@@ -28,8 +28,12 @@
   };
 
   function face(L, cy) {
+    // Rosto com volume: sombra do lado direito, bochechas e olhos que piscam (.ch-eyes).
     return '<ellipse cx="32" cy="' + cy + '" rx="10.5" ry="12" fill="' + L.skin + '"/>' +
-      '<circle cx="28" cy="' + (cy + 1) + '" r="1.5" fill="#22150e"/><circle cx="36" cy="' + (cy + 1) + '" r="1.5" fill="#22150e"/>' +
+      '<ellipse cx="35.5" cy="' + (cy + 1.5) + '" rx="7" ry="10" fill="#000" opacity=".1"/>' +
+      '<circle cx="26" cy="' + (cy + 4.5) + '" r="2" fill="#ff7a7a" opacity=".25"/><circle cx="38" cy="' + (cy + 4.5) + '" r="2" fill="#ff7a7a" opacity=".25"/>' +
+      '<g class="ch-eyes"><circle cx="28" cy="' + (cy + 1) + '" r="1.6" fill="#22150e"/><circle cx="36" cy="' + (cy + 1) + '" r="1.6" fill="#22150e"/>' +
+      '<circle cx="28.6" cy="' + (cy + 0.4) + '" r=".55" fill="#fff"/><circle cx="36.6" cy="' + (cy + 0.4) + '" r=".55" fill="#fff"/></g>' +
       '<path d="M28 ' + (cy + 6) + ' q4 3.5 8 0" stroke="#5a2a1a" stroke-width="1.7" fill="none" stroke-linecap="round"/>';
   }
   function hair(L, cy) {
@@ -86,12 +90,19 @@
     }
   };
 
-  function character(key, size) {
+  // opts.anim: respira e pisca (CSS .char.anim). Luz de cima à esquerda e
+  // sombra embaixo dão volume ("meio 3D") sem sair do estilo plano do jogo.
+  function character(key, size, opts) {
     var c = COLOR[key] || COLOR.dir, L = LOOK[key] || LOOK.dir, draw = DRAW[key] || DRAW.dir;
-    size = size || 48;
-    return '<svg class="char char-' + key + '" viewBox="0 0 64 64" width="' + size + '" height="' + size + '" aria-hidden="true">' +
-      '<circle cx="32" cy="32" r="32" fill="#18274d"/><clipPath id="chc-' + key + '-' + size + '"><circle cx="32" cy="32" r="32"/></clipPath>' +
-      '<g clip-path="url(#chc-' + key + '-' + size + ')">' + draw(c, L) + '</g>' +
+    size = size || 48; opts = opts || {};
+    var id = 'ch-' + key + '-' + size;
+    return '<svg class="char char-' + key + (opts.anim ? ' anim' : '') + '" viewBox="0 0 64 64" width="' + size + '" height="' + size + '" aria-hidden="true">' +
+      '<defs><radialGradient id="' + id + '-bg" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#2b4282"/><stop offset="1" stop-color="#0f1a38"/></radialGradient>' +
+      '<radialGradient id="' + id + '-lt" cx="30%" cy="22%" r="85%"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/>' +
+      '<stop offset="1" stop-color="#000" stop-opacity=".38"/></radialGradient><clipPath id="' + id + '-c"><circle cx="32" cy="32" r="32"/></clipPath></defs>' +
+      '<circle cx="32" cy="32" r="32" fill="url(#' + id + '-bg)"/>' +
+      '<circle cx="32" cy="36" r="17" fill="' + c + '" opacity=".18"/>' +
+      '<g clip-path="url(#' + id + '-c)"><g class="ch-body">' + draw(c, L) + '</g><circle cx="32" cy="32" r="32" fill="url(#' + id + '-lt)"/></g>' +
       '<circle cx="32" cy="32" r="31" fill="none" stroke="' + c + '" stroke-width="2"/></svg>';
   }
 
@@ -109,7 +120,7 @@
           who = '<span class="ro-who' + (m ? ' taken' : '') + '">' + h.esc(m ? m.name : t('ui.free')) + '</span>';
         } else if (!room && k === 'dir') who = '<span class="ro-who taken">' + h.esc(t('crew.you')) + '</span>';
         var role = ROLE_OF[k] && MS.team ? MS.team.role(sc, ROLE_OF[k]) : null;
-        return '<li class="ro r-' + k + '">' + character(k, 56) + '<div><b>' + h.esc(role ? MS.i18n.L(role.name) : t('crew.dir.title')) + '</b>' +
+        return '<li class="ro r-' + k + '">' + character(k, 72, { anim: true }) + '<div><b>' + h.esc(role ? MS.i18n.L(role.name) : t('crew.dir.title')) + '</b>' +
           '<span class="ro-cares">' + h.icon(k, { size: 13 }) + h.esc(t('crew.' + k + '.cares')) + '</span>' + who + '</div></li>';
       }).join('') + '</ul></section>';
   }

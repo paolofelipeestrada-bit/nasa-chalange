@@ -478,8 +478,9 @@
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
       '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
-      '<button type="button" class="btn small" data-action="sources">' + icon('info', { size: 16 }) + esc(t('src.btn')) + '</button>' +
       '<button type="button" class="btn small" data-action="coach">' + icon('info', { size: 16 }) + esc(t('coach.tips')) + '</button>' +
+      (MS.sfx ? '<button type="button" class="btn small sfx-btn" data-action="sfx-mute" aria-pressed="' + !MS.sfx.muted() + '" title="' + esc(t(MS.sfx.muted() ? 'sfx.on' : 'sfx.off')) + '" aria-label="' + esc(t(MS.sfx.muted() ? 'sfx.on' : 'sfx.off')) + '">' +
+        '<span aria-hidden="true">' + (MS.sfx.muted() ? '🔇' : '🔊') + '</span></button>' : '') +
       '</div></div>' +
       '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><ol>' + steps + '</ol></nav>' +
       hud(state, result) + '</header>';
@@ -508,15 +509,21 @@
   // Fontes e cálculos (botão no topo): os recursos da NASA usados e as contas
   // do motor, cada uma com a fórmula, o que quer dizer e a conta ao vivo
   // com os números do projeto atual (explicação que o próprio motor escreve).
-  var SRC_NASA = ['nasa1', 'nasa2', 'nasa5', 'nasa6', 'nasa7', 'nasa3', 'nasa4'];
+  var SRC_NASA = ['nasa1', 'nasa2', 'nasa5', 'nasa6', 'nasa7', 'nasa8', 'nasa9', 'nasa10', 'nasa11', 'nasa3', 'nasa4'];
   var SRC_MATH = [
     { id: 'gsd', metric: 'gsd_m' }, { id: 'swath', metric: 'swath_km' }, { id: 'revisit', metric: 'revisit_days' },
     { id: 'period', metric: 'period_min' }, { id: 'eclipse', metric: 'eclipse_pct' }, { id: 'lifetime', metric: 'lifetime_years' },
     { id: 'power', metric: 'powerGen_W' }, { id: 'contact', metric: 'contactMinPerDay' }, { id: 'downlink', metric: 'downlink_Gbit_day' },
     { id: 'mass', metric: 'mass_kg' }, { id: 'cost', metric: 'cost_k' }, { id: 'science', metric: null }
   ];
+  // O conteúdo vai no relatório final (screens-end), em "Fontes e contas":
+  // é lá, depois de jogar, que as contas fazem sentido.
   function sourcesPanel(state, result) {
     if (!ui.local.sourcesOpen) return '';
+    return '<div class="card sources"><div class="row-head"><h2>' + esc(t('src.title')) + '</h2><button type="button" class="btn small" data-action="sources">' + esc(t('ui.close')) + '</button></div>' +
+      sourcesBody(state, result) + '</div>';
+  }
+  function sourcesBody(state, result) {
     var nasa = SRC_NASA.map(function (k) {
       return '<li><b>' + esc(t('about.' + k + '.name')) + '</b><span>' + esc(t('about.' + k + '.use')) + '</span>' +
         '<a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + ' ↗</a></li>';
@@ -529,11 +536,10 @@
         '<p>' + esc(t('src.f.' + f.id + '.plain')) + '</p>' +
         (live ? '<p class="sf-live"><span>' + esc(t('src.live')) + '</span> ' + esc(live) + '</p>' : '') + '</li>';
     }).join('');
-    return '<div class="card sources"><div class="row-head"><h2>' + esc(t('src.title')) + '</h2><button type="button" class="btn small" data-action="sources">' + esc(t('ui.close')) + '</button></div>' +
-      '<p class="section-note">' + esc(t('src.intro')) + '</p>' +
+    return '<p class="section-note">' + esc(t('src.intro')) + '</p>' +
       '<h3>' + esc(t('about.nasaTitle')) + '</h3><ul class="src-nasa">' + nasa + '</ul>' +
       '<h3>' + esc(t('src.mathTitle')) + '</h3><p class="section-note">' + esc(t('src.mathNote')) + '</p><ul class="src-math">' + math + '</ul>' +
-      '<p class="small muted">' + esc(t('about.simple')) + '</p></div>';
+      '<p class="small muted">' + esc(t('about.simple')) + '</p>';
   }
 
   // Glossário completo (botão no topo).
@@ -551,7 +557,7 @@
   // Sobre o jogo: recursos da NASA usados, simplificações e uso de IA.
   // credits() é o mesmo conteúdo, mostrado no fim do jogo (relatório).
   function credits() {
-    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5', 'nasa6'].map(function (k) {
+    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5', 'nasa6', 'nasa7', 'nasa8', 'nasa9', 'nasa10', 'nasa11'].map(function (k) {
       return '<li><b>' + esc(t('about.' + k + '.name')) + '</b> — ' + esc(t('about.' + k + '.use')) +
         ' <a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + '</a></li>';
     }).join('');
@@ -579,6 +585,15 @@
     var can = MS.store.canAdvance(state);
     var next = info.phases[info.index + 1];
     var lock = phaseLock(state);
+    // Em equipe, "Lançar" primeiro pede o GO de todos (ui.teamGo, screens-end.js).
+    var go = screen && screen.nextClass === 'launch' && ui.teamGo ? ui.teamGo(state) : { need: false };
+    if (go.need && !go.all && can.ok) {
+      return '<footer class="nav"><div class="nav-inner">' +
+        '<button type="button" class="btn" data-action="prev"' + (info.index === 0 || lock ? ' disabled' : '') + '>← ' + esc(t('ui.back')) + '</button>' +
+        '<span class="missing todo">' + esc(t('go.needAll')) + '</span>' +
+        '<button type="button" class="btn primary launch" data-action="next"' + (go.asked && !go.no ? ' disabled' : '') + '>' + icon('team', { size: 20 }) +
+        esc(go.asked && !go.no ? t('go.wait', { n: go.yes, total: go.total }) : go.no ? t('go.again') : t('go.ask')) + '</button></div></footer>';
+    }
     var right = can.isLast
       ? '<button type="button" class="btn primary" data-action="retry"' + (lock ? ' disabled' : '') + '>' + esc(t('ui.retry')) + '</button>'
       : '<button type="button" class="btn primary' + (screen && screen.nextClass ? ' ' + screen.nextClass : '') + '" data-action="next"' + (can.ok && !lock ? '' : ' disabled') + '>' +
@@ -635,7 +650,12 @@
     scenario: function (d) { dispatch('setScenario', [d.id]); },
     level: function (d) { ui.local.hints = {}; dispatch('setDifficulty', [d.level]); },
     hint: function (d) { ui.local.hints = ui.local.hints || {}; ui.local.hints[d.slot] = true; rerender(); },
-    next: function () { dispatch('nextPhase'); },
+    next: function () {
+      var st = MS.store.state, scr = st && screens[MS.store.phaseInfo(st).current.screen];
+      var go = scr && scr.nextClass === 'launch' && ui.teamGo ? ui.teamGo(st) : { need: false };
+      if (go.need && !go.all) { if (!go.asked || go.no) MS.net.askReady(); return; }
+      dispatch('nextPhase');
+    },
     prev: function () { dispatch('prevPhase'); },
     goto: function (d) { dispatch('goToPhase', [d.phase]); },
     retry: function () { dispatch('retry'); },
@@ -644,6 +664,7 @@
     predict: function (d) { dispatch('setPrediction', [MS.store.state && MS.store.state.prediction === d.id ? null : d.id]); },
     lang: function (d) { MS.i18n.setLang(d.lang); ui.local.cascade = null; rerender(); },
     hud: function (d) { ui.local.hudOpen = ui.local.hudOpen === d.hud ? null : d.hud; rerender(); },
+    'sfx-mute': function () { if (MS.sfx) MS.sfx.toggle(); rerender(); },
     glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; rerender(); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },
     sources: function () { ui.local.sourcesOpen = !ui.local.sourcesOpen; rerender(); if (ui.local.sourcesOpen) root.scrollTo(0, 0); },
     about: function () { ui.local.aboutOpen = !ui.local.aboutOpen; rerender(); if (ui.local.aboutOpen) root.scrollTo(0, 0); },
@@ -699,7 +720,11 @@
     if (MS.hangar) MS.hangar.attach(rootEl, state); // hangar 3D da coluna direita
     if (ui.menuAttach) ui.menuAttach(rootEl, state); // Terra 3D do menu inicial
     if (MS.coach) MS.coach.attach(rootEl, state);   // balões de ensino
+    if (ui.sceneAfter) ui.sceneAfter(rootEl, state); // modo cena: prévia da opção em foco (js/ui/scene.js)
+    if (MS.sfx) MS.sfx.after(rootEl, state);         // sons: alerta no vermelho e estrelas (js/ui/sfx.js)
+    if (ui.chatAfter) ui.chatAfter(state);           // chat da equipe aparece só com sala (js/ui/chat.js)
     if (state.phase !== lastPhase) {
+      if (lastPhase && ui.phaseIntro) ui.phaseIntro(state); // cartão de abertura da fase (js/ui/scene.js)
       root.scrollTo(0, 0);
       lastPhase = state.phase;
       var nav = rootEl.querySelector('.steps'), cur = rootEl.querySelector('.steps .current');
@@ -737,7 +762,7 @@
     register: function (id, screen) { screens[id] = screen; },
     screens: screens, hudCards: HUD,
     dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,
-    h: { esc: esc, badge: badge, icon: icon, credits: credits, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
+    h: { esc: esc, badge: badge, icon: icon, credits: credits, sourcesBody: sourcesBody, sciValue: sciValue, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
          term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
          choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel, levelPicker: levelPicker, byMode: byMode, uiMode: function () { return uiMode; } }
   });
