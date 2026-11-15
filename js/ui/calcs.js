@@ -60,7 +60,7 @@
     if (st && Math.abs(st.ans - ans) > 1e-9) { delete local.calc[c.id]; st = null; } // projeto mudou: novo problema
     var vals = { answer: num(ans, c.decimals) };
     Object.keys(g).forEach(function (k) { vals[k] = num(g[k][0]); });
-    if (c.work) { var w = c.work(m); Object.keys(w).forEach(function (k) { vals[k] = num(w[k]); }); }
+    if (c.work) { var w = c.work(m, result.selection); Object.keys(w).forEach(function (k) { vals[k] = num(w[k]); }); }
     var givens = Object.keys(g).map(function (k) {
       return '<li><code>' + h.esc(SYM[k] || k) + ' = ' + h.esc(vals[k]) + (g[k][1] ? ' ' + h.esc(g[k][1]) : '') + '</code> <span class="muted">' + h.esc(L(g[k][2])) + '</span></li>';
     }).join('');

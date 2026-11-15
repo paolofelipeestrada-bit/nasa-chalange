@@ -78,7 +78,7 @@
   // Escolhe a lista do modo atual: byMode({ simple: [...], medium: [...], full: [...] }).
   function byMode(o) { return o[uiMode] || o.medium || o.full; }
   var SIMPLE_SPECS = ['altitude_km', 'mass_kg', 'power_W', 'cost_k'];
-  var MEDIUM_SPECS = ['altitude_km', 'lifetime_years', 'mass_kg', 'power_W', 'volume_U', 'cost_k', 'capacity_U', 'solarPower_W', 'dataRate_kbps', 'capacity_Wh'];
+  var MEDIUM_SPECS = ['isp_s', 'propellant_kg', 'viewHours', 'altitude_km', 'lifetime_years', 'mass_kg', 'power_W', 'volume_U', 'cost_k', 'capacity_U', 'solarPower_W', 'dataRate_kbps', 'capacity_Wh'];
   var SPEC_FIELDS = [
     ['altitude_km', 'km', 0], ['inclination_deg', '°', 1],
     ['lifetime_years', 'years', 1], ['orbits', 'orbits'], ['waitMonths', 'months', 0],
@@ -87,7 +87,7 @@
     ['requiredPointing_deg', '°', 2], ['capacity_U', 'U', 1],
     ['solarPower_W', 'W', 0], ['accuracy_deg', '°', 2],
     ['band', 'text'], ['dataRate_kbps', 'rate'], ['storage_GB', 'GB', 0],
-    ['compressionRatio', 'ratio'], ['capacity_Wh', 'Wh', 0],
+    ['compressionRatio', 'ratio'], ['capacity_Wh', 'Wh', 0], ['isp_s', 's', 0], ['propellant_kg', 'kg', 2], ['viewHours', 'h', 0],
     ['mass_kg', 'kg', 2], ['power_W', 'W', 1], ['volume_U', 'U', 1],
     ['cost_k', 'k$', 0], ['maturity', 'maturity']
   ];
@@ -309,7 +309,7 @@
   // Os 6 recursos que o desafio pede, sempre visíveis no topo.
   //   res: recursos do motor que o cartão resume (o status é o pior deles)
   var HUD = [
-    { id: 'mass',  res: ['mass', 'volume'] },
+    { id: 'mass',  res: ['mass', 'volume', 'deltav'] },
     { id: 'power', res: ['power', 'battery'] },  // bateria: só no modo Difícil
     { id: 'cost',  res: ['cost'] },
     { id: 'data',  res: ['storage'], metric: 'dataPerDay_Gbit' },

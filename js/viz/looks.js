@@ -78,6 +78,10 @@
     obc: function (it) {
       return { kind: 'computer', boards: num(it.storage_GB, 4) >= 32 ? 2 : 1, heatsink: num(it.compressionRatio, 1) >= 4 };
     },
+    // Missões na Lua: motor (tanque redondo com bocal, desenhado como rodas/atuador)
+    propulsion: function (it) {
+      return { kind: 'adcs', wheels: num(it.isp_s, 0) >= 200 };
+    },
     // Modo Difícil: pacote de baterias (placas) e placa de blindagem (dissipador metálico)
     battery: function (it) {
       return { kind: 'computer', boards: num(it.capacity_Wh, 10) >= 40 ? 2 : 1, heatsink: false };

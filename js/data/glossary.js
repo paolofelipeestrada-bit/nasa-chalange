@@ -14,6 +14,8 @@
   MS.data = MS.data || {};
 
   MS.data.glossary = {
+    deltav: { term: T('Δv (delta-v)', 'Δv (delta-v)', 'Δv (delta-v)'),
+      text: T('How much an engine can change the speed of a spacecraft (m/s). It comes from the rocket equation: Δv = Isp × g0 × ln(mass with fuel ÷ mass without fuel).', 'Quanto um motor consegue mudar a velocidade da nave (m/s). Vem da equação do foguete: Δv = Isp × g0 × ln(massa com combustível ÷ massa sem combustível).', 'Cuánto puede cambiar un motor la velocidad de la nave (m/s). Viene de la ecuación del cohete: Δv = Isp × g0 × ln(masa con combustible ÷ masa sin combustible).') },
     cubesat: { term: T('CubeSat', 'CubeSat', 'CubeSat'),
       text: T('A small satellite made of 10 cm cubes (1U). A 3U has three cubes in a row; a 6U has six.', 'Satélite pequeno feito de cubos de 10 cm (1U). Um 3U tem três cubos em fila; um 6U tem seis.', 'Satélite pequeño hecho de cubos de 10 cm (1U). Un 3U tiene tres cubos en fila; un 6U tiene seis.') },
     u: { term: T('U (unit)', 'U (unidade)', 'U (unidad)'),

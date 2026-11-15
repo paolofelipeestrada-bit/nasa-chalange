@@ -39,7 +39,10 @@
       recommend: {
         eo_cubesat: { orbit: 'sso500', payload: 'cam_mid', structure: 'struct_3u', power: 'eps_deploy' },
         fire_watch: { orbit: 'sso500', payload: 'cam_wide', structure: 'struct_3u', power: 'eps_deploy' },
-        city_map: { orbit: 'sso500', payload: 'cam_hr', structure: 'struct_6u', power: 'eps_body' }
+        city_map: { orbit: 'sso500', payload: 'cam_hr', structure: 'struct_6u', power: 'eps_body' },
+        flood_south: { orbit: 'sso500', payload: 'cam_wx', structure: 'struct_3u', power: 'eps_deploy' },
+        moon_map: { orbit: 'moon_polar100', groundStation: 'dsn_34m', payload: 'cam_wide', structure: 'struct_6u', power: 'eps_deploy', propulsion: 'prop_green', comms: 'com_xlunar' },
+        moon_land: { orbit: 'site_pole', groundStation: 'dsn_34m', payload: 'cam_wide', structure: 'struct_6u', power: 'eps_body', propulsion: 'prop_lander', comms: 'com_xlunar' }
       },
       help: {
         orbit: T('How high the satellite flies. Lower = sharper photos, but air slowly pulls it down.', 'A altura em que o satélite voa. Mais baixo = fotos mais nítidas, mas o ar vai puxando ele para baixo.', 'La altura a la que vuela el satélite. Más bajo = fotos más nítidas, pero el aire lo va bajando.'),

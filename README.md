@@ -21,7 +21,7 @@ arrows at the top of the screen:
 
 | NASA step | In the game |
 |---|---|
-| 1. Identify Need & Goals | Pick a customer (deforestation, fire scars or urban growth), meet your crew and read the goals. Mars and space-telescope missions are shown as "coming soon" |
+| 1. Identify Need & Goals | Pick one of 6 missions (Amazon deforestation, Cerrado fire scars, urban growth, floods and weather in southern Brazil with a weather imager, a lunar south pole mapper and a small lunar lander with a descent engine), meet your crew and read the goals. Mars and space-telescope missions are shown as "coming soon" |
 | 2. Define Concept | A cockpit to choose orbit, launcher and ground station, with **Compare the orbits**: coverage, image detail, contact with Earth and lifetime in plain words |
 | 3. Define Requirements | Each requirement as a chain: what the customer wants → the number that proves it → the choices that move that number → how it will be verified |
 | 4. Design | The Mission Director's cockpit: parts in tabs by crew role (Science, Satellite, Comms), the satellite and its *ripple effect* in the center, the customer's goals and **crew advice** on the right. Each instrument shows its **science value** for this customer (0–100) |

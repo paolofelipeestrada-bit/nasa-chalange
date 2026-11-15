@@ -19,6 +19,8 @@
   MS.data = MS.data || {};
 
   var R = 6371, MU = 398600.4418; // raio da Terra (km) e GM da Terra (km³/s²)
+  var BODY = { earth: { R: 6371, mu: 398600.4418 }, moon: { R: 1737.4, mu: 4902.8 } };
+  function bodyOf(sel) { return BODY[(sel && sel.orbit && sel.orbit.body) || 'earth'] || BODY.earth; }
   function v(m, k) { var x = m[k]; return x && typeof x.value === 'number' && isFinite(x.value) ? x.value : null; }
   function all() { for (var i = 0; i < arguments.length; i++) if (arguments[i] == null) return false; return true; }
 
@@ -27,12 +29,14 @@
       title: T('Orbital period', 'Período da órbita', 'Período de la órbita'),
       formula: 'T = 2π · √(a³ ÷ μ)   ·   a = R⊕ + h',
       why: T('Kepler’s third law: the higher the orbit, the longer one lap takes.', 'Terceira lei de Kepler: quanto mais alta a órbita, mais demora uma volta.', 'Tercera ley de Kepler: cuanto más alta la órbita, más tarda una vuelta.'),
-      given: function (m) {
-        var h = v(m, 'altitude_km');
-        return h == null ? null : { h: [h, 'km', T('altitude', 'altitude', 'altitud')], R: [R, 'km', T('Earth radius', 'raio da Terra', 'radio de la Tierra')], mu: [MU, 'km³/s²', T('Earth’s gravity (GM)', 'gravidade da Terra (GM)', 'gravedad de la Tierra (GM)')] };
+      given: function (m, sel) {
+        var h = v(m, 'altitude_km'), B = bodyOf(sel), moon = B !== BODY.earth;
+        return h == null || v(m, 'period_min') == null ? null : { h: [h, 'km', T('altitude', 'altitude', 'altitud')],
+          R: [B.R, 'km', moon ? T('Moon radius', 'raio da Lua', 'radio de la Luna') : T('Earth radius', 'raio da Terra', 'radio de la Tierra')],
+          mu: [B.mu, 'km³/s²', moon ? T('Moon’s gravity (GM)', 'gravidade da Lua (GM)', 'gravedad de la Luna (GM)') : T('Earth’s gravity (GM)', 'gravidade da Terra (GM)', 'gravedad de la Tierra (GM)')] };
       },
       answer: function (m) { return v(m, 'period_min'); },
-      work: function (m) { var a = R + v(m, 'altitude_km'), s = Math.sqrt(a * a * a / MU); return { a: a, a3: a * a * a, s: s, Ts: 2 * Math.PI * s }; },
+      work: function (m, sel) { var B = bodyOf(sel), a = B.R + v(m, 'altitude_km'), s = Math.sqrt(a * a * a / B.mu); return { a: a, a3: a * a * a, s: s, Ts: 2 * Math.PI * s }; },
       steps: [
         T('a = R⊕ + h = {R} + {h} = {a} km', 'a = R⊕ + h = {R} + {h} = {a} km', 'a = R⊕ + h = {R} + {h} = {a} km'),
         T('a³ ÷ μ = {a3} ÷ {mu} → √ = {s} s', 'a³ ÷ μ = {a3} ÷ {mu} → √ = {s} s', 'a³ ÷ μ = {a3} ÷ {mu} → √ = {s} s'),

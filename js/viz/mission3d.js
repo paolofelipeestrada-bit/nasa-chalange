@@ -99,6 +99,20 @@
   }
   function fbm(x, y) { var s = 0, amp = 0.5, f = 1; for (var i = 0; i < 5; i++) { s += amp * noise(x * f, y * f); amp *= 0.5; f *= 2; } return s; }
 
+  function moonMesh() {
+    var geo = new THREE.IcosahedronGeometry(1.003, 5), pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+    var a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3(), cc = new THREE.Color();
+    for (var i = 0; i < pos.count; i += 3) {
+      a.fromBufferAttribute(pos, i); b.fromBufferAttribute(pos, i + 1); c.fromBufferAttribute(pos, i + 2);
+      n.copy(a).add(b).add(c).normalize();
+      var k = fbm(n.x * 2.2 + 7, n.y * 2.4 + n.z * 1.6 + 1), cr = fbm(n.x * 9 + 3, n.y * 9 + n.z * 7);
+      var g = (k > 0.56 ? 0.52 : 0.8) - (cr > 0.62 ? 0.12 : 0) + (cr < 0.3 ? 0.06 : 0); // mares escuros, terras altas claras, crateras
+      cc.setRGB(g, g, g * 0.97).convertSRGBToLinear();
+      for (var j = 0; j < 3; j++) { col[(i + j) * 3] = cc.r; col[(i + j) * 3 + 1] = cc.g; col[(i + j) * 3 + 2] = cc.b; }
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 }));
+  }
   // Terra de reserva (sem js/viz/parts3d.js): esfera lisa azul.
   function plainEarth() {
     return new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), phong(0x2a6fb0, { shininess: 12 }));
@@ -212,7 +226,10 @@
     var earth = P && P.lowPolyEarth ? P.lowPolyEarth(1, 5) : plainEarth();
     scene.add(earth);
     var cloud = clouds(); scene.add(cloud);
-    scene.add(atmosphere());
+    var atmo = atmosphere(); scene.add(atmo);
+    // Lua (missões 5 e 6): esfera cinza low-poly com "crateras" (ruído); filha da Terra
+    // para herdar a rotação e o que fica preso no chão. Só aparece quando body = 'moon'.
+    var moonSkin = moonMesh(); moonSkin.visible = false; earth.add(moonSkin);
 
     // Partículas reaproveitáveis (fumaça, explosões, tempestade, reentrada)
     var N = 900, pPos = new Float32Array(N * 3), pCol = new Float32Array(N * 3);
@@ -225,7 +242,7 @@
 
     V = {
       wrap: wrap, renderer: renderer, scene: scene, camera: camera, controls: controls,
-      sunDir: sunDir, earth: earth, cloud: cloud,
+      sunDir: sunDir, earth: earth, cloud: cloud, atmo: atmo, moonSkin: moonSkin,
       particles: particles, pData: Array.from({ length: N }, function () { return { life: 0, v: new THREE.Vector3() }; }), pNext: 0,
       mission: null, key: null, t: 0, playing: true, speed: 1, camMode: 'auto', raf: null, last: 0
     };
@@ -260,7 +277,10 @@
 
     var group = new THREE.Group(), onEarth = new THREE.Group();
     V.scene.add(group); V.earth.add(onEarth);
-    var rOrb = 1 + orbit.altitude_km * ALT_SCALE;
+    var lunar = sc.body === 'moon';
+    if (V.earth.material) V.earth.material.visible = !lunar;
+    V.moonSkin.visible = lunar; V.cloud.visible = !lunar; V.atmo.visible = !lunar;
+    var rOrb = orbit.surface ? 1.012 : 1 + orbit.altitude_km * (lunar ? 3 / 1737.4 : ALT_SCALE);
     var el = MS.orbit.circular(orbit.altitude_km, orbit.inclination_deg, 0); // propagador (viz/orbit.js)
 
     // Órbita prevista, desenhada pelo propagador; a cor muda com o estado.
@@ -283,6 +303,7 @@
     station.position.copy(stLocal.clone().multiplyScalar(1.022));
     station.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), stLocal.clone().normalize());
     onEarth.add(station);
+    if (lunar) station.visible = false;
 
     // Imagens feitas: pontos acumulados na superfície
     var COV = 5000, covGeo = new THREE.BufferGeometry();
@@ -347,6 +368,7 @@
     }
     group.add(line(issRing, 0xdfe6ff, 0.16));
     var issObj = P && P.build ? P.build({ kind: 'iss' }) : new THREE.Group();
+    if (lunar) issObj.visible = false; // a ISS fica na Terra
     issObj.scale.setScalar(ISS_SCALE);
     group.add(issObj);
 
@@ -372,7 +394,7 @@
 
     V.mission = {
       state: state, result: result, schedule: schedule, group: group, onEarth: onEarth, el: el, life: life,
-      sc: sc, rOrb: rOrb, u0: u0, satU0: satU0, rAscent: rAscent, sat: sat, satMats: satMats, cone: cone,
+      sc: sc, lunar: lunar, surface: !!orbit.surface, rOrb: rOrb, u0: u0, satU0: satU0, rAscent: rAscent, sat: sat, satMats: satMats, cone: cone,
       iss: issObj, issEl: issEl, rISS: rISS, issRate: issRate, issU0: docking ? issU0 : 1.7, dock: dock, capsule: null,
       orbitLine: orbitLine, ascentLine: ascentLine, trail: trail, trailTimer: 0,
       contact: contact, station: station, stLocal: stLocal, aoiCenter: aoiCenter, aoiRad: (aoi.radius_deg || 10) * DEG,
@@ -634,7 +656,7 @@
     V.cloud.rotation.y = V.earth.rotation.y * 1.15 + T * 0.004;
 
     // ---- Satélite
-    var u = m.satU0 + Math.max(0, T - S.orbitStart) * ORBIT_RATE, r = m.rOrb, satScale = SAT_SCALE;
+    var u = m.surface ? m.satU0 : m.satU0 + Math.max(0, T - S.orbitStart) * ORBIT_RATE, r = m.rOrb, satScale = SAT_SCALE;
     if (m.dock && T < m.dock.step.t1) {
       var dg = Math.max(0, (T - m.dock.tDep) / (m.dock.step.t1 - m.dock.tDep));
       r = m.rISS + (m.rOrb - m.rISS) * dg;
@@ -674,7 +696,7 @@
     var stationDown = fx === 'stationDown' && (st !== 'ok' || local < 0.5);
     var cmd = fx === 'glitch' && st === 'ok' && local >= 0.6;
     var showLine = m.sat.visible && visible && !lost && !stationDown;
-    m.contact.visible = showLine || (cmd && m.sat.visible);
+    m.contact.visible = !m.lunar && (showLine || (cmd && m.sat.visible)); // da Lua a antena fica na Terra, fora da cena
     m.contact.material.color.setHex(cmd ? 0x59a8ff : 0x4cff7a);
     if (m.contact.visible) m.contact.geometry.setFromPoints([stWorld, satPos]);
     if (showLine) flags.push(t('viz.con'));
@@ -731,7 +753,7 @@
       if (reentry) alt = alt * (1 - local);
       tele.met = t('viz.tl.day') + ' ' + day + ' / ' + days;
       tele.alt = u8.withUnit(alt, 'km', 0);
-      tele.vel = u8.withUnit(Math.sqrt(MS.orbit.MU / (MS.orbit.RE + Math.max(0, alt))), 'km/s', 2);
+      tele.vel = u8.withUnit((m.surface ? 0 : m.lunar ? Math.sqrt(4902.8 / (1737.4 + Math.max(0, alt))) : Math.sqrt(MS.orbit.MU / (MS.orbit.RE + Math.max(0, alt)))), 'km/s', 2);
       tele.stage = m.sat.visible ? t('viz.stage.sat') : t('viz.stage.2');
       tele.fuel = null;
       var decaying = lifeEnd ? lifeEnd === 'reentry' : (m.result.metrics.lifetime_years.value || 0) < plannedYears;

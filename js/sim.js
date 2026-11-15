@@ -22,6 +22,7 @@
   // ------------------------------------------------- Constantes físicas
   var R_EARTH_KM = 6371;         // raio médio da Terra
   var MU_KM3_S2 = 398600.4418;   // parâmetro gravitacional da Terra
+  var G0 = 9.80665;              // gravidade padrão (equação do foguete)
   var EQUATOR_KM = 40075;        // circunferência no equador
   var MIN_PER_DAY = 1440;
   var DEG = Math.PI / 180;
@@ -56,6 +57,8 @@
     cost_k:               { unit: 'k$',   decimals: 0 },
     budget_k:             { unit: 'k$',   decimals: 0 },
     devTime_months:       { unitKey: 'months', decimals: 0 },
+    deltaV_mps:           { unit: 'm/s',  decimals: 0 },   // só com a escolha "propulsion" (missões na Lua)
+    deltaVNeed_mps:       { unit: 'm/s',  decimals: 0 },
     batteryNeed_Wh:       { unit: 'Wh',   decimals: 1 },   // só com a escolha "battery" (modo Difícil)
     battery_Wh:           { unit: 'Wh',   decimals: 0 },
     launchWait_months:    { unitKey: 'months', decimals: 0 },
@@ -74,13 +77,15 @@
     { id: 'cost',     demand: 'cost_k',           capacity: 'budget_k' },
     { id: 'time',     demand: 'schedule_months',  capacity: 'deadline_months' },
     // Só existe quando o cenário tem a escolha "battery" (modo Difícil, js/data/levels.js)
-    { id: 'battery',  demand: 'batteryNeed_Wh',   capacity: 'battery_Wh', slot: 'battery' }
+    { id: 'battery',  demand: 'batteryNeed_Wh',   capacity: 'battery_Wh', slot: 'battery' },
+    // Só quando o cenário tem a escolha "propulsion" (Lua): Δv que o motor dá × Δv que a missão pede
+    { id: 'deltav',   demand: 'deltaVNeed_mps',   capacity: 'deltaV_mps', slot: 'propulsion' }
   ];
 
   // Verificações de projeto (checks). Textos: t('chk.<id>.label|fail|warn').
   var CHECKS = {
     mass: { warn: true }, volume: { warn: true }, power: { warn: true }, downlink: { warn: true },
-    storage: { warn: true }, cost: { warn: true }, time: { warn: true }, battery: { warn: true },
+    storage: { warn: true }, cost: { warn: true }, time: { warn: true }, battery: { warn: true }, deltav: { warn: true },
     pointing: {}, launch: {}, contact: {}, band: {}
   };
   var CHECK_IDS = Object.keys(CHECKS);
@@ -95,7 +100,8 @@
     comms:     ['band', 'dataRate_kbps'],
     obc:       ['storage_GB', 'compressionRatio'],
     battery:   ['capacity_Wh'],   // modo Difícil
-    shield:    []                 // modo Difícil (protege do imprevisto de radiação)
+    shield:    [],                // modo Difícil (protege do imprevisto de radiação)
+    propulsion: ['isp_s', 'propellant_kg']  // missões na Lua
   };
   var SOURCE_FIELDS = {
     orbits:         ['name', 'altitude_km', 'inclination_deg', 'lifetime_years'],
@@ -109,7 +115,15 @@
     adcs: 'components', comms: 'components', obc: 'components'
   };
   // Escolhas opcionais: só alguns níveis têm (js/data/levels.js → addSlots).
-  var OPTIONAL_SLOTS = { battery: 'components', shield: 'components' };
+  var OPTIONAL_SLOTS = { battery: 'components', shield: 'components', propulsion: 'components' };
+
+  // Corpo central da órbita (campo body dos itens de órbita; padrão: Terra).
+  // rotation_days: a Lua gira devagar, então cobrir tudo leva ~1 mês lunar.
+  var BODIES = {
+    earth: { id: 'earth', R: 6371, mu: 398600.4418, circ: 40075, rotation_days: 0 },
+    moon:  { id: 'moon', R: 1737.4, mu: 4902.8, circ: 10921, rotation_days: 27.32 }
+  };
+  function bodyOf(o) { return BODIES[(o && o.body) || 'earth'] || BODIES.earth; }
 
   // ---------------------------------------------------------- Utilitários
   function isNum(x) { return typeof x === 'number' && !isNaN(x); }
@@ -234,21 +248,37 @@
 
   // ------------------------------------------------------- Modelo orbital
   function orbitModel(o) {
-    var a = R_EARTH_KM + o.altitude_km;
-    var period = 2 * Math.PI * Math.sqrt(a * a * a / MU_KM3_S2) / 60;
+    var B = bodyOf(o);
+    if (o.surface) { // pousado: sem volta, sombra = noite local
+      var sunF = isNum(o.sunFraction) ? o.sunFraction : 0.5;
+      return { surface: true, body: B, a_km: B.R, period_min: null, orbitsPerDay: 0, eclipseFraction: 1 - sunF, maxLat_deg: 90 };
+    }
+    var a = B.R + o.altitude_km;
+    var period = 2 * Math.PI * Math.sqrt(a * a * a / B.mu) / 60;
     var i = o.inclination_deg;
     return {
+      body: B,
       a_km: a,
       period_min: period,
       orbitsPerDay: MIN_PER_DAY / period,
-      eclipseFraction: Math.asin(R_EARTH_KM / a) / Math.PI, // pior caso: Sol no plano da órbita
-      maxLat_deg: i <= 90 ? i : 180 - i                     // latitude máxima do traço no solo
+      eclipseFraction: Math.asin(B.R / a) / Math.PI, // pior caso: Sol no plano da órbita
+      maxLat_deg: i <= 90 ? i : 180 - i              // latitude máxima do traço no solo
     };
   }
 
   // Contato com a estação: círculo de visada (raio lambda, em graus de
   // arco da Terra) e chance de cada cruzamento da latitude cair nele.
-  function contactModel(om, station) {
+  function contactModel(om, station, site) {
+    if (om.body.id !== 'earth') {
+      // Longe da Terra: só antenas de espaço profundo alcançam. Horas por dia com a
+      // Lua acima do horizonte; em órbita, parte de cada volta fica atrás da Lua.
+      if (!station.deepSpace) return { lambda_deg: 0, perOrbit: 0, passesPerDay: 0, maxPass_min: 0, avgPass_min: 0, contactMinPerDay: 0, deep: true, noReach: true };
+      var view = (isNum(station.viewHours) ? station.viewHours : 8) * (site && isNum(site.earthView) ? site.earthView : 1);
+      var hidden = om.surface ? 0 : om.eclipseFraction;
+      var n = isNum(station.passesPerDay) ? station.passesPerDay : 1;
+      var c = view * 60 * (1 - hidden);
+      return { lambda_deg: 0, perOrbit: 1, passesPerDay: n, maxPass_min: view * 60 / n, avgPass_min: c / n, contactMinPerDay: c, deep: true, view: view, hidden: hidden };
+    }
     var eps = isNum(station.minElevation_deg) ? station.minElevation_deg : 10;
     var eta = Math.asin(R_EARTH_KM * Math.cos(eps * DEG) / om.a_km) / DEG;
     var lambda = 90 - eps - eta;
@@ -296,11 +326,16 @@
     // Órbita
     var o = sel.orbit, om = o ? orbitModel(o) : null;
     var ff = sel.structure ? sel.structure.formFactor : null;
-    if (om) {
+    if (om && om.surface) {
+      set('altitude_km', 0, t('x.onSurface', { name: o.name }), false, t('p.onSurface'));
+      pend(['period_min', 'orbitsPerDay'], []); m.period_min.explanation = m.orbitsPerDay.explanation = t('x.onSurface', { name: o.name });
+      set('eclipse_pct', om.eclipseFraction * 100, t('x.night', { pct: pct(om.eclipseFraction, 0) }), false, t('p.night', { pct: pct(om.eclipseFraction, 0) }));
+      set('lifetime_years', o.lifetime_years, t('x.surfaceLife', { d: fmt(o.lifetime_years * 365, 0) }), false, t('p.surfaceLife', { d: fmt(o.lifetime_years * 365, 0) }));
+    } else if (om) {
       var shadowMin = om.eclipseFraction * om.period_min;
       set('altitude_km', o.altitude_km, t('x.altitude', { name: o.name }), false,
         t('p.altitude', { h: fmt(o.altitude_km, 0) }));
-      set('period_min', om.period_min, t('x.period', { r: fmt(R_EARTH_KM, 0), h: fmt(o.altitude_km, 0), a: fmt(om.a_km, 0), T: fmt(om.period_min, 1) }), false,
+      set('period_min', om.period_min, t('x.period', { r: fmt(om.body.R, 0), h: fmt(o.altitude_km, 0), a: fmt(om.a_km, 0), T: fmt(om.period_min, 1) }), false,
         t('p.period', { T: fmt(om.period_min, 0), n: fmt(om.orbitsPerDay, 0) }));
       set('orbitsPerDay', om.orbitsPerDay, t('x.orbitsPerDay', { min: fmt(MIN_PER_DAY, 0), T: fmt(om.period_min, 1), n: fmt(om.orbitsPerDay, 1) }), false,
         t('p.orbitsPerDay', { n: fmt(om.orbitsPerDay, 1) }));
@@ -314,14 +349,17 @@
 
     // Instrumento e cobertura
     var cam = sel.payload, gsd = null, area = null;
-    if (om && cam) {
+    if (om && om.surface) {
+      pend(['gsd_m', 'swath_km', 'revisit_days', 'areaPerDay_km2'], []);
+      ['gsd_m', 'swath_km', 'revisit_days', 'areaPerDay_km2'].forEach(function (k) { m[k].explanation = t('x.onSurface', { name: o.name }); });
+    } else if (om && cam) {
       gsd = (o.altitude_km * 1000) * (cam.pixel_um * 1e-6) / (cam.focal_mm * 1e-3);
       var swath = gsd * cam.pixelsAcross / 1000;
       var lat = sc.aoi.latitude_deg;
       var light = isNum(o.lightingFactor) ? o.lightingFactor : 1;
       var reaches = Math.abs(lat) <= om.maxLat_deg;
-      var circ = EQUATOR_KM * Math.cos(lat * DEG);
-      var revisit = reaches ? circ / (om.orbitsPerDay * swath * light) : Infinity;
+      var circ = om.body.circ * Math.cos(lat * DEG);
+      var revisit = reaches ? Math.max(om.body.rotation_days || 0, circ / (om.orbitsPerDay * swath * light)) : Infinity;
       area = reaches ? sc.aoi.area_km2 / revisit : 0;
       set('gsd_m', gsd, t('x.gsd', { h: fmt(o.altitude_km, 0), px: fmt(cam.pixel_um, 2), f: fmt(cam.focal_mm, 0), gsd: fmt(gsd, 1) }), false,
         t('p.gsd', { gsd: fmt(gsd, 1) }));
@@ -340,7 +378,12 @@
 
     // Dados gerados
     var obc = sel.obc, data = null;
-    if (om && cam && obc) {
+    if (om && om.surface && cam && obc) { // pousado: panoramas por dia
+      var shots = isNum(p.imagesPerDay) ? p.imagesPerDay : 20;
+      data = shots * cam.pixelsAcross * cam.pixelsAcross * cam.bands * cam.bitDepth / 1e9 / obc.compressionRatio;
+      set('dataPerDay_Gbit', data, t('x.dataSurface', { n: shots, px: fmt(cam.pixelsAcross, 0), b: cam.bands, bits: cam.bitDepth, c: fmt(obc.compressionRatio, 0), d: fmt(data, 2) }), false,
+        t('p.data', { d: fmt(data, 2) }));
+    } else if (om && cam && obc) {
       var raw = (area * 1e6 / (gsd * gsd)) * cam.bands * cam.bitDepth / 1e9;
       data = raw / obc.compressionRatio;
       set('dataPerDay_Gbit', data, t('x.data', { b: cam.bands, bits: cam.bitDepth, raw: fmt(raw, 2), c: fmt(obc.compressionRatio, 0), d: fmt(data, 2) }), false,
@@ -351,8 +394,13 @@
 
     // Contato e envio ao solo
     var gs = sel.groundStation, com = sel.comms;
-    var cm = (om && gs) ? contactModel(om, gs) : null;
-    if (cm) {
+    var cm = (om && gs) ? contactModel(om, gs, o) : null;
+    if (cm && cm.deep) {
+      set('passesPerDay', cm.passesPerDay, cm.noReach ? t('x.noDeepSpace', { name: gs.name }) : t('x.passesDeep', { n: fmt(cm.passesPerDay, 0) }), false,
+        cm.noReach ? t('p.passesNever') : t('p.passes', { p: fmt(cm.passesPerDay, 0) }));
+      set('contactMinPerDay', cm.contactMinPerDay, cm.noReach ? t('x.noDeepSpace', { name: gs.name })
+        : t('x.contactDeep', { h: fmt(cm.view, 1), hid: pct(cm.hidden, 0), c: fmt(cm.contactMinPerDay, 0) }), false, t('p.contact', { c: fmt(cm.contactMinPerDay, 0) }));
+    } else if (cm) {
       set('passesPerDay', cm.passesPerDay, cm.passesPerDay > 0
         ? t('x.passes', { lat: fmtLat(gs.latitude_deg), lam: fmt(cm.lambda_deg, 1), pct: pct(cm.perOrbit), n: fmt(om.orbitsPerDay, 1), p: fmt(cm.passesPerDay, 1) })
         : t('x.passesNever', { max: fmt(om.maxLat_deg, 1), lam: fmt(cm.lambda_deg, 1), lat: fmtLat(gs.latitude_deg) }), false,
@@ -408,6 +456,22 @@
     } else {
       set('batteryNeed_Wh', null, t('x.batteryOff'));
       set('battery_Wh', null, t('x.batteryOff'));
+    }
+
+    // Propulsão (missões na Lua): equação do foguete Δv = Isp · g0 · ln(m0 ÷ mf)
+    if (sc.slots.some(function (s) { return s.id === 'propulsion'; })) {
+      var dvNeed = o && isNum(o.deltaV_mps) ? o.deltaV_mps : isNum(p.deltaV_mps) ? p.deltaV_mps : 0; // o local de pouso pode pedir mais
+      set('deltaVNeed_mps', dvNeed, t('x.dvNeed', { dv: fmt(dvNeed, 0), why: L(p.deltaVWhy) || '' }), false, t('p.dvNeed', { dv: fmt(dvNeed, 0) }));
+      var pr = sel.propulsion, m0 = mel.totals.massTotal_kg;
+      if (pr && !mel.partial && isNum(m0)) {
+        var mf = m0 - pr.propellant_kg, dv = mf > 0 ? pr.isp_s * G0 * Math.log(m0 / mf) : 0;
+        set('deltaV_mps', dv, t('x.dv', { isp: fmt(pr.isp_s, 0), m0: fmt(m0, 2), mp: fmt(pr.propellant_kg, 2), mf: fmt(mf, 2), dv: fmt(dv, 0) }), false, t('p.dv', { dv: fmt(dv, 0) }));
+      } else {
+        pend(['deltaV_mps'], sc.slots.filter(function (s) { return s.source === 'components'; }).map(function (s) { return s.id; }));
+      }
+    } else {
+      set('deltaVNeed_mps', null, t('x.dvOff'));
+      set('deltaV_mps', null, t('x.dvOff'));
     }
 
     // Massa e volume
@@ -825,6 +889,7 @@
     var planned = isNum(p.plannedDuration_years) ? p.plannedDuration_years : 1;
     var days = Math.min(planned, metrics.lifetime_years.value) * 365;
     var revisit = metrics.revisit_days.value;
+    if (!isNum(revisit) && ctx.sel.orbit && ctx.sel.orbit.surface) revisit = 1; // pousado: um dia de fotos = uma "entrega"
     var data = metrics.dataPerDay_Gbit.value, cap = metrics.downlink_Gbit_day.value;
     var dataFraction = data > 0 ? Math.min(1, cap / data) : 1;
     if (life) {
@@ -947,7 +1012,9 @@
         h0: mv('altitude_km'), lifeYears: mv('lifetime_years'),
         plannedDays: (isNum(sc.params && sc.params.plannedDuration_years) ? sc.params.plannedDuration_years : 1) * 365,
         dataPerDay: mv('dataPerDay_Gbit'), downlinkPerDay: mv('downlink_Gbit_day'), storage: mv('storage_Gbit'),
-        powerGen: mv('powerGen_W'), powerUse: mv('powerUse_W')
+        powerGen: mv('powerGen_W'), powerUse: mv('powerUse_W'),
+        noAtmosphere: !!sc.body && sc.body !== 'earth',
+        endKind: sc.body === 'moon' ? (r.sel.orbit && r.sel.orbit.surface ? 'lunarNight' : 'lunarOrbit') : null
       });
     }
     env.life = life;

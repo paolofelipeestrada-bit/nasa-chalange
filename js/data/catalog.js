@@ -38,6 +38,37 @@
     // lightingFactor: fração das passagens diurnas com boa iluminação.
     // lifetime_years: tempo até o arrasto derrubar um CubeSat (aproximado).
     orbits: {
+      // ---- Lua (missões 5 e 6): body: 'moon'; surface: true = pousado
+      moon_polar100: { body: 'moon',
+        name: T('Lunar polar orbit 100 km', 'Órbita polar lunar 100 km', 'Órbita polar lunar 100 km'),
+        description: T('Passes over both lunar poles every 2 hours. Like NASA\'s LRO mapping orbit.', 'Passa pelos dois polos da Lua a cada 2 horas. Como a órbita de mapeamento da LRO da NASA.', 'Pasa por los dos polos de la Luna cada 2 horas. Como la órbita de mapeo del LRO de la NASA.'),
+        pros: T('Sees the whole Moon in one lunar month; about 1.5 years before it needs correcting.', 'Vê a Lua inteira em um mês lunar; cerca de 1,5 ano antes de precisar de correção.', 'Ve toda la Luna en un mes lunar; cerca de 1,5 años antes de necesitar corrección.'),
+        cons: T('Behind the Moon (no contact) about 40% of each lap.', 'Atrás da Lua (sem contato) cerca de 40% de cada volta.', 'Detrás de la Luna (sin contacto) cerca del 40% de cada vuelta.'),
+        altitude_km: 100, inclination_deg: 90, lifetime_years: 1.5 },
+      moon_polar50: { body: 'moon',
+        name: T('Low lunar orbit 50 km', 'Órbita lunar baixa 50 km', 'Órbita lunar baja 50 km'),
+        description: T('Twice as close: sharper photos, but the Moon\'s lumpy gravity (mascons) pulls it down fast.', 'Duas vezes mais perto: fotos mais nítidas, mas a gravidade irregular da Lua (mascons) puxa o satélite rápido.', 'Dos veces más cerca: fotos más nítidas, pero la gravedad irregular de la Luna (mascons) lo baja rápido.'),
+        pros: T('Twice the detail of 100 km.', 'O dobro de detalhe que a 100 km.', 'El doble de detalle que a 100 km.'),
+        cons: T('Only about 5 months before crashing.', 'Só cerca de 5 meses antes de cair.', 'Solo unos 5 meses antes de caer.'),
+        altitude_km: 50, inclination_deg: 90, lifetime_years: 0.4 },
+      moon_polar200: { body: 'moon',
+        name: T('Lunar polar orbit 200 km', 'Órbita polar lunar 200 km', 'Órbita polar lunar 200 km'),
+        description: T('Higher and calmer: lasts years, but each pixel covers twice the ground.', 'Mais alta e estável: dura anos, mas cada pixel cobre o dobro do chão.', 'Más alta y estable: dura años, pero cada píxel cubre el doble de suelo.'),
+        pros: T('About 3 years of life.', 'Cerca de 3 anos de vida.', 'Cerca de 3 años de vida.'),
+        cons: T('Half the detail of 100 km.', 'Metade do detalhe que a 100 km.', 'La mitad del detalle que a 100 km.'),
+        altitude_km: 200, inclination_deg: 90, lifetime_years: 3 },
+      site_equator: { body: 'moon', surface: true,
+        name: T('Sea of Tranquillity (equator)', 'Mar da Tranquilidade (equador)', 'Mar de la Tranquilidad (ecuador)'),
+        description: T('Flat plain near the Apollo 11 site. Earth always high in the sky.', 'Planície plana perto do local da Apollo 11. A Terra sempre alta no céu.', 'Llanura plana cerca del sitio del Apolo 11. La Tierra siempre alta en el cielo.'),
+        pros: T('Easiest landing (1,900 m/s) and Earth always in view.', 'Pouso mais fácil (1.900 m/s) e a Terra sempre à vista.', 'Aterrizaje más fácil (1.900 m/s) y la Tierra siempre a la vista.'),
+        cons: T('Only 14 days of sunlight, then the freezing lunar night.', 'Só 14 dias de sol, depois a noite lunar congelante.', 'Solo 14 días de sol, luego la noche lunar helada.'),
+        altitude_km: 0, inclination_deg: 0, lifetime_years: 0.038, sunFraction: 0.5, earthView: 1, deltaV_mps: 1900 },
+      site_pole: { body: 'moon', surface: true,
+        name: T('Shackleton crater rim (south pole)', 'Borda da cratera Shackleton (polo sul)', 'Borde del cráter Shackleton (polo sur)'),
+        description: T('A ridge near the south pole that is lit about 80% of the time, next to craters with water ice. Artemis wants to go here.', 'Uma crista perto do polo sul iluminada cerca de 80% do tempo, ao lado de crateras com gelo de água. A Artemis quer ir para lá.', 'Una cresta cerca del polo sur iluminada cerca del 80% del tiempo, junto a cráteres con hielo de agua. Artemis quiere ir allí.'),
+        pros: T('About 60 days of sunlight in a row.', 'Cerca de 60 dias de sol seguidos.', 'Cerca de 60 días de sol seguidos.'),
+        cons: T('Harder landing (2,050 m/s) and Earth low on the horizon: half the contact time.', 'Pouso mais difícil (2.050 m/s) e a Terra baixa no horizonte: metade do tempo de contato.', 'Aterrizaje más difícil (2.050 m/s) y la Tierra baja en el horizonte: la mitad del tiempo de contacto.'),
+        altitude_km: 0, inclination_deg: 0, lifetime_years: 0.164, sunFraction: 0.8, earthView: 0.5, deltaV_mps: 2050 },
       sso500: {
         name: T('Sun-synchronous 500 km', 'Heliossíncrona 500 km', 'Heliosíncrona 500 km'),
         description: T('Passes over every place at the same solar time (~10:30): steady light, great for images. Covers the whole planet.',
@@ -72,6 +103,30 @@
     // maxMass_kg e cost_k por formato; formato ausente = não aceito.
     // waitMonths: espera média pela próxima vaga, depois do satélite pronto.
     launchers: {
+      artemis_ride: {
+        name: T('Artemis secondary payload', 'Carona na Artemis (carga secundária)', 'Viaje en Artemis (carga secundaria)'),
+        description: T('Rides inside the SLS rocket adapter, like the 10 CubeSats of Artemis I, and is released on the way to the Moon.', 'Vai dentro do adaptador do foguete SLS, como os 10 CubeSats da Artemis I, e é solto a caminho da Lua.', 'Va dentro del adaptador del cohete SLS, como los 10 CubeSats de Artemis I, y se suelta camino a la Luna.'),
+        pros: T('Cheap (NASA program) and already on the way to the Moon.', 'Barata (programa da NASA) e já a caminho da Lua.', 'Barata (programa de la NASA) y ya camino a la Luna.'),
+        cons: T('Only 6U, and Artemis flights are rare: long wait.', 'Só 6U, e os voos da Artemis são raros: espera longa.', 'Solo 6U, y los vuelos de Artemis son raros: espera larga.'),
+        site: { name: T('Kennedy Space Center (USA)', 'Centro Espacial Kennedy (EUA)', 'Centro Espacial Kennedy (EE. UU.)'), latitude_deg: 28.5, longitude_deg: -80.6 },
+        orbits: ['moon_polar100', 'moon_polar50', 'moon_polar200'], maxMass_kg: { '6U': 14 }, cost_k: { '6U': 250 }, waitMonths: 10
+      },
+      lunar_rideshare: {
+        name: T('Commercial lunar rideshare', 'Carona comercial para a Lua', 'Viaje comercial a la Luna'),
+        description: T('A commercial transfer vehicle drops small satellites in lunar orbit.', 'Um veículo comercial de transferência deixa satélites pequenos na órbita da Lua.', 'Un vehículo comercial de transferencia deja satélites pequeños en órbita lunar.'),
+        pros: T('Flies sooner and takes 3U or 6U.', 'Voa antes e leva 3U ou 6U.', 'Vuela antes y lleva 3U o 6U.'),
+        cons: T('Expensive: about 75 k$ per kg.', 'Cara: cerca de 75 k$ por kg.', 'Cara: unos 75 k$ por kg.'),
+        site: { name: T('Kennedy Space Center (USA)', 'Centro Espacial Kennedy (EUA)', 'Centro Espacial Kennedy (EE. UU.)'), latitude_deg: 28.5, longitude_deg: -80.6 },
+        orbits: ['moon_polar100', 'moon_polar50', 'moon_polar200'], maxMass_kg: { '3U': 6, '6U': 14 }, cost_k: { '3U': 450, '6U': 900 }, waitMonths: 4
+      },
+      clps_ride: {
+        name: T('Ride to lunar orbit (CLPS-style)', 'Carona até a órbita lunar (tipo CLPS)', 'Viaje a la órbita lunar (tipo CLPS)'),
+        description: T('A commercial lunar mission (NASA CLPS program) carries the small lander to low lunar orbit; from there it lands on its own.', 'Uma missão lunar comercial (programa CLPS da NASA) leva o pequeno módulo até a órbita baixa da Lua; de lá ele pousa sozinho.', 'Una misión lunar comercial (programa CLPS de la NASA) lleva el pequeño módulo a la órbita baja lunar; desde ahí aterriza solo.'),
+        pros: T('Takes up to 40 kg: room for a descent stage.', 'Leva até 40 kg: cabe um estágio de descida.', 'Lleva hasta 40 kg: cabe una etapa de descenso.'),
+        cons: T('Very expensive (1,200 k$).', 'Muito cara (1.200 k$).', 'Muy cara (1.200 k$).'),
+        site: { name: T('Kennedy Space Center (USA)', 'Centro Espacial Kennedy (EUA)', 'Centro Espacial Kennedy (EE. UU.)'), latitude_deg: 28.5, longitude_deg: -80.6 },
+        orbits: ['site_equator', 'site_pole'], maxMass_kg: { '6U': 40 }, cost_k: { '6U': 1200 }, waitMonths: 6
+      },
       rideshare_sso: {
         name: T('SSO rideshare', 'Carona para SSO (rideshare)', 'Viaje compartido a SSO (rideshare)'),
         description: T('Flies with dozens of other satellites on a rocket heading to sun-synchronous orbit.',
@@ -121,6 +176,18 @@
 
     // --------------------------------------------------- Estações em solo
     groundStations: {
+      dsn_34m: { deepSpace: true,
+        name: T('NASA Deep Space Network (34 m)', 'Rede de Espaço Profundo da NASA (34 m)', 'Red de Espacio Profundo de la NASA (34 m)'),
+        description: T('Three giant antennas in California, Spain and Australia: together they always see the Moon.', 'Três antenas gigantes na Califórnia, na Espanha e na Austrália: juntas sempre veem a Lua.', 'Tres antenas gigantes en California, España y Australia: juntas siempre ven la Luna.'),
+        pros: T('Sees the Moon about 20 h per day; X band.', 'Vê a Lua cerca de 20 h por dia; banda X.', 'Ve la Luna unas 20 h por día; banda X.'),
+        cons: T('Antenna time is expensive (250 k$ per year).', 'O tempo de antena é caro (250 k$ por ano).', 'El tiempo de antena es caro (250 k$ al año).'),
+        latitude_deg: 35.4, longitude_deg: -116.9, bands: ['S', 'X'], viewHours: 20, passesPerDay: 3, cost_k: 250 },
+      gs_univ18: { deepSpace: true,
+        name: T('University 18 m dish', 'Antena universitária de 18 m', 'Antena universitaria de 18 m'),
+        description: T('One big dish at a university: it sees the Moon only while it is above its horizon.', 'Uma antena grande numa universidade: só vê a Lua enquanto ela está acima do horizonte.', 'Una antena grande en una universidad: solo ve la Luna mientras está sobre su horizonte.'),
+        pros: T('Cheap (60 k$).', 'Barata (60 k$).', 'Barata (60 k$).'),
+        cons: T('About 8 h of view per day, S band only.', 'Cerca de 8 h de visada por dia, só banda S.', 'Unas 8 h de visibilidad por día, solo banda S.'),
+        latitude_deg: -22.7, longitude_deg: -45, bands: ['S'], viewHours: 8, passesPerDay: 1, cost_k: 60 },
       gs_polar: {
         name: T('Polar station (78° N)', 'Estação polar (78° N)', 'Estación polar (78° N)'),
         description: T('Rented antenna near the North Pole: sees almost every polar orbit. One-year contract.',
@@ -154,6 +221,18 @@
     //   obc       storage_GB, compressionRatio
     components: {
       // Instrumentos
+      // Imageador meteorológico de faixa larga (inspirado no VIIRS dos satélites JPSS/NOAA)
+      cam_wx: {
+        role: 'payload', maturity: 'modified',
+        name: T('Weather imager (wide swath)', 'Imageador meteorológico (faixa larga)', 'Generador de imágenes meteorológico (franja ancha)'),
+        description: T('6 mm lens, 3,200 pixels per line and infrared bands, like the VIIRS on NOAA weather satellites: sees clouds, rain and flooded areas over a 1,400 km strip.',
+          'Lente de 6 mm, 3.200 pixels por linha e bandas no infravermelho, como o VIIRS dos satélites meteorológicos da NOAA: vê nuvens, chuva e áreas alagadas numa faixa de 1.400 km.',
+          'Lente de 6 mm, 3.200 píxeles por línea y bandas infrarrojas, como el VIIRS de los satélites meteorológicos de la NOAA: ve nubes, lluvia y zonas inundadas en una franja de 1.400 km.'),
+        pros: T('Covers the whole state almost every day, day and night (infrared).', 'Cobre o estado inteiro quase todo dia, de dia e de noite (infravermelho).', 'Cubre todo el estado casi cada día, de día y de noche (infrarrojo).'),
+        cons: T('About 460 m per pixel: sees rivers and lakes, not streets.', 'Cerca de 460 m por pixel: vê rios e lagoas, não ruas.', 'Unos 460 m por píxel: ve ríos y lagunas, no calles.'),
+        mass_kg: 0.5, power_W: 3.0, duty: 0.5, volume_U: 0.6, cost_k: 60,
+        pixel_um: 5.5, focal_mm: 6, pixelsAcross: 3200, bands: 6, bitDepth: 12, requiredPointing_deg: 5
+      },
       cam_wide: {
         role: 'payload', maturity: 'cots',
         name: T('Wide-angle camera', 'Câmera grande-angular', 'Cámara gran angular'),
@@ -298,6 +377,56 @@
         pros: T('4:1 compression and lots of memory.', 'Compressão 4:1 e muita memória.', 'Compresión 4:1 y mucha memoria.'),
         cons: T('Costs more and uses more power.', 'Mais caro e consome mais energia.', 'Más cara y consume más energía.'),
         storage_GB: 64, compressionRatio: 4, mass_kg: 0.2, power_W: 1.2, duty: 1, volume_U: 0.3, cost_k: 40
+      },
+
+      // ---- Lua: rádios de espaço profundo e propulsão
+      com_slunar: {
+        role: 'comms', maturity: 'cots',
+        name: T('Lunar S-band radio', 'Rádio banda S lunar', 'Radio banda S lunar'),
+        description: T('16 kbps from the Moon: at 384,000 km the signal arrives 30,000 times weaker than from low orbit.', '16 kbps desde a Lua: a 384 mil km o sinal chega 30 mil vezes mais fraco que de uma órbita baixa.', '16 kbps desde la Luna: a 384.000 km la señal llega 30.000 veces más débil que desde una órbita baja.'),
+        pros: T('Light and cheap.', 'Leve e barato.', 'Ligero y barato.'),
+        cons: T('Very slow: few photos reach the Earth.', 'Muito lento: poucas fotos chegam à Terra.', 'Muy lento: pocas fotos llegan a la Tierra.'),
+        band: 'S', dataRate_kbps: 16, mass_kg: 0.3, power_W: 6, duty: 0.3, volume_U: 0.5, cost_k: 60
+      },
+      com_xlunar: {
+        role: 'comms', maturity: 'modified',
+        name: T('Deep-space X-band transponder', 'Transponder banda X de espaço profundo', 'Transpondedor banda X de espacio profundo'),
+        description: T('256 kbps to a big dish, like the Iris radio used by NASA lunar CubeSats.', '256 kbps para uma antena grande, como o rádio Iris dos CubeSats lunares da NASA.', '256 kbps a una antena grande, como la radio Iris de los CubeSats lunares de la NASA.'),
+        pros: T('16 × faster than the S radio.', '16 vezes mais rápido que o rádio S.', '16 veces más rápido que la radio S.'),
+        cons: T('Heavy, power-hungry and only big X-band dishes hear it.', 'Pesado, gasta energia e só antenas grandes de banda X escutam.', 'Pesado, gasta energía y solo antenas grandes de banda X lo escuchan.'),
+        band: 'X', dataRate_kbps: 256, mass_kg: 1.1, power_W: 30, duty: 0.15, volume_U: 0.6, cost_k: 220
+      },
+      prop_cold: {
+        role: 'propulsion', maturity: 'cots',
+        name: T('Cold-gas thruster', 'Propulsor de gás frio', 'Propulsor de gas frío'),
+        description: T('Puffs compressed gas. Simple and safe, but weak (Isp 65 s).', 'Solta gás comprimido. Simples e seguro, mas fraco (Isp 65 s).', 'Suelta gas comprimido. Simple y seguro, pero débil (Isp 65 s).'),
+        pros: T('Light, cheap and simple.', 'Leve, barato e simples.', 'Ligero, barato y simple.'),
+        cons: T('Gives only a few dozen m/s.', 'Dá só algumas dezenas de m/s.', 'Da solo unas decenas de m/s.'),
+        isp_s: 65, propellant_kg: 0.4, mass_kg: 1.0, power_W: 0.5, duty: 0.1, volume_U: 1.0, cost_k: 40
+      },
+      prop_green: {
+        role: 'propulsion', maturity: 'modified',
+        name: T('Green monopropellant engine', 'Motor monopropelente "verde"', 'Motor monopropelente "verde"'),
+        description: T('Non-toxic fuel (AF-M315E) tested by NASA: Isp 220 s, 1.5 kg of propellant.', 'Combustível não tóxico (AF-M315E) testado pela NASA: Isp 220 s, 1,5 kg de combustível.', 'Combustible no tóxico (AF-M315E) probado por la NASA: Isp 220 s, 1,5 kg de combustible.'),
+        pros: T('Strong and quick burns: a few hundred m/s.', 'Forte e queima rápido: algumas centenas de m/s.', 'Fuerte y quema rápido: unos cientos de m/s.'),
+        cons: T('3 kg and 2U of the box.', '3 kg e 2U da caixa.', '3 kg y 2U de la caja.'),
+        isp_s: 220, propellant_kg: 1.5, mass_kg: 3.0, power_W: 2, duty: 0.05, volume_U: 2.0, cost_k: 180
+      },
+      prop_ion: {
+        role: 'propulsion', maturity: 'new',
+        name: T('Iodine ion engine', 'Motor iônico a iodo', 'Motor iónico de yodo'),
+        description: T('Electric engine (like the one on Lunar IceCube): Isp 1,400 s, but tiny thrust and big power use.', 'Motor elétrico (como o do Lunar IceCube): Isp 1.400 s, mas empuxo minúsculo e muito consumo de energia.', 'Motor eléctrico (como el del Lunar IceCube): Isp 1.400 s, pero empuje diminuto y mucho consumo de energía.'),
+        pros: T('Huge Δv with little propellant.', 'Δv enorme com pouco combustível.', 'Δv enorme con poco combustible.'),
+        cons: T('New technology: +8 months to develop; uses a lot of power.', 'Tecnologia nova: +8 meses de desenvolvimento; gasta muita energia.', 'Tecnología nueva: +8 meses de desarrollo; gasta mucha energía.'),
+        isp_s: 1400, propellant_kg: 0.6, mass_kg: 1.8, power_W: 60, duty: 0.1, volume_U: 1.0, cost_k: 250
+      },
+      prop_lander: {
+        role: 'propulsion', maturity: 'modified',
+        name: T('Descent stage (bipropellant)', 'Estágio de descida (bipropelente)', 'Etapa de descenso (bipropelente)'),
+        description: T('Engine, tanks and four legs under the 6U box: Isp 310 s and 17 kg of propellant to brake down to the ground.', 'Motor, tanques e quatro pernas embaixo da caixa 6U: Isp 310 s e 17 kg de combustível para frear até o chão.', 'Motor, tanques y cuatro patas debajo de la caja 6U: Isp 310 s y 17 kg de combustible para frenar hasta el suelo.'),
+        pros: T('About 2,000 m/s: enough to land.', 'Cerca de 2.000 m/s: o bastante para pousar.', 'Unos 2.000 m/s: suficiente para aterrizar.'),
+        cons: T('25 kg and 600 k$; every extra kg on top costs Δv.', '25 kg e 600 k$; cada kg a mais em cima custa Δv.', '25 kg y 600 k$; cada kg extra encima cuesta Δv.'),
+        isp_s: 310, propellant_kg: 17, mass_kg: 25, power_W: 3, duty: 0.05, volume_U: 0, cost_k: 600
       },
 
       // ---- Só no modo Difícil (js/data/levels.js): bateria e blindagem

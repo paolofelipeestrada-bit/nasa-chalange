@@ -416,4 +416,284 @@
       E7: { title: T('Yearly coverage', 'Cobertura anual', 'Cobertura anual') }
     }
   });
+
+  // ------------------------------------------------ Cenário 4: enchentes e clima no Sul
+  // Imprevisto só desta missão: semanas de nuvens; passar quase todo dia acha as brechas.
+  var CLOUDS = { id: 'RE8', fx: 'coverage', after: 'E7', chance: 0.5,
+    mitigatedBy: [{ metric: 'revisit_days', op: '<=', value: 2 }], effect: { degrade: 0.6 },
+    when: T('Rainy season', 'Época das chuvas', 'Época de lluvias'),
+    title: T('Weeks of clouds', 'Semanas de nuvens', 'Semanas de nubes'),
+    description: T('A long rainy spell keeps the region under thick clouds.', 'Uma temporada longa de chuva deixa a região coberta de nuvens grossas.', 'Una temporada larga de lluvias deja la región bajo nubes gruesas.'),
+    text: T('Clouds hid the rivers for weeks and the satellite passed too rarely to catch a clear gap: flood maps came late.', 'As nuvens esconderam os rios por semanas e o satélite passava pouco para pegar uma brecha: os mapas de enchente atrasaram.', 'Las nubes ocultaron los ríos durante semanas y el satélite pasaba muy poco para encontrar un hueco: los mapas de inundación se retrasaron.'),
+    mitigatedText: T('Clouds covered the region, but passing almost every day the satellite found clear gaps and kept the maps updated.', 'As nuvens cobriram a região, mas passando quase todo dia o satélite achou brechas e manteve os mapas em dia.', 'Las nubes cubrieron la región, pero pasando casi cada día el satélite encontró huecos y mantuvo los mapas al día.'),
+    lesson: T('Weather changes by the hour: for floods, passing often matters more than seeing small details.', 'O tempo muda de hora em hora: para enchentes, passar sempre importa mais do que ver detalhes pequenos.', 'El tiempo cambia de hora en hora: para inundaciones, pasar seguido importa más que ver detalles pequeños.') };
+
+  variant('flood_south', {
+    card: { icon: '🌧️', image: 'assets/img/client-flood_south.jpg',
+      pitch: T('Watch rain, clouds and floods in southern Brazil almost every day.', 'Acompanhar chuva, nuvens e enchentes no Sul do Brasil quase todo dia.', 'Seguir lluvia, nubes e inundaciones en el sur de Brasil casi cada día.'),
+      challenge: T('A weather satellite: passing every day beats sharp detail.', 'Satélite meteorológico: passar todo dia vale mais que detalhe.', 'Satélite meteorológico: pasar cada día vale más que el detalle.') },
+    title: T('Floods and weather in the South', 'Enchentes e clima no Sul', 'Inundaciones y clima en el Sur'),
+    customer: T('State civil defense and weather service', 'Defesa Civil e serviço de meteorologia do estado', 'Defensa Civil y servicio meteorológico del estado'),
+    contact: { name: 'Marina Kessler', role: T('Meteorologist', 'Meteorologista', 'Meteoróloga'),
+      skin: '#f0c9a6', hair: '#c8a16a', shirt: '#2f7fb8', long: true },
+    need: T('After the big floods in Rio Grande do Sul, the civil defense wants its own weather satellite: to follow rain clouds and see, almost every day, which rivers and towns are flooding, so it can warn people in time.',
+      'Depois das grandes enchentes no Rio Grande do Sul, a Defesa Civil quer um satélite meteorológico próprio: acompanhar as nuvens de chuva e ver, quase todo dia, quais rios e cidades estão alagando, para avisar a população a tempo.',
+      'Tras las grandes inundaciones en Rio Grande do Sul, la Defensa Civil quiere su propio satélite meteorológico: seguir las nubes de lluvia y ver, casi cada día, qué ríos y ciudades se inundan, para avisar a la población a tiempo.'),
+    goals: [
+      { id: 'G1', text: T('See flooded areas and big rivers (pixels of 500 m or smaller).', 'Enxergar áreas alagadas e rios grandes (pixels de 500 m ou menos).', 'Ver zonas inundadas y ríos grandes (píxeles de 500 m o menos).') },
+      { id: 'G2', text: T('Pass over the whole state at least every 2 days.', 'Passar sobre o estado inteiro pelo menos a cada 2 dias.', 'Pasar sobre todo el estado al menos cada 2 días.') },
+      { id: 'G3', text: T('Receive on the ground every image produced.', 'Receber em solo todas as imagens produzidas.', 'Recibir en tierra todas las imágenes producidas.') },
+      { id: 'G4', text: T('Operate for at least 1 year (one full rainy season).', 'Operar por pelo menos 1 ano (uma estação de chuvas completa).', 'Operar al menos 1 año (una temporada de lluvias completa).') }
+    ],
+    constraints: [
+      T('Total budget of 600 k$: satellite, launch and ground station.', 'Orçamento total de 600 k$: satélite, lançamento e estação em solo.', 'Presupuesto total de 600 k$: satélite, lanzamiento y estación terrena.'),
+      T('Launch within 24 months from the start of the project ([[schedule|schedule]]).', 'Lançar em até 24 meses do início do projeto ([[schedule|prazo]]).', 'Lanzar en un máximo de 24 meses desde el inicio del proyecto ([[schedule|plazo]]).'),
+      T('[[cubesat|CubeSat]] format (3U or 6U).', 'Formato [[cubesat|CubeSat]] (3U ou 6U).', 'Formato [[cubesat|CubeSat]] (3U o 6U).')
+    ],
+    aoi: { name: T('Rio Grande do Sul', 'Rio Grande do Sul', 'Rio Grande do Sul'), area_km2: 281700, latitude_deg: -30, longitude_deg: -53, radius_deg: 4 },
+    budget_k: 600,
+    params: { targetMapsPerYear: 180 },
+    slots: SLOTS.map(function (s) { return s.id === 'payload' ? Object.assign({}, s, { options: ['cam_wx'].concat(s.options) }) : s; }),
+    randomEvents: RANDOM_EVENTS.concat([CLOUDS]),
+    requirements: {
+      R1: { value: 500,
+        text: T('Images must have a ground detail (GSD) of 500 m or better.', 'As imagens devem ter resolução no solo (GSD) de 500 m ou melhor.', 'Las imágenes deben tener un detalle en el suelo (GSD) de 500 m o mejor.'),
+        rationale: T('Flooded plains and the big rivers (Guaíba, Taquari, Jacuí) are kilometres wide: 500 m pixels show them; streets do not matter here.', 'Várzeas alagadas e os rios grandes (Guaíba, Taquari, Jacuí) têm quilômetros de largura: pixels de 500 m mostram isso; ruas não importam aqui.', 'Las llanuras inundadas y los ríos grandes (Guaíba, Taquari, Jacuí) tienen kilómetros de ancho: píxeles de 500 m los muestran; las calles no importan aquí.') },
+      R2: { value: 2,
+        text: T('The satellite must cover the whole state in 2 days or less.', 'O satélite deve cobrir o estado inteiro em 2 dias ou menos.', 'El satélite debe cubrir todo el estado en 2 días o menos.'),
+        rationale: T('A river can flood a town in a day or two: a map every month is useless for warnings.', 'Um rio pode alagar uma cidade em um ou dois dias: um mapa por mês não serve para alertas.', 'Un río puede inundar una ciudad en uno o dos días: un mapa al mes no sirve para alertas.'),
+        hint: T('Only a very wide swath (hundreds of km) passes over the state almost every day: that is how weather satellites work.', 'Só uma faixa muito larga (centenas de km) passa sobre o estado quase todo dia: é assim que os satélites meteorológicos funcionam.', 'Solo una franja muy ancha (cientos de km) pasa sobre el estado casi cada día: así funcionan los satélites meteorológicos.') },
+      R4: { rationale: T('The civil defense needs at least one full rainy season of data.', 'A Defesa Civil precisa de pelo menos uma estação de chuvas completa de dados.', 'La Defensa Civil necesita al menos una temporada de lluvias completa de datos.') }
+    },
+    events: {
+      E6: { title: T('Spotting floods', 'Detecção de enchentes', 'Detección de inundaciones'),
+        success: T('At {gsd_m} m per pixel the flooded plains and swollen rivers show up clearly.', 'Com {gsd_m} m por pixel as várzeas alagadas e os rios cheios aparecem com clareza.', 'Con {gsd_m} m por píxel las llanuras inundadas y los ríos crecidos se ven con claridad.'),
+        failure: T('At {gsd_m} m per pixel only the biggest lakes show up: smaller flooded rivers are missed.', 'Com {gsd_m} m por pixel só as lagoas maiores aparecem: rios menores alagados passam despercebidos.', 'Con {gsd_m} m por píxel solo se ven las lagunas mayores: los ríos menores inundados pasan desapercibidos.') },
+      E7: { title: T('Near-daily coverage', 'Cobertura quase diária', 'Cobertura casi diaria'),
+        success: T('A fresh image of the whole state every {revisit_days} days: warnings go out in time.', 'Uma imagem nova do estado inteiro a cada {revisit_days} dias: os alertas saem a tempo.', 'Una imagen nueva de todo el estado cada {revisit_days} días: las alertas salen a tiempo.'),
+        failure: T('The whole state is only seen every {revisit_days} days: floods are spotted after they happen.', 'O estado inteiro só é visto a cada {revisit_days} dias: as enchentes são vistas depois que acontecem.', 'Todo el estado solo se ve cada {revisit_days} días: las inundaciones se ven después de ocurrir.') }
+    }
+  });
+
+  // ------------------------------------------------ Lua: peças comuns às missões 5 e 6
+  function moonSlots(o) {
+    return SLOTS.map(function (s) {
+      var c = Object.assign({}, s);
+      if (o[s.id]) Object.assign(c, o[s.id]);
+      return c;
+    }).concat([]).reduce(function (acc, s) {
+      acc.push(s);
+      if (s.id === 'power') acc.push(PROPULSION);
+      return acc;
+    }, []);
+  }
+  var PROPULSION = { id: 'propulsion', phase: 'design', segment: 'space', source: 'components', options: ['prop_cold', 'prop_green', 'prop_ion'],
+    label: T('Propulsion', 'Propulsão', 'Propulsión'),
+    help: T('The engine that changes speed in space. Rocket equation: more propellant or a higher Isp = more [[deltav|Δv]], but every kg on board makes it harder.',
+      'O motor que muda a velocidade no espaço. Equação do foguete: mais combustível ou Isp maior = mais [[deltav|Δv]], mas cada kg a bordo dificulta.',
+      'El motor que cambia la velocidad en el espacio. Ecuación del cohete: más combustible o Isp mayor = más [[deltav|Δv]], pero cada kg a bordo lo dificulta.') };
+  var MOON_TEAM = JSON.parse(JSON.stringify(TEAM));
+  MOON_TEAM.roles.forEach(function (r) { if (r.id === 'bus') r.slots = r.slots.concat(['propulsion']); });
+  var MOON_RANDOM = RANDOM_EVENTS.filter(function (e) { return e.id !== 'RE5'; }).map(function (e) {
+    if (e.id !== 'RE3') return e;
+    return Object.assign({}, e, { mitigatedBy: [{ slot: 'comms', is: 'com_xlunar' }],
+      mitigatedText: T('A bug froze the onboard computer; the fix went up quickly over the X-band transponder.', 'Um bug travou o computador de bordo; a correção subiu rápido pelo transponder banda X.', 'Un error congeló la computadora de a bordo; la corrección subió rápido por el transpondedor banda X.'),
+      lesson: T('From the Moon every byte is precious: a fast radio also lets you fix the software.', 'Da Lua cada byte é precioso: um rádio rápido também serve para corrigir o software.', 'Desde la Luna cada byte es precioso: una radio rápida también sirve para corregir el software.') });
+  });
+  var DV_VERIF = { id: 'V9', requirements: ['R5'], checks: ['deltav'], method: T('Test', 'Teste', 'Prueba'),
+    title: T('Engine firing test and Δv budget', 'Teste de queima do motor e orçamento de Δv', 'Prueba de encendido del motor y presupuesto de Δv'),
+    description: T('The engine fires on a test stand; the rocket equation gives the Δv with the real mass.', 'O motor é ligado numa bancada de teste; a equação do foguete dá o Δv com a massa real.', 'El motor se enciende en un banco de pruebas; la ecuación del cohete da el Δv con la masa real.') };
+  function ev(id, fx, when, title, cond, onFail, ok, bad) {
+    var e = { id: id, fx: fx, when: when, title: title, conditions: cond, success: ok };
+    if (onFail) e.onFail = onFail;
+    if (bad) e.failure = bad;
+    return e;
+  }
+  var E_BY_ID = {}; EVENTS.forEach(function (e) { E_BY_ID[e.id] = e; });
+
+  // ------------------------------------------------ Cenário 5: mapear a Lua
+  variant('moon_map', {
+    body: 'moon',
+    card: { icon: '🌕', image: 'assets/img/client-moon_map.jpg',
+      pitch: T('Map the craters near the lunar south pole, where water ice may hide.', 'Mapear as crateras perto do polo sul da Lua, onde pode haver gelo de água.', 'Mapear los cráteres cerca del polo sur de la Luna, donde puede haber hielo de agua.'),
+      challenge: T('Deep space: you need an engine, a big antenna and a careful data budget.', 'Espaço profundo: precisa de motor, antena grande e cuidado com os dados.', 'Espacio profundo: necesitas motor, antena grande y cuidado con los datos.') },
+    title: T('Lunar south pole mapper', 'Mapeador do polo sul da Lua', 'Cartógrafo del polo sur lunar'),
+    customer: T('Lunar science consortium (Artemis)', 'Consórcio de ciência lunar (Artemis)', 'Consorcio de ciencia lunar (Artemis)'),
+    contact: { name: 'Dra. Helena Duarte', role: T('Planetary geologist', 'Geóloga planetária', 'Geóloga planetaria'),
+      skin: '#d9a883', hair: '#2b2b2b', shirt: '#6b5bd6', long: true },
+    need: T('Before astronauts land near the lunar south pole, scientists need a detailed map of its craters, some always in shadow and possibly holding water ice. A small satellite in lunar orbit can do it, if it gets there and can send the photos home.',
+      'Antes de os astronautas pousarem perto do polo sul da Lua, os cientistas precisam de um mapa detalhado das crateras, algumas sempre na sombra e talvez com gelo de água. Um satélite pequeno em órbita lunar consegue, se chegar lá e conseguir mandar as fotos para casa.',
+      'Antes de que los astronautas aterricen cerca del polo sur lunar, los científicos necesitan un mapa detallado de sus cráteres, algunos siempre en sombra y quizás con hielo de agua. Un satélite pequeño en órbita lunar puede hacerlo, si llega y puede enviar las fotos a casa.'),
+    goals: [
+      { id: 'G1', text: T('See craters from 60 m across (pixels of 20 m or smaller).', 'Enxergar crateras a partir de 60 m (pixels de 20 m ou menos).', 'Ver cráteres desde 60 m (píxeles de 20 m o menos).') },
+      { id: 'G2', text: T('Map the whole polar region every lunar month (30 days).', 'Mapear toda a região polar a cada mês lunar (30 dias).', 'Mapear toda la región polar cada mes lunar (30 días).') },
+      { id: 'G3', text: T('Get every photo back to Earth, 384,000 km away.', 'Trazer todas as fotos até a Terra, a 384 mil km.', 'Traer todas las fotos a la Tierra, a 384.000 km.') },
+      { id: 'G4', text: T('Work in lunar orbit for at least 1 year.', 'Funcionar em órbita lunar por pelo menos 1 ano.', 'Funcionar en órbita lunar al menos 1 año.') },
+      { id: 'G5', text: T('Brake into lunar orbit with its own engine.', 'Frear para entrar na órbita da Lua com o próprio motor.', 'Frenar para entrar en la órbita lunar con su propio motor.') }
+    ],
+    constraints: [
+      T('Total budget of 1,600 k$: satellite, ride and antenna time.', 'Orçamento total de 1.600 k$: satélite, carona e tempo de antena.', 'Presupuesto total de 1.600 k$: satélite, viaje y tiempo de antena.'),
+      T('Arrive within 36 months.', 'Chegar em até 36 meses.', 'Llegar en un máximo de 36 meses.'),
+      T('[[cubesat|CubeSat]] format (3U or 6U).', 'Formato [[cubesat|CubeSat]] (3U ou 6U).', 'Formato [[cubesat|CubeSat]] (3U o 6U).')
+    ],
+    aoi: { name: T('Lunar south pole region', 'Região do polo sul da Lua', 'Región del polo sur lunar'), area_km2: 1000000, latitude_deg: -80, longitude_deg: 0, radius_deg: 10 },
+    budget_k: 1600,
+    params: { baseDev_months: 18, deadline_months: 36, deltaV_mps: 350,
+      deltaVWhy: T('Artemis releases the CubeSat flying past the Moon; it must brake about 350 m/s to be captured into orbit.', 'A Artemis solta o CubeSat passando pela Lua; ele precisa frear cerca de 350 m/s para ser capturado em órbita.', 'Artemis suelta el CubeSat pasando por la Luna; debe frenar unos 350 m/s para quedar en órbita.'),
+      margins: { mass: 0.10, volume: 0, power: 0.20, downlink: 0.10, storage: 0.10, cost: 0, time: 0.10, deltav: 0.10 } },
+    slots: moonSlots({
+      orbit: { options: ['moon_polar100', 'moon_polar50', 'moon_polar200'],
+        help: T('Lower = sharper photos, but the Moon\'s lumpy gravity pulls you down sooner.', 'Mais baixa = fotos mais nítidas, mas a gravidade irregular da Lua derruba antes.', 'Más baja = fotos más nítidas, pero la gravedad irregular de la Luna te baja antes.') },
+      launcher: { options: ['artemis_ride', 'lunar_rideshare'] },
+      groundStation: { options: ['dsn_34m', 'gs_univ18'],
+        help: T('Only deep-space antennas reach the Moon. More hours of view = more photos home.', 'Só antenas de espaço profundo alcançam a Lua. Mais horas de visada = mais fotos em casa.', 'Solo las antenas de espacio profundo alcanzan la Luna. Más horas de visibilidad = más fotos en casa.') },
+      comms: { options: ['com_slunar', 'com_xlunar'],
+        help: T('At 384,000 km the signal is very weak: data rates fall from Mbps to kbps.', 'A 384 mil km o sinal é muito fraco: a velocidade cai de Mbps para kbps.', 'A 384.000 km la señal es muy débil: la velocidad cae de Mbps a kbps.') }
+    }),
+    team: MOON_TEAM,
+    randomEvents: MOON_RANDOM,
+    verification: VERIFICATION.concat([DV_VERIF]),
+    requirements: {
+      R1: { value: 20,
+        text: T('Images must have a ground detail (GSD) of 20 m or better.', 'As imagens devem ter resolução no solo (GSD) de 20 m ou melhor.', 'Las imágenes deben tener un detalle en el suelo (GSD) de 20 m o mejor.'),
+        rationale: T('A 60 m crater must cover about 3 × 3 pixels: 60 m ÷ 3 = 20 m.', 'Uma cratera de 60 m precisa ocupar cerca de 3 × 3 pixels: 60 m ÷ 3 = 20 m.', 'Un cráter de 60 m debe ocupar unos 3 × 3 píxeles: 60 m ÷ 3 = 20 m.'),
+        hint: T('Fly lower or use a longer focal length, but watch the data: more detail = more Gbit to send from the Moon.', 'Voe mais baixo ou use foco maior, mas cuidado com os dados: mais detalhe = mais Gbit para mandar da Lua.', 'Vuela más bajo o usa más foco, pero cuidado con los datos: más detalle = más Gbit que enviar desde la Luna.') },
+      R2: { value: 30,
+        text: T('The satellite must cover the whole polar region in 30 days or less.', 'O satélite deve cobrir toda a região polar em 30 dias ou menos.', 'El satélite debe cubrir toda la región polar en 30 días o menos.'),
+        rationale: T('The Moon turns once every 27 days: in one lunar month a polar orbit passes over every longitude.', 'A Lua dá uma volta a cada 27 dias: em um mês lunar a órbita polar passa sobre todas as longitudes.', 'La Luna gira una vez cada 27 días: en un mes lunar la órbita polar pasa sobre todas las longitudes.'),
+        hint: T('The swath must be wide enough that consecutive laps overlap.', 'A faixa precisa ser larga o bastante para as voltas seguidas se sobreporem.', 'La franja debe ser lo bastante ancha para que las vueltas seguidas se solapen.') },
+      R3: { hint: T('From the Moon only the X-band transponder with the 34 m antennas sends a lot of data; or pick a camera that makes fewer Gbit.', 'Da Lua só o transponder banda X com as antenas de 34 m manda muitos dados; ou escolha uma câmera que gere menos Gbit.', 'Desde la Luna solo el transpondedor banda X con las antenas de 34 m envía muchos datos; o elige una cámara que genere menos Gbit.') },
+      R4: { text: T('The satellite must stay in lunar orbit and working for at least 1 year.', 'O satélite deve ficar em órbita lunar, funcionando, por pelo menos 1 ano.', 'El satélite debe permanecer en órbita lunar y funcionando al menos 1 año.'),
+        rationale: T('A full year shows how the shadows in the craters change with the seasons.', 'Um ano inteiro mostra como as sombras nas crateras mudam com as estações.', 'Un año completo muestra cómo cambian las sombras de los cráteres con las estaciones.'),
+        hint: T('Very low lunar orbits are unstable (mascons): 100 km or higher lasts longer.', 'Órbitas lunares muito baixas são instáveis (mascons): 100 km ou mais dura mais.', 'Las órbitas lunares muy bajas son inestables (mascons): 100 km o más dura más.') }
+    },
+    events: {}
+  });
+  (function () {
+    var sc = MS.data.scenarios.moon_map;
+    sc.requirements.push({ id: 'R5', goal: 'G5', weight: 1, metric: 'deltaV_mps', op: '>=', ref: 'deltaVNeed_mps',
+      title: T('Lunar orbit insertion', 'Inserção na órbita lunar', 'Inserción en órbita lunar'),
+      text: T('The engine must give at least the Δv needed to brake into lunar orbit.', 'O motor deve dar pelo menos o Δv necessário para frear e entrar na órbita lunar.', 'El motor debe dar al menos el Δv necesario para frenar y entrar en órbita lunar.'),
+      rationale: T('Without braking, the CubeSat flies past the Moon and is lost in orbit around the Sun.', 'Sem frear, o CubeSat passa direto pela Lua e se perde numa órbita em volta do Sol.', 'Sin frenar, el CubeSat pasa de largo la Luna y se pierde en órbita alrededor del Sol.'),
+      hint: T('Rocket equation: more propellant or higher Isp; or lighter parts.', 'Equação do foguete: mais combustível ou Isp maior; ou peças mais leves.', 'Ecuación del cohete: más combustible o Isp mayor; o piezas más ligeras.') });
+    sc.events = [
+      ev('E1', 'launch', T('Day 0', 'Dia 0', 'Día 0'), T('Launch towards the Moon', 'Lançamento rumo à Lua', 'Lanzamiento hacia la Luna'), [{ check: 'launch' }, { check: 'mass' }, { check: 'volume' }], 'abort',
+        T('The rocket sent the CubeSat on its way to the Moon.', 'O foguete mandou o CubeSat a caminho da Lua.', 'El cohete envió el CubeSat camino a la Luna.'), E_BY_ID.E1.failure),
+      E_BY_ID.ET, E_BY_ID.E2,
+      ev('EL', 'power', T('Day 5', 'Dia 5', 'Día 5'), T('Braking into lunar orbit', 'Freio para entrar na órbita lunar', 'Frenado para entrar en órbita lunar'), [{ check: 'deltav' }], 'abort',
+        T('The engine fired and gave {deltaV_mps} m/s: the Moon captured the CubeSat into orbit.', 'O motor queimou e deu {deltaV_mps} m/s: a Lua capturou o CubeSat em órbita.', 'El motor encendió y dio {deltaV_mps} m/s: la Luna capturó el CubeSat en órbita.'),
+        T('The engine only gave {deltaV_mps} m/s of the {deltaVNeed_mps} needed: the CubeSat flew past the Moon and was lost.', 'O motor só deu {deltaV_mps} m/s dos {deltaVNeed_mps} necessários: o CubeSat passou direto pela Lua e se perdeu.', 'El motor solo dio {deltaV_mps} m/s de los {deltaVNeed_mps} necesarios: el CubeSat pasó de largo la Luna y se perdió.')),
+      E_BY_ID.E3,
+      ev('E4', 'contact', T('Week 1', 'Semana 1', 'Semana 1'), T('First contact from the Moon', 'Primeiro contato da Lua', 'Primer contacto desde la Luna'), [{ check: 'contact' }, { check: 'band' }], 'abort',
+        T('The deep-space antennas heard the CubeSat: {contactMinPerDay} min of contact per day.', 'As antenas de espaço profundo ouviram o CubeSat: {contactMinPerDay} min de contato por dia.', 'Las antenas de espacio profundo escucharon el CubeSat: {contactMinPerDay} min de contacto por día.'),
+        T('No antenna on Earth could hear the CubeSat at 384,000 km: the mission is lost.', 'Nenhuma antena na Terra conseguiu ouvir o CubeSat a 384 mil km: a missão está perdida.', 'Ninguna antena en la Tierra pudo escuchar el CubeSat a 384.000 km: la misión está perdida.')),
+      E_BY_ID.E5,
+      ev('E6', 'image', T('Month 1', 'Mês 1', 'Mes 1'), T('Mapping the craters', 'Mapeamento das crateras', 'Mapeo de los cráteres'), [{ requirement: 'R1' }], { degrade: 0.5 },
+        T('At {gsd_m} m per pixel, craters from 60 m up show in the map.', 'Com {gsd_m} m por pixel, crateras a partir de 60 m aparecem no mapa.', 'Con {gsd_m} m por píxel, los cráteres desde 60 m aparecen en el mapa.'),
+        T('At {gsd_m} m per pixel the small craters blur: the map misses half of them.', 'Com {gsd_m} m por pixel as crateras pequenas borram: o mapa perde metade delas.', 'Con {gsd_m} m por píxel los cráteres pequeños se borran: el mapa pierde la mitad.')),
+      ev('E7', 'coverage', T('Months 1–12', 'Meses 1–12', 'Meses 1–12'), T('Polar coverage', 'Cobertura do polo', 'Cobertura del polo'), [{ requirement: 'R2' }], 'none',
+        T('A full map of the polar region every {revisit_days} days.', 'Um mapa completo da região polar a cada {revisit_days} dias.', 'Un mapa completo de la región polar cada {revisit_days} días.'),
+        T('The polar region is only covered every {revisit_days} days.', 'A região polar só é coberta a cada {revisit_days} dias.', 'La región polar solo se cubre cada {revisit_days} días.')),
+      ev('E8', 'contact', T('Months 1–12', 'Meses 1–12', 'Meses 1–12'), T('Photos back to Earth', 'Fotos de volta à Terra', 'Fotos de vuelta a la Tierra'), [{ requirement: 'R3' }], 'none',
+        T('All {dataPerDay_Gbit} Gbit made each day reached the Earth.', 'Os {dataPerDay_Gbit} Gbit gerados por dia chegaram todos à Terra.', 'Los {dataPerDay_Gbit} Gbit generados por día llegaron todos a la Tierra.'),
+        T('The CubeSat makes {dataPerDay_Gbit} Gbit per day but only {downlink_Gbit_day} fit through the link from the Moon: the rest is lost.', 'O CubeSat gera {dataPerDay_Gbit} Gbit por dia, mas só {downlink_Gbit_day} passam pelo enlace da Lua: o resto se perde.', 'El CubeSat genera {dataPerDay_Gbit} Gbit por día, pero solo {downlink_Gbit_day} pasan por el enlace desde la Luna: el resto se pierde.')),
+      ev('E9', 'end', T('Year 1', 'Ano 1', 'Año 1'), T('End of mission', 'Fim da missão', 'Fin de la misión'), [{ requirement: 'R4' }], 'none',
+        T('The mission completed its year; the orbit still lasts about {lifetime_years} years.', 'A missão completou o ano; a órbita ainda dura cerca de {lifetime_years} anos.', 'La misión completó su año; la órbita aún dura unos {lifetime_years} años.'),
+        T('The Moon\'s uneven gravity brought the CubeSat down after {lifetime_years} years, before the end.', 'A gravidade irregular da Lua derrubou o CubeSat após {lifetime_years} ano, antes do fim.', 'La gravedad irregular de la Luna bajó el CubeSat tras {lifetime_years} años, antes del final.'))
+    ];
+  })();
+
+  // ------------------------------------------------ Cenário 6: pousar na Lua
+  variant('moon_land', {
+    body: 'moon',
+    card: { icon: '🚀', image: 'assets/img/client-moon_land.jpg',
+      pitch: T('Land a small robot on the Moon and send panoramic photos for a month.', 'Pousar um pequeno robô na Lua e mandar fotos panorâmicas por um mês.', 'Aterrizar un pequeño robot en la Luna y enviar fotos panorámicas durante un mes.'),
+      challenge: T('Hardest: every kg costs Δv, and the lunar night freezes everything.', 'A mais difícil: cada kg custa Δv, e a noite lunar congela tudo.', 'La más difícil: cada kg cuesta Δv, y la noche lunar congela todo.') },
+    title: T('Small lunar lander', 'Pequeno módulo de pouso lunar', 'Pequeño módulo de aterrizaje lunar'),
+    customer: T('Lunar exploration program', 'Programa de exploração lunar', 'Programa de exploración lunar'),
+    contact: { name: 'Rafael Okoye', role: T('Landing engineer', 'Engenheiro de pouso', 'Ingeniero de aterrizaje'),
+      skin: '#6b4430', hair: '#141010', shirt: '#e07b39', long: false },
+    need: T('The program wants to test a cheap way to reach the lunar surface: a 6U box with a descent stage that brakes from lunar orbit to a soft landing, then sends panoramic photos for about a month.',
+      'O programa quer testar um jeito barato de chegar à superfície da Lua: uma caixa 6U com um estágio de descida que freia da órbita lunar até um pouso suave, e depois manda fotos panorâmicas por cerca de um mês.',
+      'El programa quiere probar una forma barata de llegar a la superficie lunar: una caja 6U con una etapa de descenso que frena desde la órbita lunar hasta un aterrizaje suave y luego envía fotos panorámicas durante cerca de un mes.'),
+    goals: [
+      { id: 'G1', text: T('Land softly: the engine must kill about 2 km/s of speed.', 'Pousar suave: o motor precisa tirar cerca de 2 km/s de velocidade.', 'Aterrizar suave: el motor debe quitar unos 2 km/s de velocidad.') },
+      { id: 'G2', text: T('Send every panoramic photo back to Earth.', 'Mandar todas as fotos panorâmicas para a Terra.', 'Enviar todas las fotos panorámicas a la Tierra.') },
+      { id: 'G3', text: T('Work on the surface for at least 30 days.', 'Funcionar na superfície por pelo menos 30 dias.', 'Funcionar en la superficie al menos 30 días.') }
+    ],
+    constraints: [
+      T('Total budget of 2,600 k$: lander, ride and antenna time.', 'Orçamento total de 2.600 k$: módulo, carona e tempo de antena.', 'Presupuesto total de 2.600 k$: módulo, viaje y tiempo de antena.'),
+      T('Land within 36 months.', 'Pousar em até 36 meses.', 'Aterrizar en un máximo de 36 meses.'),
+      T('A 6U box on top of a descent stage, up to 40 kg in total.', 'Uma caixa 6U em cima de um estágio de descida, até 40 kg no total.', 'Una caja 6U sobre una etapa de descenso, hasta 40 kg en total.')
+    ],
+    aoi: { name: T('Landing site', 'Local de pouso', 'Sitio de aterrizaje'), area_km2: 1, latitude_deg: 0, longitude_deg: 23, radius_deg: 1 },
+    budget_k: 2600,
+    params: { baseDev_months: 18, deadline_months: 36, deltaV_mps: 1900, plannedDuration_years: 0.082, imagesPerDay: 20, targetMapsPerYear: 365,
+      deltaVWhy: T('From low lunar orbit the lander must brake about 1.7 km/s plus margin to hover and touch down.', 'Da órbita lunar baixa o módulo precisa frear cerca de 1,7 km/s mais folga para pairar e tocar o chão.', 'Desde la órbita lunar baja el módulo debe frenar unos 1,7 km/s más margen para flotar y tocar el suelo.'),
+      margins: { mass: 0.10, volume: 0, power: 0.20, downlink: 0.10, storage: 0.10, cost: 0, time: 0.10, deltav: 0.05 } },
+    slots: moonSlots({
+      orbit: { options: ['site_equator', 'site_pole'], label: T('Landing site', 'Local de pouso', 'Sitio de aterrizaje'),
+        help: T('Where to land. The equator is easy but freezes after 14 days; the polar ridge gets sun for months but is harder to reach and to talk to.', 'Onde pousar. O equador é fácil, mas congela após 14 dias; a crista polar tem sol por meses, mas é mais difícil de alcançar e de falar.', 'Dónde aterrizar. El ecuador es fácil pero se congela tras 14 días; la cresta polar tiene sol por meses pero es más difícil de alcanzar y de comunicar.') },
+      launcher: { options: ['clps_ride'] },
+      groundStation: { options: ['dsn_34m', 'gs_univ18'],
+        help: T('Only deep-space antennas reach the Moon.', 'Só antenas de espaço profundo alcançam a Lua.', 'Solo las antenas de espacio profundo alcanzan la Luna.') },
+      payload: { options: ['cam_wide', 'cam_mid'], label: T('Panoramic camera', 'Câmera panorâmica', 'Cámara panorámica') },
+      structure: { options: ['struct_6u'] },
+      comms: { options: ['com_slunar', 'com_xlunar'] }
+    }),
+    team: MOON_TEAM,
+    randomEvents: MOON_RANDOM.filter(function (e) { return e.id !== 'RE4'; }).map(function (e) { return e.after === 'E6' ? Object.assign({}, e, { after: 'E5' }) : e; }),
+    verification: [Object.assign({}, VERIFICATION[2], { requirements: ['R2'] }), VERIFICATION[4], VERIFICATION[5], VERIFICATION[7],
+      Object.assign({}, DV_VERIF, { requirements: ['R1'] }),
+      { id: 'V10', requirements: ['R3'], method: T('Analysis', 'Análise', 'Análisis'),
+        title: T('Sunlight and lunar night analysis', 'Análise de sol e noite lunar', 'Análisis de sol y noche lunar'),
+        description: T('How many days of sunlight the site gets before the −170 °C night.', 'Quantos dias de sol o local tem antes da noite a −170 °C.', 'Cuántos días de sol tiene el sitio antes de la noche a −170 °C.') }],
+    requirements: {},
+    events: {}
+  });
+  (function () {
+    var sc = MS.data.scenarios.moon_land;
+    sc.slots = sc.slots.map(function (s) { return s.id === 'propulsion' ? Object.assign({}, s, { options: ['prop_green', 'prop_lander'] }) : s; });
+    sc.requirements = [
+      { id: 'R1', goal: 'G1', weight: 1, metric: 'deltaV_mps', op: '>=', ref: 'deltaVNeed_mps',
+        title: T('Soft landing', 'Pouso suave', 'Aterrizaje suave'),
+        text: T('The descent engine must give at least the Δv the landing site needs.', 'O motor de descida deve dar pelo menos o Δv que o local de pouso pede.', 'El motor de descenso debe dar al menos el Δv que pide el sitio de aterrizaje.'),
+        rationale: T('In low lunar orbit you fly at about 1.6 km/s: all of it must be braked before touching the ground.', 'Na órbita lunar baixa você voa a cerca de 1,6 km/s: tudo isso precisa ser freado antes de tocar o chão.', 'En la órbita lunar baja vuelas a unos 1,6 km/s: todo eso debe frenarse antes de tocar el suelo.'),
+        hint: T('Use the descent stage, take lighter parts (every kg on top costs Δv) or choose the easier site.', 'Use o estágio de descida, leve peças mais leves (cada kg em cima custa Δv) ou escolha o local mais fácil.', 'Usa la etapa de descenso, lleva piezas más ligeras (cada kg encima cuesta Δv) o elige el sitio más fácil.') },
+      { id: 'R2', goal: 'G2', weight: 1, metric: 'downlink_Gbit_day', op: '>=', ref: 'dataPerDay_Gbit',
+        title: T('Photos back to Earth', 'Fotos de volta à Terra', 'Fotos de vuelta a la Tierra'),
+        text: T('The daily link to Earth must carry all the photos made per day.', 'O enlace diário com a Terra deve levar todas as fotos feitas por dia.', 'El enlace diario con la Tierra debe llevar todas las fotos hechas por día.'),
+        rationale: T('Photos that never reach Earth are worth nothing to the scientists.', 'Fotos que nunca chegam à Terra não valem nada para os cientistas.', 'Las fotos que nunca llegan a la Tierra no valen nada para los científicos.'),
+        hint: T('The polar site sees Earth low on the horizon: half the contact time. X band and the 34 m antennas help.', 'O local polar vê a Terra baixa no horizonte: metade do tempo de contato. Banda X e as antenas de 34 m ajudam.', 'El sitio polar ve la Tierra baja en el horizonte: la mitad del tiempo de contacto. Banda X y las antenas de 34 m ayudan.') },
+      { id: 'R3', goal: 'G3', weight: 1, metric: 'lifetime_years', op: '>=', value: 0.082,
+        title: T('30 days on the surface', '30 dias na superfície', '30 días en la superficie'),
+        text: T('The lander must work on the surface for at least 30 days (0.082 year).', 'O módulo deve funcionar na superfície por pelo menos 30 dias (0,082 ano).', 'El módulo debe funcionar en la superficie al menos 30 días (0,082 año).'),
+        rationale: T('A lunar day lasts 14 Earth days; then comes a night of 14 days at −170 °C that a small lander cannot survive.', 'Um dia lunar dura 14 dias terrestres; depois vem uma noite de 14 dias a −170 °C que um módulo pequeno não aguenta.', 'Un día lunar dura 14 días terrestres; luego viene una noche de 14 días a −170 °C que un módulo pequeño no aguanta.'),
+        hint: T('Only a place with almost constant sunlight (the polar ridge) gives more than 14 days.', 'Só um lugar com sol quase constante (a crista polar) dá mais de 14 dias.', 'Solo un lugar con sol casi constante (la cresta polar) da más de 14 días.') }
+    ];
+    sc.events = [
+      ev('E1', 'launch', T('Day 0', 'Dia 0', 'Día 0'), T('Launch towards the Moon', 'Lançamento rumo à Lua', 'Lanzamiento hacia la Luna'), [{ check: 'launch' }, { check: 'mass' }, { check: 'volume' }], 'abort',
+        T('The ride carried the lander to low lunar orbit.', 'A carona levou o módulo até a órbita lunar baixa.', 'El viaje llevó el módulo a la órbita lunar baja.'), E_BY_ID.E1.failure),
+      E_BY_ID.ET,
+      ev('E2', 'separation', T('Day 5', 'Dia 5', 'Día 5'), T('Release in lunar orbit', 'Liberação na órbita lunar', 'Liberación en órbita lunar'), [],
+        null, T('The lander separated and pointed its engine forward.', 'O módulo se separou e apontou o motor para a frente.', 'El módulo se separó y apuntó el motor hacia adelante.')),
+      ev('EL', 'power', T('Day 6', 'Dia 6', 'Día 6'), T('Descent and landing', 'Descida e pouso', 'Descenso y aterrizaje'), [{ check: 'deltav' }], 'abort',
+        T('The engine fired for 11 minutes, gave {deltaV_mps} m/s and the lander touched down softly!', 'O motor queimou por 11 minutos, deu {deltaV_mps} m/s e o módulo tocou o chão suavemente!', '¡El motor encendió 11 minutos, dio {deltaV_mps} m/s y el módulo tocó el suelo suavemente!'),
+        T('The propellant ran out with only {deltaV_mps} of the {deltaVNeed_mps} m/s braked: the lander hit the ground too fast.', 'O combustível acabou com só {deltaV_mps} dos {deltaVNeed_mps} m/s freados: o módulo bateu no chão rápido demais.', 'El combustible se acabó con solo {deltaV_mps} de los {deltaVNeed_mps} m/s frenados: el módulo chocó contra el suelo demasiado rápido.')),
+      ev('E3', 'power', T('Day 6', 'Dia 6', 'Día 6'), T('Power on the surface', 'Energia na superfície', 'Energía en la superficie'), [{ check: 'power' }], { degrade: 0.3 },
+        T('In sunlight the panels make {powerGen_W} W for {powerUse_W} W used.', 'No sol os painéis geram {powerGen_W} W para {powerUse_W} W de consumo.', 'Con sol los paneles generan {powerGen_W} W para {powerUse_W} W de consumo.'),
+        E_BY_ID.E3.failure),
+      ev('E4', 'contact', T('Day 6', 'Dia 6', 'Día 6'), T('Hello from the Moon', 'Alô da Lua', 'Hola desde la Luna'), [{ check: 'contact' }, { check: 'band' }], 'abort',
+        T('The antennas heard the lander: {contactMinPerDay} min of contact per day.', 'As antenas ouviram o módulo: {contactMinPerDay} min de contato por dia.', 'Las antenas escucharon el módulo: {contactMinPerDay} min de contacto por día.'),
+        T('No antenna on Earth could hear the lander: it works alone and silent.', 'Nenhuma antena na Terra conseguiu ouvir o módulo: ele funciona sozinho e em silêncio.', 'Ninguna antena en la Tierra pudo escuchar el módulo: funciona solo y en silencio.')),
+      ev('E5', 'image', T('Day 7', 'Dia 7', 'Día 7'), T('First panorama', 'Primeira panorâmica', 'Primera panorámica'), [], null,
+        T('The first 360° panorama of the landing site arrived on Earth.', 'A primeira panorâmica 360° do local de pouso chegou à Terra.', 'La primera panorámica 360° del sitio de aterrizaje llegó a la Tierra.')),
+      ev('E8', 'contact', T('Days 7–30', 'Dias 7–30', 'Días 7–30'), T('Photos back to Earth', 'Fotos de volta à Terra', 'Fotos de vuelta a la Tierra'), [{ requirement: 'R2' }], 'none',
+        T('All {dataPerDay_Gbit} Gbit of photos per day reached Earth.', 'Os {dataPerDay_Gbit} Gbit de fotos por dia chegaram todos à Terra.', 'Los {dataPerDay_Gbit} Gbit de fotos por día llegaron todos a la Tierra.'),
+        T('The lander makes {dataPerDay_Gbit} Gbit per day but only {downlink_Gbit_day} reach Earth.', 'O módulo gera {dataPerDay_Gbit} Gbit por dia, mas só {downlink_Gbit_day} chegam à Terra.', 'El módulo genera {dataPerDay_Gbit} Gbit por día, pero solo {downlink_Gbit_day} llegan a la Tierra.')),
+      ev('E9', 'end', T('Day 30', 'Dia 30', 'Día 30'), T('A month on the Moon?', 'Um mês na Lua?', '¿Un mes en la Luna?'), [{ requirement: 'R3' }], 'none',
+        T('The lander kept working for the whole month in the sunlight of the polar ridge.', 'O módulo funcionou o mês inteiro com o sol da crista polar.', 'El módulo funcionó todo el mes con el sol de la cresta polar.'),
+        T('The lunar night arrived before the month was over and the lander froze.', 'A noite lunar chegou antes do fim do mês e o módulo congelou.', 'La noche lunar llegó antes del fin del mes y el módulo se congeló.'))
+    ];
+  })();
 })(globalThis);

@@ -133,7 +133,7 @@
       ['en', 'pt', 'es'].forEach(function (l) { assert(c.title[l] && c.why[l], c.id + ' sem texto ' + l); });
       c.steps.forEach(function (s) {
         var keys = (s.pt.match(/\{(\w+)\}/g) || []).map(function (x) { return x.slice(1, -1); });
-        var w = c.work ? c.work(m) : {};
+        var w = c.work ? c.work(m, r.selection) : {};
         keys.forEach(function (k) { assert(k === 'answer' || k in g || k in w, c.id + ': {' + k + '} sem valor'); });
       });
     });

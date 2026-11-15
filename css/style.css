@@ -558,7 +558,7 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 .ck-tab { flex: 1 1 0; min-width: 0; justify-content: center; padding: 6px 8px; font-size: 14px; }
 .ck-tab > span:not(.ck-tab-n) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Cartões compactos no cockpit: só massa, energia, volume e custo nas especificações */
-.ck-parts .specs > :not(.sp-mass_kg):not(.sp-power_W):not(.sp-volume_U):not(.sp-cost_k):not(.sp-solarPower_W):not(.sp-dataRate_kbps):not(.sp-capacity_U):not(.sp-capacity_Wh) { display: none; }
+.ck-parts .specs > :not(.sp-mass_kg):not(.sp-power_W):not(.sp-volume_U):not(.sp-cost_k):not(.sp-solarPower_W):not(.sp-dataRate_kbps):not(.sp-capacity_U):not(.sp-capacity_Wh):not(.sp-isp_s):not(.sp-propellant_kg) { display: none; }
 .ck-parts .option-thumb { height: 104px; }
 .ck-parts .option { padding: 12px; gap: 6px; }
 .ck-parts .option-thumb { margin: -12px -12px 2px; }

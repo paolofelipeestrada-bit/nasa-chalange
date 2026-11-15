@@ -134,11 +134,12 @@
         for (var k = 0; k < C.stormDays; k++) dragBoost[d + k] = Math.max(dragBoost[d + k] || 1, m);
       });
       if (flrX[d]) tally.xFlares += flrX[d].length;
-      var act = p.activity * (dragBoost[d] || 1) * (flrX[d] ? C.flareDrag : 1);
-      var dh = r0 * Math.exp((input.h0 - h) / C.scaleHeight_km) * act * (safe ? C.safeDrag : 1);
+      // Sem atmosfera (Lua): o clima espacial não muda a órbita; ela só termina na vida prevista.
+      var act = input.noAtmosphere ? 1 : p.activity * (dragBoost[d] || 1) * (flrX[d] ? C.flareDrag : 1);
+      var dh = r0 * Math.exp((input.h0 - h) / C.scaleHeight_km) * act * (safe && !input.noAtmosphere ? C.safeDrag : 1);
       h -= dh;
       (gst[d] || []).forEach(function (g) { if (g[1] >= C.alertKp) note(d, 'storm', { kp: g[1], id: g[2], drop: dh }); });
-      if (h <= hEnd) { end = 'reentry'; opDays = d; note(d, 'reentry', { h: h }); break; }
+      if (h <= hEnd) { end = input.endKind || 'reentry'; opDays = d; note(d, 'reentry', { h: h }); break; }
 
       // 3. Partículas solares: painéis e computador
       if (sep[d]) {
