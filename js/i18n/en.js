@@ -631,6 +631,10 @@
     'req3.nOk': "{n} met",
     'req3.nFail': "{n} failing",
     'req3.nPending': "{n} waiting",
-    'coach.requirements.2': "Each line links a customer wish to a number and to the parts that change it. Change a part later and you already know which goal you are risking."
+    'coach.requirements.2': "Each line links a customer wish to a number and to the parts that change it. Change a part later and you already know which goal you are risking.",
+    'alert.call': "Mission control · day {day}",
+    'alert.noAnswer': "No answer in time = \"{opt}\".",
+    'alert.timeout': "No answer in time: \"{opt}\". Not deciding is also a decision.",
+    'alert.waitTitle': "Waiting for your answer"
   };
 })(globalThis);

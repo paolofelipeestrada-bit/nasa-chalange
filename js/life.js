@@ -53,6 +53,8 @@
     memory: ['pause', 'overwrite', 'compress'],
     power: ['reduce', 'keep']
   };
+  // Sem resposta a tempo (alerta com contagem no 3D): o satélite segue como está.
+  var NO_ANSWER = { storm: 'keep', memory: 'overwrite', power: 'keep' };
 
   function day(s) { return Math.round(Date.parse(s + 'T00:00:00Z') / DAY_MS); }
   function iso(n) { return new Date(n * DAY_MS).toISOString().slice(0, 10); }
@@ -205,5 +207,5 @@
     return { periodId: input.periodId, launch: p.launch, days: N, series: series, log: log, pending: pending, totals: totals, tally: tally };
   }
 
-  MS.life = { simulate: simulate, OPTIONS: OPTIONS, CONSTANTS: C, iso: iso, day: day };
+  MS.life = { simulate: simulate, OPTIONS: OPTIONS, NO_ANSWER: NO_ANSWER, CONSTANTS: C, iso: iso, day: day };
 })(globalThis);

@@ -798,6 +798,12 @@
         title.textContent = e.title;
         title.style.color = STATUS_COLOR[e.status] || '';
         text.textContent = e.text;
+      } else if (V.t >= S.duration && m.result.mission.status === 'decide') {
+        // Parada esperando a resposta ao alerta do controle da missão.
+        when.textContent = t('alert.call', { day: m.result.mission.decision.day + 1 });
+        title.textContent = t('alert.waitTitle');
+        title.style.color = STATUS_COLOR.warn;
+        text.textContent = '';
       } else if (V.t >= S.duration) {
         var o = m.result.mission.outcome;
         when.textContent = t('viz.end');
@@ -864,6 +870,7 @@
       if (res.done) endCine(false);
       else { cineHud(res); V.renderer.render(V.cine.obj.scene, V.camera); return; }
     }
+    alertTick(dt);
     if (V.playing) {
       V.t += dt * V.speed;
       if (S.launchFailed) V.t = Math.min(V.t, S.orbitStart + 3);
@@ -910,6 +917,7 @@
     if (key !== V.key) {
       var same = V.baseKey === base, keepT = V.t;
       V.key = key; V.baseKey = base; V.hudKey = null; V.flagKey = null;
+      hideAlert();
       buildMission(state, result);
       if (same) {
         // Só mudou uma decisão da missão: segue do mesmo ponto, sem repetir a decolagem.
@@ -957,6 +965,94 @@
     V.snapCam = true;
     update(0);
   }
+  // ------------------------------------------- Alerta do controle da missão
+  // Quando o voo chega ao dia de um problema (result.mission.decision), o
+  // controle chama dentro da vista 3D: bipes, borda vermelha e 10 s para
+  // responder. Sem resposta, vale MS.life.NO_ANSWER (o satélite segue como
+  // está). Sem contagem com "menos movimento" ou quando a vez é de outro na
+  // equipe. Os botões usam data-action="decide", igual ao cartão da página.
+  var ALERT_SECONDS = 10;
+  var sfx = null;
+  function alertBeep(f) {
+    if (MS.ui.local.shoutMute) return;
+    try {
+      var AC = root.AudioContext || root.webkitAudioContext;
+      if (!AC) return;
+      sfx = sfx || new AC();
+      if (sfx.state === 'suspended') sfx.resume();
+      var o = sfx.createOscillator(), g = sfx.createGain(), t0 = sfx.currentTime;
+      o.type = 'square'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      o.connect(g); g.connect(sfx.destination); o.start(t0); o.stop(t0 + 0.15);
+    } catch (e) { /* sem som */ }
+  }
+  function hideAlert() {
+    if (!V || !V.alert) return;
+    V.alert = null;
+    V.wrap.classList.remove('alert-on');
+    var el = V.wrap.querySelector('.viz-alert');
+    if (el) el.remove();
+  }
+  function showAlert(pend, now) {
+    var esc = MS.ui.h.esc, st = V.mission.state;
+    var locked = !!(MS.ui.phaseLock && MS.ui.phaseLock(st));
+    var reduce = false;
+    try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
+    var timed = !locked && !reduce;
+    var none = MS.life.NO_ANSWER[pend.id];
+    V.alert = { key: pend.id + '|' + pend.day, timed: timed, left: ALERT_SECONDS * 1000, shown: ALERT_SECONDS + 1, none: none };
+    var el = document.createElement('div');
+    el.className = 'viz-alert';
+    el.setAttribute('role', 'alertdialog');
+    el.setAttribute('aria-label', t('life.dec.' + pend.id + '.title'));
+    el.innerHTML = '<div class="va-top"><span class="va-tag pixel">' + esc(t('alert.call', { day: pend.day + 1 })) + '</span>' +
+      (timed ? '<span class="va-clock pixel" aria-hidden="true">' + ALERT_SECONDS + '</span>' : '') + '</div>' +
+      '<h3>' + esc(t('life.dec.' + pend.id + '.title')) + '</h3><p>' + MS.ui.life.decisionText(pend) + '</p>' +
+      '<div class="va-opts">' + pend.options.map(function (o) {
+        return '<button type="button" class="btn small' + (o === none ? '' : ' primary') + '" data-action="decide" data-id="' + esc(pend.id) + '" data-choice="' + esc(o) + '"' + (locked ? ' disabled' : '') + '>' +
+          esc(t('life.opt.' + pend.id + '.' + o)) + '</button>';
+      }).join('') + '</div>' +
+      '<p class="va-note">' + esc(timed ? t('alert.noAnswer', { opt: t('life.opt.' + pend.id + '.' + none) }) : t('life.dec.rule')) + '</p>' +
+      (timed ? '<div class="va-bar"><i></i></div>' : '');
+    V.wrap.appendChild(el);
+    V.wrap.classList.add('alert-on');
+    alertBeep(880); setTimeout(function () { alertBeep(660); }, 160);
+    if (!timed) return;
+    var first = el.querySelector('.va-opts .btn');
+    if (first) { try { first.focus({ preventScroll: true }); } catch (e) { /* ok */ } }
+  }
+  function alertTick(dt) {
+    var mission = V.mission && V.mission.result.mission;
+    var pend = mission && mission.status === 'decide' ? mission.decision : null;
+    if (!pend || V.t < V.mission.schedule.duration - 0.05) { hideAlert(); return; }
+    if (!V.alert || V.alert.key !== pend.id + '|' + pend.day) { hideAlert(); showAlert(pend, 0); }
+    var a = V.alert;
+    if (!a.timed || !V.playing) return;
+    a.left -= dt * 1000;
+    var sec = Math.max(0, Math.ceil(a.left / 1000));
+    if (sec !== a.shown) {
+      a.shown = sec;
+      var c = V.wrap.querySelector('.va-clock');
+      if (c) { c.textContent = String(sec); c.classList.toggle('hot', sec <= 3); }
+      if (sec <= 3 && sec > 0) alertBeep(sec === 1 ? 990 : 740);
+    }
+    var bar = V.wrap.querySelector('.va-bar i');
+    if (bar) bar.style.width = Math.max(0, a.left / (ALERT_SECONDS * 1000) * 100) + '%';
+    if (a.left <= 0 && !a.fired) {
+      a.fired = true;
+      var b = V.wrap.querySelector('.viz-alert [data-choice="' + a.none + '"]');
+      var toast = document.createElement('div');
+      toast.className = 'viz-toast';
+      toast.setAttribute('role', 'status');
+      toast.textContent = t('alert.timeout', { opt: t('life.opt.' + pend.id + '.' + a.none) });
+      V.wrap.appendChild(toast);
+      setTimeout(function () { toast.remove(); }, 4500);
+      alertBeep(330);
+      if (b) b.click();
+    }
+  }
+
   function cineHud(res) {
     var c = V.cine, el = V.wrap.querySelector('.viz-cine'), esc = MS.ui.h.esc;
     if (!el) return;

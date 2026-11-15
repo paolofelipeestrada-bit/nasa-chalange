@@ -43,7 +43,8 @@
   }
 
   // ------------------------------------------------------- Decisão
-  function decision(pending, locked) {
+  // Texto do problema (com o link para o registro da NASA, quando houver).
+  function decisionText(pending) {
     var id = pending.id, c = pending.ctx || {};
     var text;
     if (id === 'storm') {
@@ -54,6 +55,10 @@
     } else {
       text = h.esc(t('life.dec.power.text', { day: pending.day + 1, gen: U.fmt(c.gen, 1), use: U.fmt(c.use, 1) }));
     }
+    return text;
+  }
+  function decision(pending, locked) {
+    var id = pending.id, text = decisionText(pending);
     var opts = pending.options.map(function (o) {
       return '<button type="button" class="choice" data-action="decide" data-id="' + id + '" data-choice="' + o + '"' + (locked ? ' disabled' : '') + '>' +
         '<span class="choice-title">' + h.esc(t('life.opt.' + id + '.' + o)) + '</span>' +
@@ -151,5 +156,5 @@
     });
   }
 
-  ui.life = { periodPicker: periodPicker, decision: decision, chart: chart, diary: diary, stats: stats, niceDate: niceDate };
+  ui.life = { periodPicker: periodPicker, decision: decision, decisionText: decisionText, chart: chart, diary: diary, stats: stats, niceDate: niceDate };
 })(globalThis);

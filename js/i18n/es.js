@@ -611,6 +611,10 @@
     'req3.nOk': "{n} cumplidos",
     'req3.nFail': "{n} fallando",
     'req3.nPending': "{n} esperando",
-    'coach.requirements.2': "Cada línea une un deseo del cliente a un número y a las piezas que cambian ese número. Si cambias una pieza después, ya sabes qué meta estás arriesgando."
+    'coach.requirements.2': "Cada línea une un deseo del cliente a un número y a las piezas que cambian ese número. Si cambias una pieza después, ya sabes qué meta estás arriesgando.",
+    'alert.call': "Control de misión · día {day}",
+    'alert.noAnswer': "Sin respuesta a tiempo = \"{opt}\".",
+    'alert.timeout': "Sin respuesta a tiempo: \"{opt}\". No decidir también es una decisión.",
+    'alert.waitTitle': "Esperando tu respuesta"
   };
 })(globalThis);
