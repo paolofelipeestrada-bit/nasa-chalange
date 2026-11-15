@@ -64,6 +64,7 @@
         '<span class="mn-kicker">' + h.esc(t('menu.kicker')) + '</span>' +
         '<h1 class="pixel">' + h.esc(t('app.name')) + '</h1>' +
         '<p class="mn-tag">' + h.esc(t('menu.tagline')) + '</p>' +
+        '<div class="mn-level"><span class="mn-level-cap">' + h.esc(t('lvl.title')) + '</span>' + h.levelPicker(state) + '</div>' +
         '<div class="mn-btns">' + btns + '</div>' +
         '<div class="mn-small">' + small + '</div>' +
         howPanel() +

@@ -255,7 +255,7 @@
       V.scene.remove(V.mission.group); V.earth.remove(V.mission.onEarth);
       dispose(V.mission.group); dispose(V.mission.onEarth);
     }
-    var sc = MS.data.scenarios[state.scenarioId], sel = result.selection;
+    var sc = MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId], sel = result.selection;
     var orbit = sel.orbit, gs = sel.groundStation, L = sel.launcher;
 
     var group = new THREE.Group(), onEarth = new THREE.Group();

@@ -56,6 +56,8 @@
     cost_k:               { unit: 'k$',   decimals: 0 },
     budget_k:             { unit: 'k$',   decimals: 0 },
     devTime_months:       { unitKey: 'months', decimals: 0 },
+    batteryNeed_Wh:       { unit: 'Wh',   decimals: 1 },   // só com a escolha "battery" (modo Difícil)
+    battery_Wh:           { unit: 'Wh',   decimals: 0 },
     launchWait_months:    { unitKey: 'months', decimals: 0 },
     schedule_months:      { unitKey: 'months', decimals: 0 },
     deadline_months:      { unitKey: 'months', decimals: 0 }
@@ -70,13 +72,15 @@
     { id: 'downlink', demand: 'dataPerDay_Gbit',  capacity: 'downlink_Gbit_day' },
     { id: 'storage',  demand: 'storageNeed_Gbit', capacity: 'storage_Gbit' },
     { id: 'cost',     demand: 'cost_k',           capacity: 'budget_k' },
-    { id: 'time',     demand: 'schedule_months',  capacity: 'deadline_months' }
+    { id: 'time',     demand: 'schedule_months',  capacity: 'deadline_months' },
+    // Só existe quando o cenário tem a escolha "battery" (modo Difícil, js/data/levels.js)
+    { id: 'battery',  demand: 'batteryNeed_Wh',   capacity: 'battery_Wh', slot: 'battery' }
   ];
 
   // Verificações de projeto (checks). Textos: t('chk.<id>.label|fail|warn').
   var CHECKS = {
     mass: { warn: true }, volume: { warn: true }, power: { warn: true }, downlink: { warn: true },
-    storage: { warn: true }, cost: { warn: true }, time: { warn: true },
+    storage: { warn: true }, cost: { warn: true }, time: { warn: true }, battery: { warn: true },
     pointing: {}, launch: {}, contact: {}, band: {}
   };
   var CHECK_IDS = Object.keys(CHECKS);
@@ -89,7 +93,9 @@
     power:     ['solarPower_W'],
     adcs:      ['accuracy_deg'],
     comms:     ['band', 'dataRate_kbps'],
-    obc:       ['storage_GB', 'compressionRatio']
+    obc:       ['storage_GB', 'compressionRatio'],
+    battery:   ['capacity_Wh'],   // modo Difícil
+    shield:    []                 // modo Difícil (protege do imprevisto de radiação)
   };
   var SOURCE_FIELDS = {
     orbits:         ['name', 'altitude_km', 'inclination_deg', 'lifetime_years'],
@@ -102,6 +108,8 @@
     payload: 'components', structure: 'components', power: 'components',
     adcs: 'components', comms: 'components', obc: 'components'
   };
+  // Escolhas opcionais: só alguns níveis têm (js/data/levels.js → addSlots).
+  var OPTIONAL_SLOTS = { battery: 'components', shield: 'components' };
 
   // ---------------------------------------------------------- Utilitários
   function isNum(x) { return typeof x === 'number' && !isNaN(x); }
@@ -381,6 +389,25 @@
         isNum(solar) ? t('p.powerGen', { g: fmt(gen, 1) }) : '');
     } else {
       pend(['powerGen_W'], ['orbit', 'structure', 'power']);
+    }
+
+    // Bateria (só no modo Difícil): energia para atravessar a sombra sem
+    // descarregar mais que a profundidade de descarga segura (DoD).
+    if (sc.slots.some(function (s) { return s.id === 'battery'; })) {
+      var dod = isNum(p.batteryDoD) ? p.batteryDoD : 0.3;
+      if (om) {
+        var shadowH = om.eclipseFraction * om.period_min / 60;
+        var needWh = isNum(useW) ? useW * shadowH / dod : null;
+        set('batteryNeed_Wh', needWh, t('x.batteryNeed', { w: fmt(useW, 2), min: fmt(shadowH * 60, 0), dod: pct(dod), need: fmt(needWh, 1), soFar: soFar }),
+          mel.partial, t('p.batteryNeed', { need: fmt(needWh, 1), dod: pct(dod) }));
+      } else {
+        pend(['batteryNeed_Wh'], ['orbit']);
+      }
+      if (sel.battery) set('battery_Wh', sel.battery.capacity_Wh, t('x.battery', { name: sel.battery.name, c: fmt(sel.battery.capacity_Wh, 0) }));
+      else pend(['battery_Wh'], ['battery']);
+    } else {
+      set('batteryNeed_Wh', null, t('x.batteryOff'));
+      set('battery_Wh', null, t('x.batteryOff'));
     }
 
     // Massa e volume
@@ -884,6 +911,7 @@
     if (!data || !data.scenarios) throw new Error('Dados não carregados (MS.data).');
     var sc = data.scenarios[state && state.scenarioId];
     if (!sc) throw new Error('Cenário desconhecido: ' + (state && state.scenarioId));
+    if (MS.levels) sc = MS.levels.apply(sc, MS.levels.id(state)); // nível de dificuldade (js/levels.js)
     var catalog = data.catalog || {};
     var r = resolveSelection(state.design, sc, catalog);
     var slotLabel = {};
@@ -895,7 +923,9 @@
     var mel = buildMEL(ctx);
     var metrics = computeMetrics(ctx, mel);
     var margins = (sc.params && sc.params.margins) || {};
-    var resources = RESOURCES.map(function (def) { return evalResource(def, metrics, margins); });
+    var resources = RESOURCES.filter(function (def) {
+      return !def.slot || sc.slots.some(function (s) { return s.id === def.slot; });
+    }).map(function (def) { return evalResource(def, metrics, margins); });
     var checks = computeChecks(ctx, metrics, resources);
     var requirements = evaluateRequirements(sc, metrics);
     var verification = evaluateVerification(sc, requirements, checks);
@@ -1023,8 +1053,9 @@
       });
       (sc.slots || []).forEach(function (s) {
         var w = `${where}, escolha ${s.id}`;
-        if (!ENGINE_SLOTS[s.id]) { err(`${w}: o motor não conhece esta escolha.`); return; }
-        if (s.source !== ENGINE_SLOTS[s.id]) err(`${w}: source deve ser "${ENGINE_SLOTS[s.id]}".`);
+        var src = ENGINE_SLOTS[s.id] || OPTIONAL_SLOTS[s.id];
+        if (!src) { err(`${w}: o motor não conhece esta escolha.`); return; }
+        if (s.source !== src) err(`${w}: source deve ser "${src}".`);
         if (phaseIds.indexOf(s.phase) === -1) err(`${w}: fase "${s.phase}" não existe.`);
         if (!s.options || !s.options.length) err(`${w}: sem opções.`);
         (s.options || []).forEach(function (oid) {

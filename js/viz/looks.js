@@ -77,6 +77,13 @@
     },
     obc: function (it) {
       return { kind: 'computer', boards: num(it.storage_GB, 4) >= 32 ? 2 : 1, heatsink: num(it.compressionRatio, 1) >= 4 };
+    },
+    // Modo Difícil: pacote de baterias (placas) e placa de blindagem (dissipador metálico)
+    battery: function (it) {
+      return { kind: 'computer', boards: num(it.capacity_Wh, 10) >= 40 ? 2 : 1, heatsink: false };
+    },
+    shield: function (it) {
+      return { kind: 'computer', boards: 1, heatsink: num(it.mass_kg, 0) > 0 };
     }
   };
 

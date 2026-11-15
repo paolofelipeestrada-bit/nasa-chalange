@@ -210,7 +210,7 @@
   function rebuild(state) {
     if (V.model) { V.scene.remove(V.model); disposeModel(V.model); }
     V.pulse = [];
-    var sc = MS.data.scenarios[state.scenarioId], phase = state.phase, prev = V.preview;
+    var sc = MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId], phase = state.phase, prev = V.preview;
     var label = { kicker: t('hangar.title'), name: '', stats: '', previewing: false }, model, space = false;
 
     if (phase === 'concept') {

@@ -298,6 +298,48 @@
         pros: T('4:1 compression and lots of memory.', 'Compressão 4:1 e muita memória.', 'Compresión 4:1 y mucha memoria.'),
         cons: T('Costs more and uses more power.', 'Mais caro e consome mais energia.', 'Más cara y consume más energía.'),
         storage_GB: 64, compressionRatio: 4, mass_kg: 0.2, power_W: 1.2, duty: 1, volume_U: 0.3, cost_k: 40
+      },
+
+      // ---- Só no modo Difícil (js/data/levels.js): bateria e blindagem
+      bat_10: {
+        role: 'battery', maturity: 'cots',
+        name: T('Small battery (10 Wh)', 'Bateria pequena (10 Wh)', 'Batería pequeña (10 Wh)'),
+        description: T('Two lithium-ion cells: 10 Wh.', 'Duas células de íon-lítio: 10 Wh.', 'Dos celdas de ion-litio: 10 Wh.'),
+        pros: T('Light and cheap.', 'Leve e barata.', 'Ligera y barata.'),
+        cons: T('Drains deeply in the shadow if the satellite uses a lot of power.', 'Descarrega fundo na sombra se o satélite gasta muita energia.', 'Se descarga a fondo en la sombra si el satélite usa mucha energía.'),
+        capacity_Wh: 10, mass_kg: 0.1, power_W: 0, volume_U: 0.1, cost_k: 5
+      },
+      bat_20: {
+        role: 'battery', maturity: 'cots',
+        name: T('Medium battery (20 Wh)', 'Bateria média (20 Wh)', 'Batería mediana (20 Wh)'),
+        description: T('Four lithium-ion cells: 20 Wh.', 'Quatro células de íon-lítio: 20 Wh.', 'Cuatro celdas de ion-litio: 20 Wh.'),
+        pros: T('Good balance for a 3U.', 'Bom equilíbrio para um 3U.', 'Buen equilibrio para un 3U.'),
+        cons: T('A little more mass and volume.', 'Um pouco mais de massa e volume.', 'Un poco más de masa y volumen.'),
+        capacity_Wh: 20, mass_kg: 0.2, power_W: 0, volume_U: 0.2, cost_k: 9
+      },
+      bat_40: {
+        role: 'battery', maturity: 'cots',
+        name: T('Large battery (40 Wh)', 'Bateria grande (40 Wh)', 'Batería grande (40 Wh)'),
+        description: T('Eight lithium-ion cells: 40 Wh.', 'Oito células de íon-lítio: 40 Wh.', 'Ocho celdas de ion-litio: 40 Wh.'),
+        pros: T('Shallow discharge: lasts for years.', 'Descarga rasa: dura anos.', 'Descarga poco profunda: dura años.'),
+        cons: T('Heavier and takes space in the box.', 'Mais pesada e ocupa espaço na caixa.', 'Más pesada y ocupa espacio en la caja.'),
+        capacity_Wh: 40, mass_kg: 0.4, power_W: 0, volume_U: 0.4, cost_k: 15
+      },
+      shield_none: {
+        role: 'shield', maturity: 'cots',
+        name: T('No extra shielding', 'Sem blindagem extra', 'Sin blindaje extra'),
+        description: T('Only the aluminium frame protects the electronics.', 'Só a estrutura de alumínio protege a eletrônica.', 'Solo la estructura de aluminio protege la electrónica.'),
+        pros: T('No extra mass or cost.', 'Sem massa nem custo extra.', 'Sin masa ni costo extra.'),
+        cons: T('Radiation can corrupt data in memory.', 'A radiação pode estragar dados na memória.', 'La radiación puede dañar datos en la memoria.'),
+        mass_kg: 0, power_W: 0, volume_U: 0, cost_k: 0
+      },
+      shield_ta: {
+        role: 'shield', maturity: 'cots',
+        name: T('Tantalum spot shield', 'Blindagem de tântalo', 'Blindaje de tantalio'),
+        description: T('A thin tantalum plate over the computer and memory.', 'Uma placa fina de tântalo sobre o computador e a memória.', 'Una placa fina de tantalio sobre la computadora y la memoria.'),
+        pros: T('Protects the data from most particles.', 'Protege os dados da maioria das partículas.', 'Protege los datos de la mayoría de las partículas.'),
+        cons: T('Dense metal: adds mass and cost.', 'Metal denso: soma massa e custo.', 'Metal denso: suma masa y costo.'),
+        mass_kg: 0.15, power_W: 0, volume_U: 0.1, cost_k: 18
       }
     }
   };

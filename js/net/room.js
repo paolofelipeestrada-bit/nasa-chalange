@@ -30,7 +30,7 @@
 
   function notify() { if (net.onUpdate) net.onUpdate(); }
   function toast(msg) { if (net.onToast) net.onToast(msg); }
-  function scenario() { return MS.data.scenarios[MS.store.state.scenarioId]; }
+  function scenario() { var s = MS.store.state; return MS.levels ? MS.levels.scenario(s) : MS.data.scenarios[s.scenarioId]; }
   function maxPlayers() { var t = scenario().team; return (t && t.maxPlayers) || 4; }
   function newCode() {
     var c = '';

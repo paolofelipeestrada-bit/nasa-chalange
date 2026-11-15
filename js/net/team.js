@@ -15,8 +15,8 @@
   function L(v) { return MS.i18n ? MS.i18n.L(v) : v; }
 
   // Únicas ações que um convidado pode pedir ao anfitrião.
-  var ACTIONS = ['select', 'setScenario', 'nextPhase', 'prevPhase', 'goToPhase', 'retry', 'reset', 'setPeriod', 'decide', 'setPrediction'];
-  var PHASE_ACTIONS = ['setScenario', 'nextPhase', 'prevPhase', 'goToPhase', 'retry', 'reset', 'setPeriod', 'decide'];
+  var ACTIONS = ['select', 'setScenario', 'setDifficulty', 'nextPhase', 'prevPhase', 'goToPhase', 'retry', 'reset', 'setPeriod', 'decide', 'setPrediction'];
+  var PHASE_ACTIONS = ['setScenario', 'setDifficulty', 'nextPhase', 'prevPhase', 'goToPhase', 'retry', 'reset', 'setPeriod', 'decide'];
 
   function roles(sc) { return (sc && sc.team && sc.team.roles) || []; }
   function role(sc, id) { return roles(sc).filter(function (r) { return r.id === id; })[0] || null; }
@@ -97,6 +97,10 @@
       return t('net.period', { name: per ? L(per.name) : (args && args[0]) });
     }
     if (action === 'setPrediction') return t('net.predicted');
+    if (action === 'setDifficulty') {
+      var lv = MS.levels && MS.levels.def(args && args[0]);
+      return t('net.level', { name: lv ? L(lv.name) : (args && args[0]) });
+    }
     if (action === 'decide') return t('net.decided', { name: t('life.opt.' + (args && args[0]) + '.' + (args && args[1])) });
     var flow = (MS.data && MS.data.flow && MS.data.flow.phases) || [];
     var ph = flow.filter(function (p) { return p.id === (args && args[0]); })[0];

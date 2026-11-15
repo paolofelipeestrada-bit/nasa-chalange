@@ -22,13 +22,14 @@
   // Projeto de exemplo para uma fase: vazio, só o conceito, ou completo.
   tut.demoState = function (kind, phase) {
     var base = MS.store.state || MS.store.createState();
-    var s = MS.store.createState(base.scenarioId);
-    var sc = MS.data.scenarios[s.scenarioId], want = (MS.data.tutorial && MS.data.tutorial.demoDesign) || {};
+    var s = MS.store.createState(base.scenarioId, base.difficulty);
+    var sc = MS.levels ? MS.levels.scenario(s) : MS.data.scenarios[s.scenarioId], want = (MS.data.tutorial && MS.data.tutorial.demoDesign) || {};
     if (kind === 'concept' || kind === 'full') {
       sc.slots.forEach(function (slot) {
         if (kind === 'concept' && slot.phase !== 'concept') return;
         s.design[slot.id] = slot.options.indexOf(want[slot.id]) !== -1 ? want[slot.id] : slot.options[0];
       });
+      if (MS.levels) s.design = MS.levels.autoFill(sc, s.design);
     }
     if (phase) { s.phase = phase; s.reached = phase; }
     return s;
