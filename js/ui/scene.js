@@ -310,9 +310,21 @@
   }
   ui.actions['req-flip'] = function (d) {
     local.reqFlip = local.reqFlip || {};
-    local.reqFlip[d.id] = !local.reqFlip[d.id];
-    click(local.reqFlip[d.id] ? 620 : 420, 0.07);
-    rerender();
+    var on = local.reqFlip[d.id] = !local.reqFlip[d.id];
+    click(on ? 620 : 420, 0.07);
+    // Vira a carta que já está na tela (sem redesenhar), para a animação 3D
+    // acontecer de verdade; só redesenha se a carta não estiver no documento.
+    var card = root.document && root.document.querySelector('.rc-card[data-id="' + String(d.id).replace(/"/g, '') + '"]');
+    if (!card) { rerender(); return; }
+    card.classList.toggle('flipped', on);
+    card.setAttribute('aria-pressed', String(on));
+    card.classList.remove('flipping'); void card.offsetWidth; card.classList.add('flipping');
+    var nx = root.document.querySelector('.rc-nav .big-go');
+    if (nx) nx.disabled = !on;
+    var dn = root.document.querySelector('.rc-nav .rc-done');
+    if (dn) dn.textContent = t(on ? 'sc.req.allSeen' : 'sc.req.flipLast');
+    var dot = root.document.querySelector('.sc-req .sc-rail li.on');
+    if (dot) dot.classList.toggle('seen', on);
   };
   ui.actions['req-go'] = function (d) { local.reqIdx = Number(d.i); rerender(); };
   (function () {
@@ -527,6 +539,10 @@
 
   // Depois de desenhar: a opção em foco aparece como prévia (HUD + hangar).
   ui.sceneAfter = function (rootEl, state) {
+    var fresh = rootEl && rootEl.querySelector && rootEl.querySelector('.scene.sc-enter');
+    if (fresh && root.innerWidth <= 760 && fresh.getBoundingClientRect().top < 0) {
+      try { fresh.scrollIntoView({ block: 'start' }); } catch (e) { /* navegador antigo */ }
+    }
     if (!active(state)) return;
     var slot = openNow();
     if (!slot) return;

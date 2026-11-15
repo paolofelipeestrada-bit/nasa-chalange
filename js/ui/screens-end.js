@@ -259,6 +259,10 @@
         : '<p>' + h.esc(t('rep.noRandom')) + '</p>') + '</div>';
       var ringColor = s.total >= 70 ? 'var(--ok)' : s.total >= 40 ? 'var(--warn)' : 'var(--fail)';
       // Estrelas: 1 a partir de 40%, 2 a partir de 70%, 3 a partir de 90% da nota.
+      var GOLD_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="rs-gold" x1="0" y1="0" x2=".35" y2="1">' +
+        '<stop offset="0" stop-color="#fff6c2"/><stop offset=".38" stop-color="#ffd84a"/><stop offset=".7" stop-color="#f2b01e"/><stop offset="1" stop-color="#b9780a"/></linearGradient></defs>' +
+        '<path class="rs-fill" d="M12 2.4l2.95 6.07 6.65.86-4.88 4.6 1.25 6.6L12 17.3l-5.97 3.23 1.25-6.6-4.88-4.6 6.65-.86z"/>' +
+        '<path class="rs-shine" d="M12 4.6l1.9 3.95 3.1.42c-2.6.5-5.1 1.6-7.3 3.3l-.9-.85 1.3-.17z"/></svg>';
       var pct = s.total / s.max * 100, nStars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0;
       var confetti = '';
       if (nStars >= 2) for (var ci = 0; ci < 28; ci++) {
@@ -267,7 +271,7 @@
       }
       var stars = '<div class="rep-stars n-' + nStars + '" aria-label="' + h.esc(t('rep.stars', { n: nStars })) + '">' +
         (confetti ? '<div class="rep-confetti" aria-hidden="true">' + confetti + '</div>' : '') +
-        '<div class="rs-row">' + [1, 2, 3].map(function (k) { return '<span class="rs-star' + (k <= nStars ? ' on' : '') + '" style="animation-delay:' + (0.25 + k * 0.3).toFixed(2) + 's">★</span>'; }).join('') + '</div>' +
+        '<div class="rs-row">' + [1, 2, 3].map(function (k) { return '<span class="rs-star' + (k <= nStars ? ' on' : '') + '" style="animation-delay:' + (0.25 + k * 0.3).toFixed(2) + 's">' + GOLD_STAR + '</span>'; }).join('') + '</div>' +
         '<p class="rs-line">' + h.esc(t('rep.starsLine.' + nStars)) + '</p></div>';
       // Ordem pensada para ler de cima para baixo: nota → por quê → o que
       // tentar agora. O resto (contas, requisitos, sorte, diário) fica em
