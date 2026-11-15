@@ -507,7 +507,7 @@
   // Fontes e cálculos (botão no topo): os recursos da NASA usados e as contas
   // do motor, cada uma com a fórmula, o que quer dizer e a conta ao vivo
   // com os números do projeto atual (explicação que o próprio motor escreve).
-  var SRC_NASA = ['nasa1', 'nasa2', 'nasa5', 'nasa6', 'nasa7', 'nasa3', 'nasa4'];
+  var SRC_NASA = ['nasa1', 'nasa2', 'nasa5', 'nasa6', 'nasa7', 'nasa8', 'nasa9', 'nasa10', 'nasa11', 'nasa3', 'nasa4'];
   var SRC_MATH = [
     { id: 'gsd', metric: 'gsd_m' }, { id: 'swath', metric: 'swath_km' }, { id: 'revisit', metric: 'revisit_days' },
     { id: 'period', metric: 'period_min' }, { id: 'eclipse', metric: 'eclipse_pct' }, { id: 'lifetime', metric: 'lifetime_years' },
@@ -555,7 +555,7 @@
   // Sobre o jogo: recursos da NASA usados, simplificações e uso de IA.
   // credits() é o mesmo conteúdo, mostrado no fim do jogo (relatório).
   function credits() {
-    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5', 'nasa6'].map(function (k) {
+    var res = ['nasa1', 'nasa2', 'nasa3', 'nasa4', 'nasa5', 'nasa6', 'nasa7', 'nasa8', 'nasa9', 'nasa10', 'nasa11'].map(function (k) {
       return '<li><b>' + esc(t('about.' + k + '.name')) + '</b> — ' + esc(t('about.' + k + '.use')) +
         ' <a href="' + esc(t('about.' + k + '.url')) + '" target="_blank" rel="noopener">' + esc(t('ui.link')) + '</a></li>';
     }).join('');

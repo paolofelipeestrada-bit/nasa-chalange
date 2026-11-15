@@ -50,7 +50,13 @@
     if (slot.source === 'orbits') ids.sort(function (a, b) { return (cat[a].altitude_km || 0) - (cat[b].altitude_km || 0); });
     return ids;
   }
-  function isLever(slot) { return slot.source === 'orbits'; }
+  // Alavanca só quando as opções diferem em altitude (locais de pouso na Lua: botão).
+  function isLever(slot) {
+    if (slot.source !== 'orbits') return false;
+    var cat = MS.data.catalog.orbits, alts = {};
+    slot.options.forEach(function (o) { alts[(cat[o] || {}).altitude_km || 0] = true; });
+    return Object.keys(alts).length > 1;
+  }
 
   function openSlot(state, slots) {
     var want = local.sceneSlot[state.phase];

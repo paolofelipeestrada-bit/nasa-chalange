@@ -72,6 +72,14 @@ between players).
 - **Concept Maturity Levels** (NASA JPL): the CML 1–4 tag shown at each step.
 - **Build It Yourself: Satellite** (NASA Webb): inspiration for goal-driven design and self-explaining options.
   https://science.nasa.gov/mission/webb/game-build-it-yourself/
+- **VIIRS** (NASA Earthdata): model for the wide-swath weather imager in the floods mission.
+  https://www.earthdata.nasa.gov/data/instruments/viirs
+- **Lunar Reconnaissance Orbiter** (NASA): model for the polar lunar mapping orbits.
+  https://science.nasa.gov/mission/lro/
+- **Deep Space Network** (NASA): the big antennas used as ground station in the Moon missions.
+  https://www.nasa.gov/communicating-with-missions/dsn/
+- **Artemis I** (NASA): carried 10 CubeSats toward the Moon; model for the Artemis ride.
+  https://www.nasa.gov/mission/artemis-i/
 
 In the game, **Sources & math** (in the Mission Report) lists every NASA resource used and the 12 formulas
 the engine calculates, each with what it means and the calculation for the player's own design.
