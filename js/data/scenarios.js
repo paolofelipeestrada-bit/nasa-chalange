@@ -244,7 +244,7 @@
   // ------------------------------------------------ Cenário 1: desmatamento
   var BASE = {
     id: 'eo_cubesat',
-    card: { icon: '🌳',
+    card: { icon: '🌳', image: 'assets/img/client-eo_cubesat.jpg',
       pitch: T('Find new deforestation in the Amazon every month.', 'Achar desmatamento novo na Amazônia todo mês.', 'Encontrar deforestación nueva en la Amazonía cada mes.'),
       challenge: T('Hard: sharp images AND a full map every month.', 'Difícil: imagens nítidas E mapa completo todo mês.', 'Difícil: imágenes nítidas Y mapa completo cada mes.') },
     title: T('Deforestation watch', 'Vigilância do desmatamento', 'Vigilancia de la deforestación'),
@@ -337,7 +337,7 @@
 
   // ------------------------------------------------ Cenário 2: queimadas
   variant('fire_watch', {
-    card: { icon: '🔥',
+    card: { icon: '🔥', image: 'assets/img/client-fire_watch.jpg',
       pitch: T('Map fire scars and plant health in the Cerrado every month.', 'Mapear queimadas e a saúde da vegetação do Cerrado todo mês.', 'Mapear quemas y la salud de la vegetación del Cerrado cada mes.'),
       challenge: T('Easier on detail, tight on money: several designs can win.', 'Menos exigente no detalhe, apertado no dinheiro: vários projetos vencem.', 'Menos exigente en detalle, ajustado en dinero: varios diseños pueden ganar.') },
     title: T('Fire scar watch', 'Vigilância de queimadas', 'Vigilancia de quemas'),
@@ -375,7 +375,7 @@
 
   // ------------------------------------------------ Cenário 3: cidades
   variant('city_map', {
-    card: { icon: '🏙️',
+    card: { icon: '🏙️', image: 'assets/img/client-city_map.jpg',
       pitch: T('A very detailed yearly map of a metropolitan region.', 'Um mapa anual muito detalhado de uma região metropolitana.', 'Un mapa anual muy detallado de una región metropolitana.'),
       challenge: T('Needs a big telescope: watch volume, money and schedule.', 'Exige um telescópio grande: cuidado com volume, dinheiro e prazo.', 'Exige un telescopio grande: cuidado con el volumen, el dinero y el plazo.') },
     title: T('Urban growth map', 'Mapa do crescimento urbano', 'Mapa del crecimiento urbano'),

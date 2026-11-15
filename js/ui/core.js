@@ -586,6 +586,8 @@
       '<span class="missing' + (can.missing.length && !lock ? ' todo' : '') + '">' + esc(missing) + '</span>' + right + '</div></footer>';
   }
 
+  // Endereço completo (url() dentro de variável CSS seria lido a partir de css/).
+  function absUrl(u) { try { return new URL(u, document.baseURI).href; } catch (e) { return u; } }
   function renderHTML(state) {
     setLevelUI(state);
     if (ui.local.menuOpen && ui.menuHTML) return ui.menuHTML(state); // menu inicial (js/ui/menu.js)
@@ -608,7 +610,7 @@
     var eyebrow = ph.nasaStep ? t('ui.stepOf', { n: ph.nasaStep, total: 6 }) : t('ui.finalStep');
     return (result ? header(state, info, result) : '') + '<main>' + warn + (ui.teamPanel ? ui.teamPanel(state) : '') +
       aboutPanel() + sourcesPanel(state, result) + glossaryPanel() +
-      '<div class="phase-head"><span class="eyebrow">' + esc(eyebrow) + '</span>' +
+      '<div class="phase-head' + (ph.image ? ' has-art' : '') + '"' + (ph.image ? ' style="--ph-art:url(\'' + esc(absUrl(ph.image)) + '\')"' : '') + '><span class="eyebrow">' + esc(eyebrow) + '</span>' +
       '<h1>' + esc(L(ph.title)) + '</h1><p class="muted">' + esc(L(ph.subtitle) || '') + '</p></div>' +
       (ui.clientLine ? ui.clientLine(state, result) : '') + guide(ph) + body + (ui.calcPanel && result ? ui.calcPanel(state, result) : '') + '</main>' + footer(state, info, screen) +
       (ui.shoutDock && result ? ui.shoutDock(state, result) : ''); // gritos da equipe (js/ui/shouts-ui.js)

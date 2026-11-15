@@ -42,6 +42,7 @@
     return '<div class="scen-grid">' + Object.keys(scs).map(function (id) {
       var sc = scs[id], on = id === state.scenarioId, c = sc.card || {};
       return '<button type="button" class="scen' + (on ? ' selected' : '') + '" data-action="scenario" data-id="' + h.esc(id) + '" aria-pressed="' + on + '"' + (lock ? ' disabled' : '') + '>' +
+        (c.image ? '<span class="scen-art" aria-hidden="true" style="background-image:url(\'' + h.esc(c.image) + '\')"></span>' : '') +
         '<span class="scen-ic" aria-hidden="true">' + h.esc(c.icon || '🛰️') + '</span>' +
         '<span class="scen-title">' + h.esc(L(sc.title)) + '</span>' +
         '<span class="scen-cust">' + h.esc(L(sc.customer)) + '</span>' +

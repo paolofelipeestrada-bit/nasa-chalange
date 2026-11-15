@@ -1087,3 +1087,25 @@ body[data-level="easy"] .hud-detail .small { display: none !important; }
 .calc-steps { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size: 14.5px; }
 .calc-steps code { color: #b9d3ff; }
 @media (max-width: 700px) { .calc-body { grid-template-columns: 1fr; } }
+
+/* ------------------------------------------------ Ilustrações (Higgsfield, assets/img) */
+/* Menu: céu pintado atrás da Terra 3D */
+.menu { background: #050a1c url('../assets/img/menu-bg.jpg') left center / cover no-repeat; }
+/* Topo de cada fase: faixa ilustrada com degradê para o texto continuar legível */
+.phase-head.has-art { position: relative; overflow: hidden; border-radius: var(--radius); padding: 22px 22px 18px; min-height: 150px;
+  display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(8, 14, 38, .96) 0%, rgba(8, 14, 38, .82) 40%, rgba(8, 14, 38, .25) 75%, rgba(8, 14, 38, .1) 100%),
+    var(--ph-art) right 30% / cover no-repeat; box-shadow: var(--shadow); }
+.phase-head.has-art h1 { text-shadow: 0 2px 12px rgba(0, 0, 0, .7); }
+.phase-head.has-art .muted { color: #cfdaf5; margin-bottom: 0; }
+@media (max-width: 640px) {
+  .phase-head.has-art { min-height: 120px; padding: 16px;
+    background: linear-gradient(180deg, rgba(8, 14, 38, .35) 0%, rgba(8, 14, 38, .92) 70%), var(--ph-art) center / cover no-repeat; }
+}
+/* Cartões de cliente com a ilustração da missão */
+.scen-art { display: block; margin: -14px -14px 6px; height: 120px; border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+  background-size: cover; background-position: center; }
+.scen.selected .scen-art { margin: -13.5px -13.5px 6px; }
+.scen:has(.scen-art) .scen-ic { position: absolute; top: 92px; left: 12px; width: 40px; height: 40px; display: grid; place-items: center; font-size: 22px;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 50%; }
+.scen:has(.scen-art) .scen-title { margin-top: 10px; }
