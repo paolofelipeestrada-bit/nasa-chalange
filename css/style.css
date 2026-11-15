@@ -849,3 +849,26 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .viz3d.cine-on .vc-poll li.r-sci { --rc: var(--sci); } .viz3d.cine-on .vc-poll li.r-eng { --rc: var(--eng); }
 .viz3d.cine-on .vc-poll li.r-mgr { --rc: var(--mgr); } .viz3d.cine-on .vc-poll li.r-com { --rc: var(--com); }
 @media (max-width: 560px) { .vc-count { font-size: 96px; } .vc-caption { font-size: 14px; bottom: 96px; } .vc-skip { bottom: 140px; } .vc-poll { width: calc(100% - 32px); } }
+
+/* ---------- Conceito: comparação das órbitas ---------- */
+.orb-cmp, .orb-cmp ul { list-style: none; margin: 0; padding: 0; }
+.orb-eff { padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.orb-eff:first-child { border-top: 0; padding-top: 2px; }
+.orb-q { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-bottom: 6px; }
+.orb-q svg { color: var(--muted); }
+.orb-q b { font-size: .9rem; }
+.orb-q small { flex-basis: 100%; color: var(--muted); font-size: .76rem; padding-left: 22px; }
+.orb-eff li { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(88px, auto); align-items: center; gap: 8px;
+  padding: 4px 6px; border-radius: 6px; font-size: .82rem; }
+.orb-eff li.on { background: var(--accent-soft); }
+.orb-n { color: var(--muted); line-height: 1.2; }
+.orb-eff li.on .orb-n { color: var(--text); }
+.orb-v { text-align: right; font-variant-numeric: tabular-nums; }
+.orb-eff li.never .orb-v { color: var(--fail); }
+.orb-mine { display: inline-flex; align-items: center; gap: 2px; font-size: .66rem; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+.orb-stars { display: inline-flex; gap: 3px; }
+.orb-stars i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.orb-stars.s3 i.on { background: var(--ok); }
+.orb-stars.s2 i.on { background: var(--warn); }
+.orb-stars.s1 i.on { background: var(--fail); }
+.concept-ck .ck-parts .specs > * { display: revert; }

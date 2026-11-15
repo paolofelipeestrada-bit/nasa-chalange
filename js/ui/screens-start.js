@@ -61,14 +61,56 @@
   });
 
   // ------------------------------------------------------------ Concept
+  // Comparação das órbitas: 4 efeitos em palavras simples, uma coluna por órbita.
+  // Os números vêm do motor (MS.advice.orbitCompare → MS.sim.run).
+  var EFFECT_ICON = { cover: 'eye', detail: 'sci', contact: 'comms', life: 'time' };
+  function effectText(id, v) {
+    var U = MS.sim.util;
+    if (v == null) return '—';
+    if (id === 'cover') return isFinite(v) ? t('orb.coverV', { n: U.fmt(v, v < 10 ? 1 : 0) }) : t('orb.coverNever');
+    if (id === 'detail') return t('orb.detailV', { m: U.fmt(v, 0) });
+    if (id === 'contact') return t('orb.contactV', { m: U.fmt(v, 0) });
+    return v < 1 ? t('orb.lifeMonths', { n: U.fmt(v * 12, 0) }) : t('orb.lifeV', { n: U.fmt(v, v < 10 ? 1 : 0) });
+  }
+  function stars(n) {
+    if (n == null) return '';
+    return '<span class="orb-stars s' + n + '" aria-label="' + h.esc(t('orb.stars', { n: n })) + '">' +
+      [1, 2, 3].map(function (i) { return '<i class="' + (i <= n ? 'on' : '') + '"></i>'; }).join('') + '</span>';
+  }
+  function orbitPanel(state) {
+    var cmp = MS.advice.orbitCompare(state), cat = MS.data.catalog;
+    // Um bloco por efeito; dentro, uma linha por órbita (cabe na coluna estreita).
+    var body = cmp.effects.map(function (e) {
+      return '<li class="orb-eff"><div class="orb-q">' + h.icon(EFFECT_ICON[e.id], { size: 16 }) + '<b>' + h.esc(t('orb.' + e.id)) + '</b>' +
+        '<small>' + h.esc(t('orb.' + e.id + 'Q')) + '</small></div><ul>' + cmp.rows.map(function (r) {
+          return '<li class="' + (r.chosen ? 'on' : '') + (r.stars[e.id] === 0 ? ' never' : '') + '"><span class="orb-n">' + h.esc(L(cat.orbits[r.id].name)) +
+            (r.chosen ? ' <span class="orb-mine">' + h.icon('ok', { size: 11, stroke: 3 }) + h.esc(t('orb.yours')) + '</span>' : '') + '</span>' +
+            stars(r.stars[e.id]) + '<span class="orb-v">' + h.esc(effectText(e.id, r.values[e.id])) + '</span></li>';
+        }).join('') + '</ul></li>';
+    }).join('');
+    var refs = [];
+    if (cmp.refPayload) refs.push(t('orb.refCam', { cam: L(cat.components[cmp.refPayload].name) }));
+    if (cmp.refStation) refs.push(t('orb.refGs', { gs: L(cat.groundStations[cmp.refStation].name) }));
+    return '<div class="ck-panel orb-panel"><div class="ck-head"><h2>' + h.icon('eye', { size: 16 }) + h.esc(t('orb.title')) + '</h2></div>' +
+      '<p class="section-note">' + h.esc(t('orb.note', { region: L(h.scenario(state).aoi.name) })) + '</p>' +
+      '<ul class="orb-cmp">' + body + '</ul>' +
+      (refs.length ? '<p class="small muted">' + h.esc(refs.join(' ')) + '</p>' : '') + '</div>';
+  }
+
   ui.register('concept', {
     render: function (state, result) {
       var checks = result.checks.filter(function (c) { return c.id === 'launch' || c.id === 'contact'; });
-      return '<div class="cols"><div>' + h.choices(state, 'concept') + '</div>' +
-        '<aside class="side">' + '<div class="card hangar-card"><div data-viz="hangar"></div></div>' + '<div class="card"><h2>' + h.esc(t('scr.concept.defines')) + '</h2>' +
+      var all = h.scenario(state).slots.filter(function (s) { return s.phase === 'concept'; });
+      var done = all.filter(function (s) { return state.design[s.id]; }).length;
+      // Mesmo cockpit do Design: escolhas à esquerda, foguete + órbitas no
+      // centro, números e compatibilidade à direita.
+      return '<div class="cockpit concept-ck"><section class="ck-panel ck-parts"><div class="ck-head"><h2>' + h.esc(t('ck.choices')) + '</h2>' +
+        '<span class="ck-count">' + h.esc(t('ck.chosen', { n: done, total: all.length })) + '</span></div>' + h.choices(state, 'concept') + '</section>' +
+        '<div class="ck-right"><section class="ck-center"><div class="card hangar-card"><div data-viz="hangar"></div></div>' + orbitPanel(state) + '</section>' +
+        '<aside class="ck-side"><div class="ck-panel"><div class="ck-head"><h2>' + h.esc(t('scr.concept.defines')) + '</h2></div>' +
         '<p class="section-note">' + h.esc(t('scr.concept.note')) + '</p>' +
         h.metricRows(result, ['altitude_km', 'lifetime_years', 'eclipse_pct', 'contactMinPerDay', 'launchWait_months']) +
-        '</div><div class="card"><h2>' + h.esc(t('scr.compat')) + '</h2><p class="section-note">' + h.esc(t('scr.compatNote')) + '</p>' + h.statusRows(checks) + '</div></aside></div>';
+        '</div><div class="ck-panel"><div class="ck-head"><h2>' + h.esc(t('scr.compat')) + '</h2></div><p class="section-note">' + h.esc(t('scr.compatNote')) + '</p>' + h.statusRows(checks) + '</div></aside></div></div>';
     }
   });
 

@@ -55,7 +55,7 @@
         text: T('The orbit is a trade-off: lower means sharper photos but more air drag, so the satellite falls sooner. A sun-synchronous orbit passes over the area at the same hour every day, which is great for comparing images.',
           'A órbita é uma troca: mais baixa dá fotos mais nítidas, mas tem mais atrito com o ar e o satélite cai antes. A órbita heliossíncrona passa sobre a área sempre na mesma hora, ótimo para comparar imagens.',
           'La órbita es un intercambio: más baja da fotos más nítidas, pero hay más roce con el aire y el satélite cae antes. La órbita heliosíncrona pasa sobre la zona siempre a la misma hora, ideal para comparar imágenes.') },
-      { target: '.side .hangar-card',
+      { target: '.ck-center .hangar-card',
         title: T('The 3D hangar', 'O hangar 3D', 'El hangar 3D'),
         text: T('Here you see what you chose. Drag to turn it. Hover over a card to preview that option before choosing it.',
           'Aqui você vê o que escolheu. Arraste para girar. Passe o mouse sobre um cartão para ver aquela opção antes de escolher.',

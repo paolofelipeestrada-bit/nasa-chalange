@@ -166,6 +166,51 @@
     return CARDS.map(function (id) { return { id: id, unlocked: !!out[id], why: out[id] || '' }; });
   }
 
-  MS.advice = { crew: crew, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE,
+  // ------------------------------------------- Comparação das órbitas (fase Conceito)
+  // Para cada órbita do cenário, roda o motor com aquela órbita no lugar e lê os
+  // 4 efeitos que ela muda: cobertura (revisita da região), detalhe (pixel no
+  // chão), contato com a Terra e tempo de vida. A câmera e a estação ainda podem
+  // não estar escolhidas: usa as do jogador ou, se faltarem, as de referência
+  // (câmera do meio da lista, primeira estação). stars: 1–3, relativo às outras.
+  var EFFECTS = [
+    { id: 'cover', metric: 'revisit_days', better: 'low' },
+    { id: 'detail', metric: 'gsd_m', better: 'low' },
+    { id: 'contact', metric: 'contactMinPerDay', better: 'high' },
+    { id: 'life', metric: 'lifetime_years', better: 'high' }
+  ];
+  function orbitCompare(state) {
+    var sc = MS.data.scenarios[state.scenarioId];
+    var slot = function (id) { return sc.slots.filter(function (s) { return s.id === id; })[0]; };
+    var pay = slot('payload'), gs = slot('groundStation');
+    var ref = {
+      payload: state.design.payload || (pay ? pay.options[Math.floor(pay.options.length / 2)] : null),
+      groundStation: state.design.groundStation || (gs ? gs.options[0] : null)
+    };
+    var rows = slot('orbit').options.map(function (id) {
+      var design = Object.assign({}, state.design, { orbit: id });
+      if (ref.payload) design.payload = ref.payload;
+      if (ref.groundStation) design.groundStation = ref.groundStation;
+      var r = MS.sim.run(Object.assign({}, state, { design: design }));
+      var vals = {};
+      EFFECTS.forEach(function (e) { var m = r.metrics[e.metric]; vals[e.id] = m && m.value != null ? m.value : null; });
+      return { id: id, chosen: state.design.orbit === id, values: vals, stars: {} };
+    });
+    // Estrelas: 3 para a melhor, 1 para a pior; "nunca vê a região" = 0.
+    EFFECTS.forEach(function (e) {
+      var ok = rows.map(function (x) { return x.values[e.id]; }).filter(function (v) { return v != null && isFinite(v); });
+      var lo = Math.min.apply(null, ok), hi = Math.max.apply(null, ok);
+      rows.forEach(function (x) {
+        var v = x.values[e.id];
+        if (v == null) { x.stars[e.id] = null; return; }
+        if (!isFinite(v)) { x.stars[e.id] = 0; return; }
+        var f = hi === lo ? 1 : (v - lo) / (hi - lo);
+        if (e.better === 'low') f = 1 - f;
+        x.stars[e.id] = 1 + Math.round(f * 2);
+      });
+    });
+    return { effects: EFFECTS, rows: rows, refPayload: !state.design.payload && ref.payload, refStation: !state.design.groundStation && ref.groundStation };
+  }
+
+  MS.advice = { crew: crew, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE, orbitCompare: orbitCompare,
                 dataFraction: dataFraction, bucket: bucket, previous: previous, changes: changes, cards: cards, CARDS: CARDS };
 })(globalThis);

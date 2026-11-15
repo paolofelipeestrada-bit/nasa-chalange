@@ -99,4 +99,29 @@
     assert.equal(small.unlocked, r.score.total - prev.result.score.total >= 15);
     cards.forEach(function (c) { assert(!c.unlocked || c.why, 'carta sem explicação: ' + c.id); });
   });
+
+  T.group('Comparação das órbitas (Conceito)');
+
+  test('uma coluna por órbita, 4 efeitos, mesmo sem câmera escolhida', function () {
+    var c = MS.advice.orbitCompare(stateWith({}));
+    assert.equal(c.rows.length, 3);
+    assert.equal(c.effects.length, 4);
+    assert(c.refPayload, 'usa câmera de referência');
+    c.rows.forEach(function (r) { c.effects.forEach(function (e) { assert(r.values[e.id] != null, r.id + ' sem ' + e.id); }); });
+  });
+
+  test('mais alta: menos detalhe e vida mais longa; ISS cai antes', function () {
+    var c = MS.advice.orbitCompare(stateWith({}));
+    var by = {}; c.rows.forEach(function (r) { by[r.id] = r; });
+    assert(by.sso600.values.detail > by.sso500.values.detail, 'pixel maior a 600 km');
+    assert(by.sso600.values.life > by.sso500.values.life);
+    assert.equal(by.iss400.stars.life, 1);
+    assert.equal(by.sso600.stars.life, 3);
+  });
+
+  test('marca a órbita escolhida e usa a câmera do jogador', function () {
+    var c = MS.advice.orbitCompare(stateWith({ orbit: 'sso600', payload: 'cam_hr' }));
+    assert.equal(c.rows.filter(function (r) { return r.chosen; })[0].id, 'sso600');
+    assert(!c.refPayload);
+  });
 })(globalThis);
