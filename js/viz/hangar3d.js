@@ -133,6 +133,13 @@
       cam.position.set(wide === 2 ? -U / 2 : 0, -h / 2 + U * 0.5, 0);
       parts.payload = cam; g.add(cam);
     }
+    // Sensor de aproximação (missões da ISS): no topo, olhando para a frente (+Z), onde fica o porto.
+    if (pick('sensor')) {
+      var sn = P.build(lookOf(pick('sensor')));
+      sn.scale.setScalar(0.3); sn.rotation.x = Math.PI;
+      sn.position.set(wide === 2 ? U / 2 : 0, h / 2 - U * 0.45, d / 2 - 0.02);
+      parts.sensor = sn; g.add(sn);
+    }
     // Computador e controle de atitude no cubo do meio.
     if (pick('obc')) {
       var obc = P.build(lookOf(pick('obc')));

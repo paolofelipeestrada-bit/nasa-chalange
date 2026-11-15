@@ -53,6 +53,7 @@
   var TL = { ascent: 0.2, tli: 0.32, coast: 0.86 }, LANDED_R = 0.955;
   // Frações do passo de acoplamento: deriva, transferência de Hohmann, aproximação, acoplada, CubeSat liberado.
   var DK = { hohmann: 0.12, arrive: 0.6, docked: 0.72, deploy: 0.82 };
+  var OWN_DRIFT = 0.15; // missão "Acoplar com a ISS": fração da perseguição antes do 1º impulso de Hohmann
   var V = null;                      // a "vista" persistente (criada uma vez)
 
   // ------------------------------------------------------------ Utilidades
@@ -374,7 +375,9 @@
     // plano da órbita escolhida, para o encontro acontecer.
     var issData = MS.data.catalog.spaceStation || { altitude_km: 418, inclination_deg: 51.64, chaseBelow_km: 40 };
     var docking = !!schedule.docking && !schedule.launchFailed;
-    var issEl = MS.orbit.circular(issData.altitude_km, docking ? orbit.inclination_deg : issData.inclination_deg, docking ? 0 : 55);
+    // Missão "Acoplar com a ISS": a ISS também fica no plano da órbita escolhida.
+    var inPlane = docking || (sc.dockMode === 'chase' && !schedule.launchFailed);
+    var issEl = MS.orbit.circular(issData.altitude_km, inPlane ? orbit.inclination_deg : issData.inclination_deg, inPlane ? 0 : 55);
     var rISS = 1 + issData.altitude_km * ALT_SCALE;
     var issRate = ORBIT_RATE * Math.pow((MS.orbit.RE + orbit.altitude_km) / (MS.orbit.RE + issData.altitude_km), 1.5);
     var issRing = [];
@@ -408,10 +411,36 @@
       rAscent = dock.rChase;
     }
 
+    // Acoplamento do próprio CubeSat (missões 7 e 8, sc.dockMode):
+    //   'chase'   espera na órbita de perseguição, sobe por Hohmann e acopla no porto da ISS;
+    //   'inspect' é solto pela ISS (nave de carga), voa em volta dela e volta ao porto.
+    var own = null;
+    if (sc.dockMode && !schedule.launchFailed) {
+      var byId = {};
+      schedule.steps.forEach(function (x) { byId[x.event.id] = x; });
+      var ostep = schedule.steps.filter(function (x) { return x.event.fx === 'dock'; })[0] || null;
+      own = {
+        mode: sc.dockMode, step: ostep,
+        imgSteps: schedule.steps.filter(function (x) { return x.event.fx === 'image'; }),
+        // chase: o acoplamento depende do evento seguinte (sensor); inspect: do próprio passo de volta
+        approachOk: sc.dockMode === 'chase' ? !!(byId.ED2 && byId.ED2.event.status === 'ok') : !!(ostep && ostep.event.status === 'ok'),
+        // chase: a aproximação final acontece no passo do sensor (ED2), depois da subida
+        app: sc.dockMode === 'chase' ? (byId.ED2 || null) : ostep
+      };
+      if (sc.dockMode === 'chase' && ostep) {
+        var odur = ostep.t1 - ostep.t0, otb = ostep.t0 + OWN_DRIFT * odur, ota = ostep.t1;
+        var ohoh = MS.orbit.hohmann(MS.orbit.RE + orbit.altitude_km, MS.orbit.RE + issData.altitude_km);
+        var oub = satU0 + (otb - schedule.orbitStart) * ORBIT_RATE;
+        own.dur = odur;
+        own.el = { a_km: ohoh.a_km, e: ohoh.e, i_deg: orbit.inclination_deg, raan_deg: 0, argp_deg: oub / DEG };
+        issU0 = oub + Math.PI - 0.035 - ota * issRate; // a ISS chega ao apogeu junto com o CubeSat
+      }
+    }
+
     V.mission = {
       state: state, result: result, schedule: schedule, group: group, onEarth: onEarth, el: el, life: life,
       sc: sc, lunar: lunar, surface: !!orbit.surface, rOrb: rOrb, u0: u0, satU0: satU0, rAscent: rAscent, sat: sat, satMats: satMats, cone: cone,
-      iss: issObj, issEl: issEl, rISS: rISS, issRate: issRate, issU0: docking ? issU0 : 1.7, dock: dock, capsule: null,
+      iss: issObj, issEl: issEl, rISS: rISS, issRate: issRate, issU0: typeof issU0 === 'number' ? issU0 : 1.7, dock: dock, own: own, capsule: null,
       orbitLine: orbitLine, ascentLine: ascentLine, trail: trail, trailTimer: 0,
       contact: contact, station: station, stLocal: stLocal, aoiCenter: aoiCenter, aoiRad: (aoi.radius_deg || 10) * DEG,
       coverage: coverage, covCount: 0, covMax: COV, covTimer: 0,
@@ -603,6 +632,105 @@
     if (s >= TL.coast && !fl.loi) { fl.loi = true; flash(t(m.surface ? 'viz.ev.descent' : 'viz.ev.loi'), T); }
     if (m.surface && s >= 0.985 && !fl.landed) { fl.landed = true; flash(t('viz.ev.landed'), T); }
   }
+  // ---- Acoplamento do próprio CubeSat (missões da ISS). Devolve a posição do satélite,
+  // o foco da câmera e se ele está perto da ISS (para virar o sensor para ela).
+  function ownDocking(T, satPos, issPos, flags, tele, opsStart) {
+    var m = V.mission, own = m.own, os = own.step, ap = own.app, out = { pos: satPos, focus: null, near: false }, state = null;
+    var portW = m.iss.localToWorld(m.iss.userData.port ? m.iss.userData.port.clone() : new THREE.Vector3());
+    var dockRel = portW.clone().add(portW.clone().sub(issPos).normalize().multiplyScalar(0.012)).sub(issPos); // nariz no porto
+    var tDocked = ap ? ap.t0 + (ap.t1 - ap.t0) * 0.75 : Infinity;
+    var during = (os && T >= os.t0 && T < os.t1) || (ap && T >= ap.t0 && T < ap.t1);
+    if (own.mode === 'chase') {
+      if (!os || T < os.t0) return out;
+      var dl = (T - os.t0) / own.dur;
+      if (os.event.status !== 'ok') { // sem Δv: fica na órbita de perseguição
+        if (during) { flags.push(t('viz.noFuel')); out.focus = satPos.clone(); }
+        return out;
+      }
+      if (dl < OWN_DRIFT) { state = 'rendezvous'; }
+      else if (dl < 1) {
+        if (!m.fl.ownHoh) { m.fl.ownHoh = true; flash(t('viz.ev.hohmann'), T); }
+        var f = (dl - OWN_DRIFT) / (1 - OWN_DRIFT), nu = MS.orbit.trueFromMean(Math.PI * f, own.el.e);
+        var pk = MS.orbit.position(own.el, nu);
+        out.pos = new THREE.Vector3(pk.x, pk.y, pk.z).multiplyScalar(sceneR(pk.r) / pk.r);
+        if ((f < 0.12 || f > 0.9) && Math.random() < 0.6) spawn(out.pos.clone(), 0x9ec5ff, 1, 0.008); // os dois impulsos
+        tele.alt = MS.sim.util.withUnit(pk.r - MS.orbit.RE, 'km', 0);
+        tele.vel = MS.sim.util.withUnit(MS.orbit.speed(own.el, pk.r), 'km/s', 2);
+        state = 'rendezvous';
+      } else {
+        if (!own.arrRel) {
+          var apk = MS.orbit.position(own.el, Math.PI);
+          own.arrRel = new THREE.Vector3(apk.x, apk.y, apk.z).multiplyScalar(sceneR(apk.r) / apk.r).sub(issPos);
+        }
+        // Chegou: espera ao lado da ISS (ex.: noite) até o passo da aproximação final.
+        var g = ap && T >= ap.t0 ? Math.min(1, (T - ap.t0) / (tDocked - ap.t0)) : 0, rel;
+        if (!ap || T < ap.t0) rel = own.arrRel.clone();
+        else if (own.approachOk) {
+          if (!m.fl.ownApp) { m.fl.ownApp = true; flash(t('viz.ev.approach'), T); }
+          rel = own.arrRel.clone().lerp(dockRel, smooth(g));
+        } else { // o sensor não acha o porto: chega perto e se afasta
+          rel = own.arrRel.clone().lerp(dockRel, 0.75 * Math.sin(Math.PI * g));
+          if (g > 0.5 && !m.fl.ownAbort) { m.fl.ownAbort = true; flash(t('viz.ev.abortApproach'), T); }
+        }
+        out.pos = issPos.clone().add(rel); out.near = true;
+        state = own.approachOk && T >= tDocked ? 'docked' : 'rendezvous';
+      }
+    } else { // inspect: depois que a nave de carga solta o CubeSat
+      var tRel = m.dock ? m.dock.step.t1 : opsStart;
+      if (T < tRel) return out;
+      var ims = own.imgSteps, i0 = ims[0], i1 = ims[ims.length - 1], flyOk = !!(i0 && i0.event.status === 'ok');
+      var R = 0.05, up = issPos.clone().normalize(), fwd = issPoint(T + 0.05).sub(issPos).normalize();
+      fwd.sub(up.clone().multiplyScalar(fwd.dot(up))).normalize();
+      var ring = function (a) { return up.clone().multiplyScalar(Math.cos(a) * R).add(fwd.clone().multiplyScalar(-Math.sin(a) * R)); };
+      var rel2 = ring(0);
+      if (i0 && T >= i0.t0) {
+        if (flyOk) {
+          var fr = Math.min(1, (T - i0.t0) / (i1.t1 - i0.t0));
+          rel2 = ring(2 * Math.PI * fr);
+          if (!m.fl.fly) { m.fl.fly = true; flash(t('viz.ev.flyaround'), T); }
+          if (T < i1.t1) { flags.push(t('viz.inspecting')); out.focus = issPos.clone().add(rel2); state = 'rendezvous'; }
+        } else { // sem combustível: se afasta à deriva
+          rel2 = ring(0).multiplyScalar(1 + 4 * Math.min(1, (T - i0.t0) / 7));
+          flags.push(t('viz.drift'));
+        }
+      }
+      rel2 = satPos.clone().sub(issPos).lerp(rel2, smooth((T - tRel) / 3)); // sai devagar de onde foi solto
+      if (os && T >= os.t0 && flyOk) {
+        if (!m.fl.back) { m.fl.back = true; flash(t('viz.ev.backToPort'), T); }
+        var g2 = Math.min(1, (T - os.t0) / (tDocked - os.t0)); // inspect: ap = o próprio passo de volta
+        if (own.approachOk) rel2 = ring(0).lerp(dockRel, smooth(g2));
+        else {
+          rel2 = ring(0).lerp(dockRel, 0.75 * Math.sin(Math.PI * g2)).add(ring(0).multiplyScalar(3 * Math.max(0, (T - tDocked) / 5)));
+          if (g2 > 0.5 && !m.fl.ownAbort) { m.fl.ownAbort = true; flash(t('viz.ev.abortApproach'), T); }
+        }
+        state = own.approachOk && T >= tDocked ? 'docked' : 'rendezvous';
+      }
+      out.pos = issPos.clone().add(rel2); out.near = true;
+    }
+    if (state === 'docked' && !m.fl.ownDock) { m.fl.ownDock = true; flash(t('viz.ev.docked'), T); }
+    if (own.approachOk && ap && T >= tDocked && (own.mode === 'inspect' || os.event.status === 'ok')) {
+      out.pos = issPos.clone().add(dockRel); out.near = true; // acoplado: segue com a ISS
+      state = 'docked';
+    }
+    var lastT = Math.max(os ? os.t1 : 0, ap ? ap.t1 : 0);
+    if (during || (state && T < lastT) || (own.mode === 'chase' && os && T >= os.t0 && T < lastT && os.event.status === 'ok')) {
+      if (!state) state = 'rendezvous';
+      out.focus = out.focus || out.pos.clone();
+      tele.status = 'dock'; tele.dockText = state || 'rendezvous';
+      tele.stage = t('viz.stage.sat');
+      if (!tele.alt) tele.alt = MS.sim.util.withUnit(((MS.data.catalog.spaceStation || {}).altitude_km || 418), 'km', 0);
+      if (!tele.vel) tele.vel = MS.sim.util.withUnit(Math.sqrt(MS.orbit.MU / (MS.orbit.RE + 418)), 'km/s', 2);
+      tele.met = 'T+ ' + Math.max(1, Math.round((T - (os ? os.t0 : T)) * 6)) + ' h';
+    } else if (state === 'docked') {
+      // Acoplado até o fim: a telemetria mostra a estação (altitude e velocidade da ISS).
+      tele.status = 'dock'; tele.dockText = 'docked'; tele.stage = t('viz.stage.sat');
+      tele.alt = MS.sim.util.withUnit(((MS.data.catalog.spaceStation || {}).altitude_km || 418), 'km', 0);
+      tele.vel = MS.sim.util.withUnit(Math.sqrt(MS.orbit.MU / (MS.orbit.RE + 418)), 'km/s', 2);
+      tele.met = t('viz.tl.day') + ' ' + Math.max(1, Math.round(1 + (T - lastT) / 3));
+    }
+    return out;
+  }
+
   // Altitude real do dia, da missão dia a dia (clima espacial da NASA).
   function lifeAltitude(life, day) {
     var s = life.series;
@@ -803,11 +931,18 @@
     var gone = S.duration && T >= S.duration && (failedStep('end', T) || lifeEnd === 'reentry');
     if (reentry) r = m.rOrb - (m.rOrb - 1) * local;
     var satPos = orbitPoint(u, r);
+    var ownView = m.own && inOrbit && !gone ? ownDocking(T, satPos, issPos, flags, tele, opsStart) : null;
+    if (ownView) {
+      satPos = ownView.pos;
+      if (ownView.focus) m.dockFocus = ownView.focus;
+      // Perto da ISS o CubeSat encolhe para a escala da estação (de longe ele é exagerado para dar para ver).
+      satScale *= 0.25 + 0.75 * smooth((satPos.distanceTo(issPos) - 0.03) / 0.25);
+    }
     var showSat = inOrbit && !gone && (m.dock ? T >= m.dock.tDep : (!sepStep || T >= sepStep.t0 + (sepStep.t1 - sepStep.t0) * 0.35));
     m.sat.visible = showSat;
     m.sat.scale.setScalar(satScale);
     m.sat.position.copy(satPos);
-    m.sat.lookAt(0, 0, 0);
+    m.sat.lookAt(ownView && ownView.near ? issPos : new THREE.Vector3(0, 0, 0)); // perto da ISS: sensor virado para ela
     if (failedStep('wobble', T) || fx === 'wobble') m.sat.rotateZ(Math.sin(T * 9) * 0.25);
 
     // Cores de estado do satélite
@@ -846,7 +981,7 @@
     var over = m.sat.visible && satPos.clone().normalize().angleTo(aoiWorld) < m.aoiRad;
     var imgStep = started('image', T), blurred = failedStep('image', T);
     var daylight = satPos.clone().normalize().dot(V.sunDir) > 0.05; // câmera óptica só fotografa de dia
-    var imaging = over && imgStep && !safeMode && daylight;
+    var imaging = over && imgStep && !safeMode && daylight && !m.own; // nas missões da ISS a câmera olha a estação, não a Terra
     m.cone.visible = !!imaging;
     if (imaging) {
       m.cone.position.copy(satPos); m.cone.lookAt(0, 0, 0);
@@ -963,7 +1098,7 @@
     var side = up.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
     var sepStepC = S.steps.filter(function (x) { return x.event.fx === 'separation'; })[0];
     var sepEnd = sepStepC ? sepStepC.t1 : S.orbitStart;
-    if (V.camMode === 'follow' || launching || V.t < sepEnd) {
+    if (V.camMode === 'follow' || launching || V.t < sepEnd || (m.dockFocus && V.camMode !== 'free')) {
       target = focus;
       var close = launching ? (m.lunar ? 0.5 : 0.3) : m.dockFocus ? 0.26 : 0.2;
       want = focus.clone().add(up.multiplyScalar(close * 0.45)).add(side.multiplyScalar(close));

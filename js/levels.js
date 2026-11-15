@@ -45,7 +45,13 @@
     sc.randomEvents = (sc.randomEvents || []).map(function (re) {
       re.chance = Math.min(0.95, Math.round(re.chance * num(lv.chanceFactor, 1) * 1000) / 1000);
       return re;
-    }).concat(clone(lv.addEvents || []));
+    }).concat(clone(lv.addEvents || []).map(function (re) {
+      // Cenário sem o evento de referência (ex.: missões da ISS não têm "Primeira imagem"):
+      // o imprevisto entra depois do primeiro contato, ou do último evento antes do fim.
+      var ids = (sc.events || []).map(function (e) { return e.id; });
+      if (re.after && ids.indexOf(re.after) === -1) re.after = ids.indexOf('E4') !== -1 ? 'E4' : ids[Math.max(0, ids.length - 2)];
+      return re;
+    }));
 
     (lv.addSlots || []).forEach(function (s) {
       var add = clone(s), at = sc.slots.map(function (x) { return x.id; }).indexOf(add.after);

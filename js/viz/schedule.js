@@ -13,10 +13,10 @@
   var MS = root.MS = root.MS || {};
 
   // Segundos de animação a 1× (o botão de tempo acelera para 5× ou 20×).
-  var DURATIONS = { launch: 20, separation: 6, docking: 16, default: 7, lunarLaunch: 40 };
+  var DURATIONS = { launch: 20, separation: 6, docking: 16, dock: 16, default: 7, lunarLaunch: 40 };
   // Efeitos visuais que o 3D sabe desenhar (campo "fx" dos eventos nos dados).
   var FX = ['launch', 'separation', 'power', 'contact', 'image', 'coverage', 'end',
-            'delay', 'storm', 'glitch', 'wobble', 'debris', 'stationDown'];
+            'delay', 'storm', 'glitch', 'wobble', 'debris', 'stationDown', 'dock'];
 
   function build(result) {
     var events = (result.mission.events || []).filter(function (e) {

@@ -76,7 +76,9 @@
           'Pasa siempre a la misma hora solar (~10:30): luz constante, ideal para imágenes. Cubre todo el planeta.'),
         pros: T('Good light on every pass and a long life (5 years).', 'Luz boa em toda passagem e vida longa (5 anos).', 'Buena luz en cada pasada y vida larga (5 años).'),
         cons: T('Only the SSO rideshare goes there.', 'Só a carona para SSO chega lá.', 'Solo el viaje compartido a SSO llega allí.'),
-        altitude_km: 500, inclination_deg: 97.4, lightingFactor: 1.0, lifetime_years: 5
+        altitude_km: 500, inclination_deg: 97.4, lightingFactor: 1.0, lifetime_years: 5,
+        // Missões de acoplamento: mudar o plano de 97,4° para 51,6° custa Δv = 2·v·sen(Δi/2) ≈ 5,8 km/s
+        deltaV_mps: 5800
       },
       sso600: {
         name: T('Sun-synchronous 600 km', 'Heliossíncrona 600 km', 'Heliosíncrona 600 km'),
@@ -94,7 +96,28 @@
           'Inclinación de 51,6°. La hora de paso cambia cada día y el arrastre es mucho mayor.'),
         pros: T('Cheapest launch and slightly sharper images.', 'Lançamento mais barato e imagens um pouco mais nítidas.', 'Lanzamiento más barato e imágenes un poco más nítidas.'),
         cons: T('Falls in less than 1 year, and the polar station cannot see it.', 'Cai em menos de 1 ano e a estação polar não enxerga.', 'Cae en menos de 1 año y la estación polar no la ve.'),
-        altitude_km: 400, inclination_deg: 51.6, lightingFactor: 0.6, lifetime_years: 0.8
+        altitude_km: 400, inclination_deg: 51.6, lightingFactor: 0.6, lifetime_years: 0.8,
+        // Missões de acoplamento: na mesma altura da ISS a nave não a alcança; precisa descer, esperar e subir de novo.
+        deltaV_mps: 130, rendezvous_days: 25
+      },
+      // ---- Missões de acoplamento com a ISS (7 e 8)
+      chase350: {
+        name: T('Chase orbit 350 km (51.6°)', 'Órbita de perseguição 350 km (51,6°)', 'Órbita de persecución 350 km (51,6°)'),
+        description: T('In the same plane as the Space Station, 70 km below it. A lower orbit is faster, so the CubeSat catches up on its own and then climbs (Hohmann transfer). Real cargo ships do this.',
+          'No mesmo plano da ISS, 70 km abaixo. Órbita mais baixa é mais rápida: o CubeSat alcança a estação sozinho e depois sobe (transferência de Hohmann). As naves de carga reais fazem assim.',
+          'En el mismo plano que la ISS, 70 km por debajo. Una órbita más baja es más rápida: el CubeSat alcanza la estación solo y luego sube (transferencia de Hohmann). Las naves de carga reales lo hacen así.'),
+        pros: T('Catches the Station in about 4 days with little fuel (60 m/s).', 'Alcança a ISS em uns 4 dias com pouco combustível (60 m/s).', 'Alcanza la ISS en unos 4 días con poco combustible (60 m/s).'),
+        cons: T('Air drag is strong at 350 km: it cannot wait there for long.', 'O arrasto do ar é forte a 350 km: não dá para esperar muito ali.', 'El arrastre del aire es fuerte a 350 km: no se puede esperar mucho allí.'),
+        altitude_km: 350, inclination_deg: 51.6, lightingFactor: 0.6, lifetime_years: 0.3, deltaV_mps: 60, rendezvous_days: 4
+      },
+      iss_near: {
+        name: T('Released by the Station (418 km)', 'Solto pela própria ISS (418 km)', 'Liberado por la propia ISS (418 km)'),
+        description: T('The CubeSat goes up inside a cargo ship and the astronauts release it right next to the Station.',
+          'O CubeSat sobe dentro de uma nave de carga e os astronautas o soltam bem ao lado da estação.',
+          'El CubeSat sube dentro de una nave de carga y los astronautas lo liberan justo al lado de la estación.'),
+        pros: T('Already next to the Station: only small moves are needed (25 m/s).', 'Já começa ao lado da ISS: só precisa de manobras pequenas (25 m/s).', 'Ya empieza junto a la ISS: solo necesita maniobras pequeñas (25 m/s).'),
+        cons: T('Only the cargo ship goes there.', 'Só a nave de carga leva até lá.', 'Solo la nave de carga llega allí.'),
+        altitude_km: 418, inclination_deg: 51.64, lightingFactor: 0.6, lifetime_years: 0.9, deltaV_mps: 25, rendezvous_days: 0
       }
     },
 
@@ -160,7 +183,17 @@
         source: T('NASA\'s CubeSat Launch Initiative releases CubeSats from the ISS (CubeSat 101).', 'O programa de CubeSats da NASA ejeta CubeSats a partir da ISS (CubeSat 101).', 'El programa de CubeSats de la NASA libera CubeSats desde la ISS (CubeSat 101).'),
         site: { name: T('Cape Canaveral (USA)', 'Cabo Canaveral (EUA)', 'Cabo Cañaveral (EE. UU.)'), latitude_deg: 28.5, longitude_deg: -80.6 },
         look: { upper: 'capsule' }, // 3D: nave de carga no topo do foguete
-        orbits: ['iss400'], maxMass_kg: { '3U': 4.0, '6U': 8.0 }, cost_k: { '3U': 110, '6U': 190 }, waitMonths: 2
+        orbits: ['iss400', 'iss_near'], maxMass_kg: { '3U': 4.0, '6U': 8.0 }, cost_k: { '3U': 110, '6U': 190 }, waitMonths: 2
+      },
+      rideshare_iss: {
+        name: T('Rideshare to the Station plane (51.6°)', 'Carona para o plano da ISS (51,6°)', 'Viaje compartido al plano de la ISS (51,6°)'),
+        description: T('A rocket heading to the Space Station inclination drops the CubeSat in the same orbital plane, a little below the Station.',
+          'Um foguete que vai para a inclinação da ISS deixa o CubeSat no mesmo plano da órbita, um pouco abaixo da estação.',
+          'Un cohete que va a la inclinación de la ISS deja el CubeSat en el mismo plano orbital, un poco por debajo de la estación.'),
+        pros: T('Already in the right plane: changing plane later would cost a huge Δv.', 'Já no plano certo: mudar de plano depois custaria um Δv enorme.', 'Ya en el plano correcto: cambiar de plano después costaría un Δv enorme.'),
+        cons: T('More expensive than the SSO rideshare.', 'Mais cara que a carona para SSO.', 'Más cara que el viaje a SSO.'),
+        site: { name: T('Cape Canaveral (USA)', 'Cabo Canaveral (EUA)', 'Cabo Cañaveral (EE. UU.)'), latitude_deg: 28.5, longitude_deg: -80.6 },
+        orbits: ['chase350', 'iss400'], maxMass_kg: { '3U': 4.0, '6U': 10.0 }, cost_k: { '3U': 150, '6U': 260 }, waitMonths: 3
       }
     },
 
@@ -404,6 +437,14 @@
         cons: T('Gives only a few dozen m/s.', 'Dá só algumas dezenas de m/s.', 'Da solo unas decenas de m/s.'),
         isp_s: 65, propellant_kg: 0.4, mass_kg: 1.0, power_W: 0.5, duty: 0.1, volume_U: 1.0, cost_k: 40
       },
+      prop_coldxl: {
+        role: 'propulsion', maturity: 'cots',
+        name: T('Cold gas, big tank', 'Gás frio, tanque grande', 'Gas frío, tanque grande'),
+        description: T('The same simple butane thruster with a 1.2 kg tank. Gentle pushes, ideal for close approaches.', 'O mesmo propulsor simples de butano com tanque de 1,2 kg. Empurrões suaves, ideais para aproximações.', 'El mismo propulsor simple de butano con un tanque de 1,2 kg. Empujones suaves, ideales para aproximaciones.'),
+        pros: T('Safe near astronauts (no toxic fuel) and cheap.', 'Seguro perto de astronautas (sem combustível tóxico) e barato.', 'Seguro cerca de astronautas (sin combustible tóxico) y barato.'),
+        cons: T('Low Isp: about 120 m/s at most.', 'Isp baixo: no máximo uns 120 m/s.', 'Isp bajo: como mucho unos 120 m/s.'),
+        isp_s: 70, propellant_kg: 1.2, mass_kg: 2.4, power_W: 1, duty: 0.05, volume_U: 2.0, cost_k: 80
+      },
       prop_green: {
         role: 'propulsion', maturity: 'modified',
         name: T('Green monopropellant engine', 'Motor monopropelente "verde"', 'Motor monopropelente "verde"'),
@@ -427,6 +468,33 @@
         pros: T('About 2,000 m/s: enough to land.', 'Cerca de 2.000 m/s: o bastante para pousar.', 'Unos 2.000 m/s: suficiente para aterrizar.'),
         cons: T('25 kg and 600 k$; every extra kg on top costs Δv.', '25 kg e 600 k$; cada kg a mais em cima custa Δv.', '25 kg y 600 k$; cada kg extra encima cuesta Δv.'),
         isp_s: 310, propellant_kg: 17, mass_kg: 25, power_W: 3, duty: 0.05, volume_U: 0, cost_k: 600
+      },
+
+      // ---- Sensores de aproximação (missões de acoplamento com a ISS)
+      // navError_cm: erro na medida da posição relativa nos últimos metros
+      nav_gps: {
+        role: 'sensor', maturity: 'cots',
+        name: T('Relative GPS', 'GPS relativo', 'GPS relativo'),
+        description: T('Compares its GPS position with the Station\'s. Works anywhere, day or night.', 'Compara a sua posição de GPS com a da estação. Funciona em qualquer lugar, de dia ou de noite.', 'Compara su posición GPS con la de la estación. Funciona en cualquier lugar, de día o de noche.'),
+        pros: T('Cheap and light: great to get within a few hundred metres.', 'Barato e leve: ótimo para chegar a algumas centenas de metros.', 'Barato y ligero: ideal para llegar a unos cientos de metros.'),
+        cons: T('About 50 cm of error: too coarse to hit a docking port.', 'Erro de uns 50 cm: grosseiro demais para acertar um porto de acoplamento.', 'Unos 50 cm de error: demasiado grueso para acertar un puerto de acoplamiento.'),
+        navError_cm: 50, mass_kg: 0.1, power_W: 1, duty: 1, volume_U: 0.2, cost_k: 20
+      },
+      nav_cam: {
+        role: 'sensor', maturity: 'cots',
+        name: T('Navigation camera', 'Câmera de navegação', 'Cámara de navegación'),
+        description: T('Finds the target marks painted around the port and computes the distance, like the cameras on cargo ships.', 'Acha as marcas pintadas em volta do porto e calcula a distância, como as câmeras das naves de carga.', 'Encuentra las marcas pintadas alrededor del puerto y calcula la distancia, como las cámaras de las naves de carga.'),
+        pros: T('About 3 cm of error, light and affordable.', 'Erro de uns 3 cm, leve e acessível.', 'Unos 3 cm de error, ligera y asequible.'),
+        cons: T('Needs light: in Earth\'s shadow it cannot see the marks.', 'Precisa de luz: na sombra da Terra não enxerga as marcas.', 'Necesita luz: en la sombra de la Tierra no ve las marcas.'),
+        navError_cm: 3, needsLight: true, mass_kg: 0.3, power_W: 2, duty: 0.3, volume_U: 0.4, cost_k: 60
+      },
+      nav_lidar: {
+        role: 'sensor', maturity: 'modified',
+        name: T('Docking LIDAR', 'LIDAR de acoplamento', 'LIDAR de acoplamiento'),
+        description: T('A laser scanner that measures distance with its own light, like the one Dragon uses to dock.', 'Um scanner a laser que mede a distância com luz própria, como o que a Dragon usa para acoplar.', 'Un escáner láser que mide la distancia con luz propia, como el que usa Dragon para acoplarse.'),
+        pros: T('About 1 cm of error, day or night.', 'Erro de uns 1 cm, de dia ou de noite.', 'Unos 1 cm de error, de día o de noche.'),
+        cons: T('Heavy, power-hungry and expensive.', 'Pesado, gasta energia e é caro.', 'Pesado, gasta energía y es caro.'),
+        navError_cm: 1, mass_kg: 0.9, power_W: 8, duty: 0.2, volume_U: 1.0, cost_k: 200
       },
 
       // ---- Só no modo Difícil (js/data/levels.js): bateria e blindagem

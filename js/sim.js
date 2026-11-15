@@ -59,6 +59,9 @@
     devTime_months:       { unitKey: 'months', decimals: 0 },
     deltaV_mps:           { unit: 'm/s',  decimals: 0 },   // só com a escolha "propulsion" (missões na Lua)
     deltaVNeed_mps:       { unit: 'm/s',  decimals: 0 },
+    navError_cm:          { unit: 'cm',   decimals: 0 },   // só com a escolha "sensor" (acoplamento com a ISS)
+    rendezvous_days:      { unitKey: 'days', decimals: 0 },
+    gsdNear_mm:           { unit: 'mm',   decimals: 1 },   // só com params.inspectRange_m (inspetor da ISS)
     batteryNeed_Wh:       { unit: 'Wh',   decimals: 1 },   // só com a escolha "battery" (modo Difícil)
     battery_Wh:           { unit: 'Wh',   decimals: 0 },
     launchWait_months:    { unitKey: 'months', decimals: 0 },
@@ -101,7 +104,8 @@
     obc:       ['storage_GB', 'compressionRatio'],
     battery:   ['capacity_Wh'],   // modo Difícil
     shield:    [],                // modo Difícil (protege do imprevisto de radiação)
-    propulsion: ['isp_s', 'propellant_kg']  // missões na Lua
+    propulsion: ['isp_s', 'propellant_kg'],  // missões na Lua e na ISS
+    sensor:    ['navError_cm']               // acoplamento com a ISS
   };
   var SOURCE_FIELDS = {
     orbits:         ['name', 'altitude_km', 'inclination_deg', 'lifetime_years'],
@@ -115,7 +119,7 @@
     adcs: 'components', comms: 'components', obc: 'components'
   };
   // Escolhas opcionais: só alguns níveis têm (js/data/levels.js → addSlots).
-  var OPTIONAL_SLOTS = { battery: 'components', shield: 'components', propulsion: 'components' };
+  var OPTIONAL_SLOTS = { battery: 'components', shield: 'components', propulsion: 'components', sensor: 'components' };
 
   // Corpo central da órbita (campo body dos itens de órbita; padrão: Terra).
   // rotation_days: a Lua gira devagar, então cobrir tudo leva ~1 mês lunar.
@@ -472,6 +476,35 @@
     } else {
       set('deltaVNeed_mps', null, t('x.dvOff'));
       set('deltaV_mps', null, t('x.dvOff'));
+    }
+
+    // Encontro com a ISS: precisão do sensor de aproximação e dias até alcançar a estação
+    if (sc.slots.some(function (s) { return s.id === 'sensor'; })) {
+      var sn = sel.sensor;
+      if (sn) set('navError_cm', sn.navError_cm, t('x.nav', { name: sn.name, e: fmt(sn.navError_cm, 0) }), false, t('p.nav', { e: fmt(sn.navError_cm, 0) }));
+      else pend(['navError_cm'], ['sensor']);
+      if (o) {
+        var rdv = isNum(o.rendezvous_days) ? o.rendezvous_days : Infinity;
+        set('rendezvous_days', rdv, isFinite(rdv) ? t('x.rdv', { name: o.name, d: fmt(rdv, 0) }) : t('x.rdvNever', { name: o.name }), false,
+          isFinite(rdv) ? t('p.rdv', { d: fmt(rdv, 0) }) : t('p.rdvNever'));
+      } else {
+        pend(['rendezvous_days'], ['orbit']);
+      }
+    } else {
+      set('navError_cm', null, t('x.navOff'));
+      set('rendezvous_days', null, t('x.navOff'));
+    }
+    // Inspeção de perto (inspetor da ISS): a mesma conta do GSD, com a distância no lugar da altitude
+    if (isNum(p.inspectRange_m)) {
+      if (cam) {
+        var gNear = p.inspectRange_m * cam.pixel_um / cam.focal_mm; // m × µm ÷ mm = mm
+        set('gsdNear_mm', gNear, t('x.gsdNear', { d: fmt(p.inspectRange_m, 0), px: fmt(cam.pixel_um, 2), f: fmt(cam.focal_mm, 0), g: fmt(gNear, 1) }), false,
+          t('p.gsdNear', { g: fmt(gNear, 1) }));
+      } else {
+        pend(['gsdNear_mm'], ['payload']);
+      }
+    } else {
+      set('gsdNear_mm', null, t('x.navOff'));
     }
 
     // Massa e volume
@@ -901,13 +934,19 @@
     var possible = isFinite(revisit) && revisit > 0 ? imgDays / revisit : 0;
     var maps = aborted ? 0 : possible * dataFraction * factor;
     var target = (isNum(p.targetMapsPerYear) ? p.targetMapsPerYear : 12) * planned;
+    // Missões de entrega/acoplamento (outcomeMode 'events'): o resultado é a própria
+    // linha do tempo, uma entrega só, reduzida pelos problemas no caminho.
+    var byEvents = sc.outcomeMode === 'events';
+    if (byEvents) { maps = aborted ? 0 : factor; target = 1; }
     var value = target > 0 ? Math.min(1, maps / target) : 0;
     var outcome = {
       days: days, imagingDays: imgDays, dataFraction: dataFraction, opsFactor: factor,
       maps: maps, target: target, value: value,
       explanation: aborted
         ? t('eng.outcomeAborted', { title: L(aborted.title) })
-        : life
+        : byEvents
+          ? t('eng.outcomeEvents', { ops: pct(factor) })
+          : life
           ? t('eng.outcomeLife', { img: fmt(imgDays, 0), rev: fmt(revisit, 1), data: pct(dataFraction), ops: pct(factor), maps: fmt(maps, 1), target: fmt(target, 0) })
           : t('eng.outcome', { days: fmt(days, 0), rev: fmt(revisit, 1), data: pct(dataFraction), ops: pct(factor), maps: fmt(maps, 1), target: fmt(target, 0) })
     };
@@ -1025,7 +1064,7 @@
     var score = computeScore(sc, requirements, resources, mission);
 
     return {
-      scenarioId: sc.id,
+      scenarioId: sc.id, dockMode: sc.dockMode || null,
       seed: seed,
       complete: r.missing.length === 0,
       missing: r.missing.map(function (id) { return { slot: id, label: slotLabel[id] }; }),

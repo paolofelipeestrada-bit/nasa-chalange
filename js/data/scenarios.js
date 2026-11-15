@@ -696,4 +696,256 @@
         T('The lunar night arrived before the month was over and the lander froze.', 'A noite lunar chegou antes do fim do mês e o módulo congelou.', 'La noche lunar llegó antes del fin del mes y el módulo se congeló.'))
     ];
   })();
+
+  // ------------------------------------------------ ISS: peças comuns às missões 7 e 8
+  // dockMode: 'chase' = sobe da órbita de perseguição e acopla · 'inspect' = sai da ISS,
+  // voa em volta fotografando e volta para acoplar (o 3D usa isso; o motor não).
+  var SENSOR = { id: 'sensor', phase: 'design', segment: 'space', source: 'components', options: ['nav_gps', 'nav_cam', 'nav_lidar'],
+    label: T('Approach sensor', 'Sensor de aproximação', 'Sensor de aproximación'),
+    help: T('Measures where the Station port is in the last metres. To [[docking|dock]], the error must be smaller than the port tolerance (5 cm).',
+      'Mede onde está o porto da ISS nos últimos metros. Para [[docking|acoplar]], o erro precisa ser menor que a tolerância do porto (5 cm).',
+      'Mide dónde está el puerto de la ISS en los últimos metros. Para [[docking|acoplarse]], el error debe ser menor que la tolerancia del puerto (5 cm).') };
+  function dockSlots(o) {
+    var out = [];
+    SLOTS.forEach(function (s) {
+      out.push(Object.assign({}, s, o[s.id] || {}));
+      if (s.id === 'payload') out.push(Object.assign({}, SENSOR, o.sensor || {}));
+      if (s.id === 'power') out.push(Object.assign({}, PROPULSION, o.propulsion || {}));
+    });
+    return out;
+  }
+  var DOCK_TEAM = JSON.parse(JSON.stringify(TEAM));
+  DOCK_TEAM.roles.forEach(function (r) {
+    if (r.id === 'bus') r.slots = r.slots.concat(['propulsion']);
+    if (r.id === 'payload') r.slots = r.slots.concat(['sensor']);
+  });
+  var RE_BY_ID = {}; RANDOM_EVENTS.forEach(function (e) { RE_BY_ID[e.id] = e; });
+  function reAfter(id, after, extra) { return Object.assign(clone(RE_BY_ID[id]), { after: after }, extra || {}); }
+  // Imprevisto das missões da ISS: a aproximação cai no lado escuro da Terra.
+  function darkApproach(after) {
+    return { id: 'RE9', fx: 'delay', after: after, chance: 0.5, mitigatedBy: [{ slot: 'sensor', is: 'nav_lidar' }], effect: { degrade: 0.8 },
+      when: T('Approach', 'Aproximação', 'Aproximación'),
+      title: T('Approach in the dark', 'Aproximação no escuro', 'Aproximación a oscuras'),
+      description: T('Half of every lap is in Earth\'s shadow. The final approach may fall right there.', 'Metade de cada volta é na sombra da Terra. A aproximação final pode cair bem ali.', 'La mitad de cada vuelta está en la sombra de la Tierra. La aproximación final puede caer justo ahí.'),
+      text: T('The final approach fell on the night side: the sensor could not see the port and the CubeSat had to hold and wait for sunrise, burning fuel and time.', 'A aproximação final caiu no lado da noite: o sensor não enxergava o porto e o CubeSat teve de parar e esperar o sol nascer, gastando combustível e tempo.', 'La aproximación final cayó en el lado nocturno: el sensor no veía el puerto y el CubeSat tuvo que detenerse a esperar el amanecer, gastando combustible y tiempo.'),
+      mitigatedText: T('The approach fell on the night side, but the LIDAR brings its own light and docking went on.', 'A aproximação caiu no lado da noite, mas o LIDAR tem luz própria e o acoplamento seguiu.', 'La aproximación cayó en el lado nocturno, pero el LIDAR tiene luz propia y el acoplamiento siguió.'),
+      lesson: T('Cameras need sunlight; a LIDAR carries its own light and works at night.', 'Câmeras precisam de luz do Sol; o LIDAR leva luz própria e funciona de noite.', 'Las cámaras necesitan luz solar; el LIDAR lleva luz propia y funciona de noche.') };
+  }
+  var DOCK_VERIF = {
+    nav: { id: 'V1', requirements: ['R1'], method: T('Test', 'Teste', 'Prueba'),
+      title: T('Sensor test on a port mock-up', 'Teste do sensor numa maquete do porto', 'Prueba del sensor en una maqueta del puerto'),
+      description: T('A full-size port on a moving rail: the sensor must measure its position within 5 cm.', 'Um porto em tamanho real num trilho móvel: o sensor precisa medir a posição com erro de até 5 cm.', 'Un puerto a tamaño real sobre un riel móvil: el sensor debe medir su posición con un error de hasta 5 cm.') },
+    dv: { id: 'V2', requirements: ['R2'], checks: ['deltav'], method: T('Test', 'Teste', 'Prueba'),
+      title: T('Engine firing test and Δv budget', 'Teste de queima do motor e orçamento de Δv', 'Prueba de encendido del motor y presupuesto de Δv'),
+      description: T('The engine fires on a test stand; the rocket equation gives the Δv with the real mass.', 'O motor é ligado numa bancada de teste; a equação do foguete dá o Δv com a massa real.', 'El motor se enciende en un banco de pruebas; la ecuación del cohete da el Δv con la masa real.') }
+  };
+  function dockVerification(v1, v4) { return [v1, DOCK_VERIF.dv, VERIFICATION[2], v4].concat(VERIFICATION.slice(4)); }
+
+  // ------------------------------------------------ Cenário 7: entregar um experimento na ISS
+  variant('iss_dock', {
+    dockMode: 'chase', outcomeMode: 'events',
+    clientLines: {
+      need: T('Hi! My cells must reach the Space Station alive, in a few days. Can your CubeSat find the Station and dock by itself?', 'Oi! Minhas células precisam chegar vivas à ISS, em poucos dias. Seu CubeSat consegue achar a estação e acoplar sozinho?', '¡Hola! Mis células deben llegar vivas a la ISS en pocos días. ¿Tu CubeSat puede encontrar la estación y acoplarse solo?'),
+      concept: T('First: where does the rocket leave us? We must end up in the Station plane, or we will never meet it.', 'Primeiro: onde o foguete nos deixa? Precisamos ficar no plano da ISS, senão nunca vamos encontrá-la.', 'Primero: ¿dónde nos deja el cohete? Debemos quedar en el plano de la ISS, o nunca la encontraremos.'),
+      conceptOk: T('Good start: from there we can catch the Station. Now let us turn my needs into numbers.', 'Bom começo: dali dá para alcançar a ISS. Agora vamos transformar o que eu preciso em números.', 'Buen comienzo: desde allí podemos alcanzar la ISS. Ahora convirtamos lo que necesito en números.'),
+      design: T('Fuel to get there and a sensor that hits a 5 cm port: those two decide everything.', 'Combustível para chegar e um sensor que acerte um porto de 5 cm: essas duas coisas decidem tudo.', 'Combustible para llegar y un sensor que acierte un puerto de 5 cm: esas dos cosas lo deciden todo.'),
+      designOk: T('Fuel, sensor and time all add up. Let us test it for real!', 'Combustível, sensor e prazo fecham. Vamos testar de verdade!', 'Combustible, sensor y plazo cuadran. ¡Probémoslo de verdad!'),
+      alert: T('An alert from mission control?! Decide quickly… my cells are waiting!', 'Um alerta do controle da missão?! Decida rápido… minhas células estão esperando!', '¿Una alerta del control de la misión?! Decide rápido… ¡mis células esperan!'),
+      flying: T('It is chasing the Station! I can barely watch the approach…', 'Ele está perseguindo a ISS! Mal consigo olhar a aproximação…', '¡Está persiguiendo la ISS! Casi no puedo mirar la aproximación…'),
+      lostOrbit: T('We never docked… the cells did not make it. What went wrong?', 'Não acoplamos… as células não chegaram. O que deu errado?', 'No nos acoplamos… las células no llegaron. ¿Qué salió mal?')
+    },
+    card: { icon: '🛰️', image: 'assets/img/client-iss_dock.jpg',
+      pitch: T('Fly a CubeSat up to the Space Station and dock with it to deliver a live experiment.', 'Levar um CubeSat até a ISS e acoplar nela para entregar um experimento vivo.', 'Llevar un CubeSat hasta la ISS y acoplarse para entregar un experimento vivo.'),
+      challenge: T('Orbital chase: lower is faster, fuel is short and the port tolerance is 5 cm.', 'Perseguição orbital: mais baixo é mais rápido, o combustível é curto e o porto aceita 5 cm de erro.', 'Persecución orbital: más bajo es más rápido, el combustible es poco y el puerto acepta 5 cm de error.') },
+    title: T('Docking with the Space Station', 'Acoplar com a ISS', 'Acoplarse con la ISS'),
+    customer: T('University space biology lab', 'Laboratório de biologia espacial da universidade', 'Laboratorio de biología espacial de la universidad'),
+    contact: { name: 'Júlia Paiva', role: T('Space biologist', 'Bióloga espacial', 'Bióloga espacial'),
+      skin: '#b9825c', hair: '#2a1a12', shirt: '#1f9e8f', long: true },
+    need: T('A culture of live cells must reach the Space Station a few days after it is prepared. Instead of waiting months for the next cargo ship, the lab wants a small CubeSat "tug" that finds the Station by itself and docks at a small port, where the astronauts pick up the experiment.',
+      'Uma cultura de células vivas precisa chegar à ISS poucos dias depois de preparada. Em vez de esperar meses pela próxima nave de carga, o laboratório quer um pequeno CubeSat "rebocador" que encontre a estação sozinho e acople num porto pequeno, onde os astronautas pegam o experimento.',
+      'Un cultivo de células vivas debe llegar a la ISS pocos días después de prepararse. En lugar de esperar meses la próxima nave de carga, el laboratorio quiere un pequeño CubeSat "remolcador" que encuentre la estación solo y se acople en un puerto pequeño, donde los astronautas recogen el experimento.'),
+    goals: [
+      { id: 'G1', text: T('Hit the docking port: position error of 5 cm or less.', 'Acertar o porto de acoplamento: erro de posição de 5 cm ou menos.', 'Acertar el puerto de acoplamiento: error de posición de 5 cm o menos.') },
+      { id: 'G2', text: T('Carry enough fuel to catch up with the Station and climb to it.', 'Levar combustível para alcançar a ISS e subir até ela.', 'Llevar combustible para alcanzar la ISS y subir hasta ella.') },
+      { id: 'G3', text: T('Send the approach telemetry and photos to the ground.', 'Mandar a telemetria e as fotos da aproximação para o solo.', 'Enviar la telemetría y las fotos de la aproximación a tierra.') },
+      { id: 'G4', text: T('Dock within 10 days of the launch, while the cells are alive.', 'Acoplar em até 10 dias depois do lançamento, enquanto as células estão vivas.', 'Acoplarse en hasta 10 días tras el lanzamiento, mientras las células están vivas.') }
+    ],
+    constraints: [
+      T('Total budget of 950 k$: CubeSat, launch and ground station.', 'Orçamento total de 950 k$: CubeSat, lançamento e estação em solo.', 'Presupuesto total de 950 k$: CubeSat, lanzamiento y estación terrena.'),
+      T('Launch within 24 months ([[schedule|schedule]]).', 'Lançar em até 24 meses ([[schedule|prazo]]).', 'Lanzar en un máximo de 24 meses ([[schedule|plazo]]).'),
+      T('Only non-toxic fuel near the astronauts; [[cubesat|CubeSat]] format (3U or 6U).', 'Perto dos astronautas, só combustível não tóxico; formato [[cubesat|CubeSat]] (3U ou 6U).', 'Cerca de los astronautas, solo combustible no tóxico; formato [[cubesat|CubeSat]] (3U o 6U).')
+    ],
+    // Área: o controle da missão em Houston, que recebe as fotos (o encontro em si é com a ISS).
+    aoi: { name: T('Mission control (Houston)', 'Controle da missão (Houston)', 'Control de la misión (Houston)'), area_km2: 1000, latitude_deg: 29.8, longitude_deg: -95.4, radius_deg: 0.5 },
+    budget_k: 950,
+    params: { plannedDuration_years: 0.1, deltaV_mps: 60,
+      deltaVWhy: T('To meet the Station: wait in the faster lower orbit, then climb with a Hohmann transfer and brake gently in the last metres.', 'Para encontrar a ISS: esperar na órbita mais baixa (mais rápida), subir com uma transferência de Hohmann e frear devagar nos últimos metros.', 'Para encontrar la ISS: esperar en la órbita más baja (más rápida), subir con una transferencia de Hohmann y frenar despacio en los últimos metros.'),
+      margins: { mass: 0.10, volume: 0, power: 0.20, downlink: 0.10, storage: 0.10, cost: 0, time: 0.10, deltav: 0.10 } },
+    slots: dockSlots({
+      orbit: { options: ['chase350', 'iss400', 'sso500'],
+        help: T('Where the rocket leaves the CubeSat. To [[rendezvous|meet]] the Station you must be in its plane (51.6°), and a lower orbit catches up faster.', 'Onde o foguete deixa o CubeSat. Para [[rendezvous|encontrar]] a ISS é preciso estar no plano dela (51,6°), e órbita mais baixa alcança mais rápido.', 'Dónde el cohete deja el CubeSat. Para [[rendezvous|encontrar]] la ISS hay que estar en su plano (51,6°), y una órbita más baja alcanza más rápido.') },
+      launcher: { options: ['rideshare_iss', 'rideshare_sso'] },
+      groundStation: { options: ['gs_national'], auto: 'fixed' },
+      payload: { options: ['cam_wide'], auto: 'fixed',
+        label: T('Onboard camera', 'Câmera de bordo', 'Cámara de a bordo'),
+        help: T('Films the approach for the ground team. Already chosen.', 'Filma a aproximação para a equipe em solo. Já escolhida.', 'Filma la aproximación para el equipo en tierra. Ya elegida.') },
+      propulsion: { options: ['prop_cold', 'prop_coldxl', 'prop_green'],
+        help: T('Every move costs [[deltav|Δv]]: chasing and climbing to the Station needs tens of m/s, and changing orbital plane would need thousands.', 'Toda manobra custa [[deltav|Δv]]: perseguir e subir até a ISS pede dezenas de m/s, e mudar o plano da órbita pediria milhares.', 'Toda maniobra cuesta [[deltav|Δv]]: perseguir y subir a la ISS pide decenas de m/s, y cambiar el plano de la órbita pediría miles.') }
+    }),
+    team: DOCK_TEAM,
+    randomEvents: [reAfter('RE1', 'E1'), reAfter('RE3', 'E4'), darkApproach('ED1'),
+      reAfter('RE5', 'ED1', { appliesIf: [] })],
+    verification: dockVerification(DOCK_VERIF.nav, { id: 'V4', requirements: ['R4'], method: T('Analysis', 'Análise', 'Análisis'),
+      title: T('Rendezvous trajectory analysis', 'Análise da trajetória de encontro', 'Análisis de la trayectoria de encuentro'),
+      description: T('Simulated chase: how many days until the CubeSat reaches the Station.', 'Perseguição simulada: quantos dias até o CubeSat alcançar a estação.', 'Persecución simulada: cuántos días hasta que el CubeSat alcanza la estación.') }),
+    requirements: {},
+    events: {}
+  });
+  (function () {
+    var sc = MS.data.scenarios.iss_dock;
+    sc.requirements = [
+      { id: 'R1', goal: 'G1', weight: 1, metric: 'navError_cm', op: '<=', value: 5,
+        title: T('Approach precision', 'Precisão da aproximação', 'Precisión de la aproximación'),
+        text: T('The approach sensor must measure the port position with an error of 5 cm or less.', 'O sensor de aproximação deve medir a posição do porto com erro de 5 cm ou menos.', 'El sensor de aproximación debe medir la posición del puerto con un error de 5 cm o menos.'),
+        rationale: T('The small port only latches if the CubeSat arrives within about 5 cm of its centre; more than that and it bounces off or hits the Station.', 'O porto pequeno só trava se o CubeSat chegar a até uns 5 cm do centro; mais que isso, ele quica ou bate na estação.', 'El puerto pequeño solo se traba si el CubeSat llega a unos 5 cm del centro; más que eso y rebota o choca con la estación.'),
+        hint: T('GPS is too coarse for the last metres: use a camera that sees the port marks or a LIDAR.', 'O GPS é grosseiro demais para os últimos metros: use uma câmera que vê as marcas do porto ou um LIDAR.', 'El GPS es demasiado grueso para los últimos metros: usa una cámara que vea las marcas del puerto o un LIDAR.') },
+      { id: 'R2', goal: 'G2', weight: 1, metric: 'deltaV_mps', op: '>=', ref: 'deltaVNeed_mps',
+        title: T('Fuel to reach the Station', 'Combustível para chegar à ISS', 'Combustible para llegar a la ISS'),
+        text: T('The engine must give at least the Δv the rendezvous needs.', 'O motor deve dar pelo menos o Δv que o encontro precisa.', 'El motor debe dar al menos el Δv que necesita el encuentro.'),
+        rationale: T('Rocket equation: without enough Δv the CubeSat runs dry before reaching the Station.', 'Equação do foguete: sem Δv suficiente o CubeSat fica sem combustível antes de chegar à ISS.', 'Ecuación del cohete: sin Δv suficiente el CubeSat se queda sin combustible antes de llegar a la ISS.'),
+        hint: T('Start in the chase orbit (lower and in the Station plane): it needs far less Δv. Then pick an engine that gives that much.', 'Comece na órbita de perseguição (mais baixa e no plano da ISS): ela pede bem menos Δv. Depois escolha um motor que dê isso.', 'Empieza en la órbita de persecución (más baja y en el plano de la ISS): pide mucho menos Δv. Luego elige un motor que dé eso.') },
+      { id: 'R3', goal: 'G3', weight: 1, metric: 'downlink_Gbit_day', op: '>=', ref: 'dataPerDay_Gbit',
+        title: T('Data delivery', 'Entrega de dados', 'Entrega de datos'),
+        text: T('The daily downlink must carry all the photos and telemetry made each day.', 'O envio diário deve levar todas as fotos e a telemetria geradas por dia.', 'El envío diario debe llevar todas las fotos y la telemetría generadas por día.'),
+        rationale: T('The ground team watches every approach step to stop it if anything goes wrong.', 'A equipe em solo acompanha cada passo da aproximação para interromper se algo der errado.', 'El equipo en tierra sigue cada paso de la aproximación para detenerla si algo sale mal.') },
+      { id: 'R4', goal: 'G4', weight: 1, metric: 'rendezvous_days', op: '<=', value: 10,
+        title: T('Arrival time', 'Tempo de chegada', 'Tiempo de llegada'),
+        text: T('The CubeSat must reach the Station within 10 days of the launch.', 'O CubeSat deve alcançar a ISS em até 10 dias depois do lançamento.', 'El CubeSat debe alcanzar la ISS en hasta 10 días tras el lanzamiento.'),
+        rationale: T('The cells survive about 10 days in the CubeSat incubator.', 'As células sobrevivem cerca de 10 dias na incubadora do CubeSat.', 'Las células sobreviven unos 10 días en la incubadora del CubeSat.'),
+        hint: T('At the same height as the Station you never catch up: start lower, where orbits are faster.', 'Na mesma altura da ISS você nunca alcança: comece mais baixo, onde as órbitas são mais rápidas.', 'A la misma altura que la ISS nunca la alcanzas: empieza más abajo, donde las órbitas son más rápidas.') }
+    ];
+    sc.events = [
+      ev('E1', 'launch', T('Day 0', 'Dia 0', 'Día 0'), T('Launch', 'Lançamento', 'Lanzamiento'), [{ check: 'launch' }, { check: 'mass' }, { check: 'volume' }], 'abort',
+        T('The rocket left the CubeSat in the {altitude_km} km orbit.', 'O foguete deixou o CubeSat na órbita de {altitude_km} km.', 'El cohete dejó el CubeSat en la órbita de {altitude_km} km.'), E_BY_ID.E1.failure),
+      E_BY_ID.ET, E_BY_ID.E2, E_BY_ID.E3, E_BY_ID.E4,
+      ev('ED1', 'dock', T('Days 1–4', 'Dias 1–4', 'Días 1–4'), T('Chase and climb to the Station', 'Perseguição e subida até a ISS', 'Persecución y subida hasta la ISS'), [{ check: 'deltav' }], 'abort',
+        T('The engine gave {deltaV_mps} m/s of the {deltaVNeed_mps} needed: the CubeSat caught up and climbed to the Station.', 'O motor deu {deltaV_mps} m/s dos {deltaVNeed_mps} necessários: o CubeSat alcançou a ISS e subiu até ela.', 'El motor dio {deltaV_mps} m/s de los {deltaVNeed_mps} necesarios: el CubeSat alcanzó la ISS y subió hasta ella.'),
+        T('The engine only gives {deltaV_mps} m/s and the trip needed {deltaVNeed_mps}: the fuel ran out and the CubeSat never reached the Station.', 'O motor só dá {deltaV_mps} m/s e a viagem pedia {deltaVNeed_mps}: o combustível acabou e o CubeSat nunca chegou à ISS.', 'El motor solo da {deltaV_mps} m/s y el viaje pedía {deltaVNeed_mps}: el combustible se acabó y el CubeSat nunca llegó a la ISS.')),
+      ev('ED2', 'contact', T('Day 4', 'Dia 4', 'Día 4'), T('Final approach and docking', 'Aproximação final e acoplamento', 'Aproximación final y acoplamiento'), [{ requirement: 'R1' }], 'abort',
+        T('The sensor measured the port within {navError_cm} cm: the CubeSat slid into the port at 3 cm/s and latched.', 'O sensor mediu o porto com erro de {navError_cm} cm: o CubeSat entrou no porto a 3 cm/s e travou.', 'El sensor midió el puerto con un error de {navError_cm} cm: el CubeSat entró en el puerto a 3 cm/s y se trabó.'),
+        T('With {navError_cm} cm of error the sensor cannot find a 5 cm port: for safety the Station ordered the CubeSat to back away.', 'Com {navError_cm} cm de erro o sensor não acha um porto de 5 cm: por segurança a ISS mandou o CubeSat se afastar.', 'Con {navError_cm} cm de error el sensor no encuentra un puerto de 5 cm: por seguridad la ISS ordenó al CubeSat alejarse.')),
+      ev('ED3', 'delay', T('Day 4', 'Dia 4', 'Día 4'), T('Cells still alive?', 'As células chegaram vivas?', '¿Las células llegaron vivas?'), [{ requirement: 'R4' }], { degrade: 0.4 },
+        T('Docked {rendezvous_days} days after launch: the cells arrived alive.', 'Acoplou {rendezvous_days} dias depois do lançamento: as células chegaram vivas.', 'Se acopló {rendezvous_days} días después del lanzamiento: las células llegaron vivas.'),
+        T('It took {rendezvous_days} days to reach the Station: most of the cells died on the way.', 'Levou {rendezvous_days} dias para alcançar a ISS: a maior parte das células morreu no caminho.', 'Tardó {rendezvous_days} días en alcanzar la ISS: la mayoría de las células murió en el camino.')),
+      ev('E8', 'contact', T('Days 1–4', 'Dias 1–4', 'Días 1–4'), T('Approach data', 'Dados da aproximação', 'Datos de la aproximación'), [{ requirement: 'R3' }], 'none',
+        T('All {dataPerDay_Gbit} Gbit of photos and telemetry reached the ground.', 'Os {dataPerDay_Gbit} Gbit de fotos e telemetria chegaram todos ao solo.', 'Los {dataPerDay_Gbit} Gbit de fotos y telemetría llegaron todos a tierra.'),
+        T('Only {downlink_Gbit_day} of the {dataPerDay_Gbit} Gbit per day reached the ground: the team flew partly blind.', 'Só {downlink_Gbit_day} dos {dataPerDay_Gbit} Gbit por dia chegaram ao solo: a equipe voou meio às cegas.', 'Solo {downlink_Gbit_day} de los {dataPerDay_Gbit} Gbit por día llegaron a tierra: el equipo voló medio a ciegas.')),
+      ev('E9', 'end', T('Day 5', 'Dia 5', 'Día 5'), T('Experiment delivered', 'Experimento entregue', 'Experimento entregado'), [], 'none',
+        T('The astronauts opened the port and took the experiment into the laboratory.', 'Os astronautas abriram o porto e levaram o experimento para o laboratório.', 'Los astronautas abrieron el puerto y llevaron el experimento al laboratorio.'))
+    ];
+  })();
+
+  // ------------------------------------------------ Cenário 8: inspetor da ISS
+  variant('iss_inspect', {
+    dockMode: 'inspect', outcomeMode: 'events',
+    clientLines: {
+      need: T('Hello! A radiator may have a hole. I would rather send a small inspector than an astronaut on a spacewalk.', 'Olá! Um radiador pode estar furado. Prefiro mandar um pequeno inspetor do que um astronauta numa caminhada espacial.', '¡Hola! Un radiador puede tener un agujero. Prefiero enviar un pequeño inspector que un astronauta a una caminata espacial.'),
+      concept: T('The ride is easy: it goes up in a cargo ship and the crew lets it out next to the Station.', 'A viagem é fácil: ele sobe numa nave de carga e a tripulação o solta ao lado da estação.', 'El viaje es fácil: sube en una nave de carga y la tripulación lo suelta junto a la estación.'),
+      conceptOk: T('Ride, orbit and antenna ready. The real challenge is the inspector itself.', 'Transporte, órbita e antena prontos. O desafio de verdade é o próprio inspetor.', 'Transporte, órbita y antena listos. El verdadero desafío es el propio inspector.'),
+      design: T('At 20 m every millimetre counts. And it has to find the port again to come home.', 'A 20 m cada milímetro conta. E ele precisa achar o porto de novo para voltar para casa.', 'A 20 m cada milímetro cuenta. Y debe encontrar el puerto otra vez para volver a casa.'),
+      designOk: T('Sharp photos, enough fuel and a safe return. Let us fly it!', 'Fotos nítidas, combustível suficiente e volta segura. Vamos voar!', 'Fotos nítidas, combustible suficiente y vuelta segura. ¡A volar!'),
+      alert: T('An alert from mission control?! Decide quickly… the crew is watching!', 'Um alerta do controle da missão?! Decida rápido… a tripulação está olhando!', '¿Una alerta del control de la misión?! Decide rápido… ¡la tripulación está mirando!'),
+      flying: T('It is flying around the Station! The first hull photos are coming in.', 'Ele está voando em volta da ISS! As primeiras fotos do casco estão chegando.', '¡Está volando alrededor de la ISS! Llegan las primeras fotos del casco.'),
+      lostOrbit: T('We lost the inspector… and I still do not know how bad that radiator is.', 'Perdemos o inspetor… e ainda não sei o tamanho do estrago no radiador.', 'Perdimos el inspector… y todavía no sé cuán grave está ese radiador.')
+    },
+    card: { icon: '🔭', image: 'assets/img/client-iss_inspect.jpg',
+      pitch: T('A small inspector leaves the Station, photographs its hull up close and docks back.', 'Um pequeno inspetor sai da ISS, fotografa o casco de perto e volta para acoplar.', 'Un pequeño inspector sale de la ISS, fotografía su casco de cerca y vuelve a acoplarse.'),
+      challenge: T('The same GSD equation, but at 20 m: millimetres matter.', 'A mesma equação do GSD, só que a 20 m: cada milímetro conta.', 'La misma ecuación del GSD, pero a 20 m: cada milímetro cuenta.') },
+    title: T('Space Station inspector', 'Inspetor da ISS', 'Inspector de la ISS'),
+    customer: T('Space Station flight control (maintenance)', 'Controle de voo da ISS (manutenção)', 'Control de vuelo de la ISS (mantenimiento)'),
+    contact: { name: 'Marcos Lindqvist', role: T('Station flight engineer', 'Engenheiro de voo da estação', 'Ingeniero de vuelo de la estación'),
+      skin: '#f1cfb0', hair: '#9a6b3c', shirt: '#4a5dd6', long: false },
+    need: T('A micrometeoroid may have punched a hole in a radiator. Instead of sending astronauts on a risky spacewalk, the team wants a small CubeSat inspector: it leaves the Station, flies around it at 20 m photographing the hull, and docks back to recharge for the next inspection.',
+      'Um micrometeorito pode ter furado um radiador. Em vez de mandar astronautas numa caminhada espacial arriscada, a equipe quer um pequeno CubeSat-inspetor: ele sai da ISS, voa em volta dela a 20 m fotografando o casco e volta para acoplar e recarregar para a próxima inspeção.',
+      'Un micrometeoroide puede haber perforado un radiador. En lugar de enviar astronautas a una caminata espacial arriesgada, el equipo quiere un pequeño CubeSat inspector: sale de la ISS, vuela a su alrededor a 20 m fotografiando el casco y vuelve a acoplarse para recargarse.'),
+    goals: [
+      { id: 'G1', text: T('See holes from 5 mm (pixels of 1.5 mm or smaller at 20 m).', 'Enxergar furos a partir de 5 mm (pixels de 1,5 mm ou menos a 20 m).', 'Ver agujeros desde 5 mm (píxeles de 1,5 mm o menos a 20 m).') },
+      { id: 'G2', text: T('Carry enough fuel to fly around the Station and come back.', 'Levar combustível para dar a volta na ISS e voltar.', 'Llevar combustible para dar la vuelta a la ISS y volver.') },
+      { id: 'G3', text: T('Send every hull photo to the ground.', 'Mandar todas as fotos do casco para o solo.', 'Enviar todas las fotos del casco a tierra.') },
+      { id: 'G4', text: T('Dock back safely: position error of 5 cm or less.', 'Acoplar de volta com segurança: erro de posição de 5 cm ou menos.', 'Acoplarse de vuelta con seguridad: error de posición de 5 cm o menos.') }
+    ],
+    constraints: [
+      T('Total budget of 850 k$: CubeSat, ride and ground station.', 'Orçamento total de 850 k$: CubeSat, transporte e estação em solo.', 'Presupuesto total de 850 k$: CubeSat, transporte y estación terrena.'),
+      T('Ready within 24 months ([[schedule|schedule]]).', 'Pronto em até 24 meses ([[schedule|prazo]]).', 'Listo en un máximo de 24 meses ([[schedule|plazo]]).'),
+      T('Only non-toxic fuel near the astronauts; [[cubesat|CubeSat]] format (3U or 6U).', 'Perto dos astronautas, só combustível não tóxico; formato [[cubesat|CubeSat]] (3U ou 6U).', 'Cerca de los astronautas, solo combustible no tóxico; formato [[cubesat|CubeSat]] (3U o 6U).')
+    ],
+    aoi: { name: T('Mission control (Houston)', 'Controle da missão (Houston)', 'Control de la misión (Houston)'), area_km2: 1000, latitude_deg: 29.8, longitude_deg: -95.4, radius_deg: 0.5 },
+    budget_k: 850,
+    params: { plannedDuration_years: 0.1, deltaV_mps: 25, inspectRange_m: 20,
+      deltaVWhy: T('Leaving the Station, flying a lap around it and braking to dock again: small moves of a few m/s each.', 'Sair da ISS, dar uma volta em torno dela e frear para acoplar de novo: manobras pequenas de poucos m/s cada.', 'Salir de la ISS, dar una vuelta a su alrededor y frenar para acoplarse de nuevo: maniobras pequeñas de pocos m/s cada una.'),
+      margins: { mass: 0.10, volume: 0, power: 0.20, downlink: 0.10, storage: 0.10, cost: 0, time: 0.10, deltav: 0.10 } },
+    slots: dockSlots({
+      orbit: { options: ['iss_near'], auto: 'fixed' },
+      launcher: { options: ['iss_cargo'], auto: 'fixed' },
+      groundStation: { options: ['gs_national'], auto: 'fixed' },
+      payload: { label: T('Inspection camera', 'Câmera de inspeção', 'Cámara de inspección'),
+        help: T('Same rule as from orbit: [[gsd|GSD]] = distance × pixel ÷ focal length. At 20 m the answer comes out in millimetres.', 'A mesma regra de lá de cima: [[gsd|GSD]] = distância × pixel ÷ foco. A 20 m a resposta sai em milímetros.', 'La misma regla que desde la órbita: [[gsd|GSD]] = distancia × píxel ÷ foco. A 20 m la respuesta sale en milímetros.') },
+      propulsion: { options: ['prop_cold', 'prop_coldxl', 'prop_green'],
+        help: T('Flying around the Station is a short trip: a few tens of m/s. A big engine only adds mass and cost.', 'Voar em volta da ISS é uma viagem curta: algumas dezenas de m/s. Motor grande só soma massa e custo.', 'Volar alrededor de la ISS es un viaje corto: unas decenas de m/s. Un motor grande solo suma masa y costo.') }
+    }),
+    team: DOCK_TEAM,
+    randomEvents: [reAfter('RE3', 'E4'), reAfter('RE2', 'EI2'), darkApproach('E8')],
+    verification: dockVerification({ id: 'V1', requirements: ['R1'], method: T('Test', 'Teste', 'Prueba'),
+      title: T('Photo test of a holed plate at 20 m', 'Foto de uma placa furada a 20 m', 'Foto de una placa perforada a 20 m'),
+      description: T('A radiator panel with 5 mm holes is photographed from 20 m in the lab.', 'Um painel de radiador com furos de 5 mm é fotografado a 20 m no laboratório.', 'Un panel de radiador con agujeros de 5 mm se fotografía a 20 m en el laboratorio.') },
+      Object.assign({}, DOCK_VERIF.nav, { id: 'V4', requirements: ['R4'] })),
+    requirements: {},
+    events: {}
+  });
+  (function () {
+    var sc = MS.data.scenarios.iss_inspect;
+    sc.requirements = [
+      { id: 'R1', goal: 'G1', weight: 1, metric: 'gsdNear_mm', op: '<=', value: 1.5,
+        title: T('Hull detail', 'Detalhe do casco', 'Detalle del casco'),
+        text: T('At 20 m, each pixel must cover 1.5 mm of hull or less.', 'A 20 m, cada pixel deve cobrir 1,5 mm do casco ou menos.', 'A 20 m, cada píxel debe cubrir 1,5 mm del casco o menos.'),
+        rationale: T('A 5 mm hole must cover about 3 × 3 pixels to be seen: 5 mm ÷ 3 ≈ 1.5 mm.', 'Um furo de 5 mm precisa ocupar uns 3 × 3 pixels para aparecer: 5 mm ÷ 3 ≈ 1,5 mm.', 'Un agujero de 5 mm debe ocupar unos 3 × 3 píxeles para verse: 5 mm ÷ 3 ≈ 1,5 mm.'),
+        hint: T('GSD = distance × pixel ÷ focal length: a longer focal length gives smaller pixels on the hull.', 'GSD = distância × pixel ÷ foco: foco maior dá pixels menores no casco.', 'GSD = distancia × píxel ÷ foco: más foco da píxeles más pequeños en el casco.') },
+      { id: 'R2', goal: 'G2', weight: 1, metric: 'deltaV_mps', op: '>=', ref: 'deltaVNeed_mps',
+        title: T('Fuel for the lap', 'Combustível para a volta', 'Combustible para la vuelta'),
+        text: T('The engine must give at least the Δv to fly around the Station and come back.', 'O motor deve dar pelo menos o Δv para dar a volta na ISS e voltar.', 'El motor debe dar al menos el Δv para dar la vuelta a la ISS y volver.'),
+        rationale: T('Without fuel to brake, the inspector drifts away and is lost.', 'Sem combustível para frear, o inspetor se afasta à deriva e se perde.', 'Sin combustible para frenar, el inspector se aleja a la deriva y se pierde.'),
+        hint: T('Rocket equation: more propellant or a higher Isp, or less mass.', 'Equação do foguete: mais combustível ou Isp maior, ou menos massa.', 'Ecuación del cohete: más combustible o Isp mayor, o menos masa.') },
+      { id: 'R3', goal: 'G3', weight: 1, metric: 'downlink_Gbit_day', op: '>=', ref: 'dataPerDay_Gbit',
+        title: T('Photos to the ground', 'Fotos para o solo', 'Fotos a tierra'),
+        text: T('The daily downlink must carry every photo made each day.', 'O envio diário deve levar todas as fotos feitas por dia.', 'El envío diario debe llevar todas las fotos hechas por día.'),
+        rationale: T('Engineers on the ground study each photo to decide on a repair.', 'Engenheiros em solo estudam cada foto para decidir o reparo.', 'Los ingenieros en tierra estudian cada foto para decidir la reparación.') },
+      { id: 'R4', goal: 'G4', weight: 1, metric: 'navError_cm', op: '<=', value: 5,
+        title: T('Docking back', 'Acoplar de volta', 'Acoplarse de vuelta'),
+        text: T('The approach sensor must measure the port position with an error of 5 cm or less.', 'O sensor de aproximação deve medir a posição do porto com erro de 5 cm ou menos.', 'El sensor de aproximación debe medir la posición del puerto con un error de 5 cm o menos.'),
+        rationale: T('Docking back recharges the battery for the next inspection; missing the port could hit the Station.', 'Acoplar de volta recarrega a bateria para a próxima inspeção; errar o porto pode bater na estação.', 'Acoplarse de vuelta recarga la batería para la próxima inspección; fallar el puerto podría chocar con la estación.'),
+        hint: T('GPS is too coarse for the last metres: use a camera that sees the port marks or a LIDAR.', 'O GPS é grosseiro demais para os últimos metros: use uma câmera que vê as marcas do porto ou um LIDAR.', 'El GPS es demasiado grueso para los últimos metros: usa una cámara que vea las marcas del puerto o un LIDAR.') }
+    ];
+    sc.events = [
+      ev('E1', 'launch', T('Day 0', 'Dia 0', 'Día 0'), T('Launch in the cargo ship', 'Lançamento na nave de carga', 'Lanzamiento en la nave de carga'), [{ check: 'launch' }, { check: 'mass' }, { check: 'volume' }], 'abort',
+        T('The inspector rode a cargo ship up to the Station.', 'O inspetor subiu numa nave de carga até a ISS.', 'El inspector subió en una nave de carga hasta la ISS.'), E_BY_ID.E1.failure),
+      E_BY_ID.ET,
+      ev('E2', 'separation', T('Day 2', 'Dia 2', 'Día 2'), T('Released by the astronauts', 'Liberado pelos astronautas', 'Liberado por los astronautas'), [], null,
+        T('The cargo ship docked and the astronauts released the inspector through the airlock.', 'A nave de carga acoplou e os astronautas soltaram o inspetor pela câmara de ar.', 'La nave de carga se acopló y los astronautas liberaron al inspector por la esclusa.')),
+      E_BY_ID.E3, E_BY_ID.E4,
+      ev('EI1', 'image', T('Day 3', 'Dia 3', 'Día 3'), T('Flying around the Station', 'Voo em volta da ISS', 'Vuelo alrededor de la ISS'), [{ check: 'deltav' }], 'abort',
+        T('With {deltaV_mps} m/s available (it needed {deltaVNeed_mps}), the inspector flew a full lap around the Station at 20 m.', 'Com {deltaV_mps} m/s disponíveis (precisava de {deltaVNeed_mps}), o inspetor deu uma volta inteira na ISS a 20 m.', 'Con {deltaV_mps} m/s disponibles (necesitaba {deltaVNeed_mps}), el inspector dio una vuelta completa a la ISS a 20 m.'),
+        T('The engine only gives {deltaV_mps} m/s of the {deltaVNeed_mps} needed: the inspector ran dry and drifted away from the Station.', 'O motor só dá {deltaV_mps} m/s dos {deltaVNeed_mps} necessários: o inspetor ficou sem combustível e se afastou à deriva.', 'El motor solo da {deltaV_mps} m/s de los {deltaVNeed_mps} necesarios: el inspector se quedó sin combustible y se alejó a la deriva.')),
+      ev('EI2', 'image', T('Day 3', 'Dia 3', 'Día 3'), T('Hull photos', 'Fotos do casco', 'Fotos del casco'), [{ requirement: 'R1' }], { degrade: 0.4 },
+        T('At {gsdNear_mm} mm per pixel the 5 mm hole in the radiator showed up clearly.', 'Com {gsdNear_mm} mm por pixel o furo de 5 mm no radiador apareceu com clareza.', 'Con {gsdNear_mm} mm por píxel el agujero de 5 mm en el radiador se vio con claridad.'),
+        T('At {gsdNear_mm} mm per pixel the 5 mm hole is just a blurry dot: the team cannot plan the repair.', 'Com {gsdNear_mm} mm por pixel o furo de 5 mm é só um ponto borrado: a equipe não consegue planejar o reparo.', 'Con {gsdNear_mm} mm por píxel el agujero de 5 mm es solo un punto borroso: el equipo no puede planear la reparación.')),
+      ev('E8', 'contact', T('Day 3', 'Dia 3', 'Día 3'), T('Photos to the ground', 'Fotos para o solo', 'Fotos a tierra'), [{ requirement: 'R3' }], 'none',
+        T('All {dataPerDay_Gbit} Gbit of photos reached the ground.', 'Os {dataPerDay_Gbit} Gbit de fotos chegaram todos ao solo.', 'Los {dataPerDay_Gbit} Gbit de fotos llegaron todos a tierra.'),
+        T('Only {downlink_Gbit_day} of the {dataPerDay_Gbit} Gbit per day reached the ground: part of the hull was never checked.', 'Só {downlink_Gbit_day} dos {dataPerDay_Gbit} Gbit por dia chegaram ao solo: parte do casco ficou sem conferir.', 'Solo {downlink_Gbit_day} de los {dataPerDay_Gbit} Gbit por día llegaron a tierra: parte del casco quedó sin revisar.')),
+      ev('EI3', 'dock', T('Day 3', 'Dia 3', 'Día 3'), T('Back to the port', 'Volta ao porto', 'Vuelta al puerto'), [{ requirement: 'R4' }], { degrade: 0.5 },
+        T('Measuring the port within {navError_cm} cm, the inspector docked back and started recharging.', 'Medindo o porto com erro de {navError_cm} cm, o inspetor acoplou de volta e começou a recarregar.', 'Midiendo el puerto con un error de {navError_cm} cm, el inspector se acopló de vuelta y empezó a recargarse.'),
+        T('With {navError_cm} cm of error it could not find the port: the inspector was sent away and cannot be used again.', 'Com {navError_cm} cm de erro não achou o porto: o inspetor foi mandado embora e não pode ser usado de novo.', 'Con {navError_cm} cm de error no encontró el puerto: el inspector fue alejado y no puede volver a usarse.')),
+      ev('E9', 'end', T('Day 4', 'Dia 4', 'Día 4'), T('Inspection report', 'Relatório da inspeção', 'Informe de la inspección'), [], 'none',
+        T('The team got the hull photos and planned the radiator repair without a spacewalk.', 'A equipe recebeu as fotos do casco e planejou o reparo do radiador sem caminhada espacial.', 'El equipo recibió las fotos del casco y planeó la reparación del radiador sin caminata espacial.'))
+    ];
+  })();
 })(globalThis);

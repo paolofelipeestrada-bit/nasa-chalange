@@ -83,6 +83,10 @@
     propulsion: function (it) {
       return { kind: 'adcs', wheels: num(it.isp_s, 0) >= 200 };
     },
+    // Missões da ISS: sensor de aproximação (câmera pequena; o LIDAR tem lente grande)
+    sensor: function (it) {
+      return { kind: 'camera', focal_mm: num(it.navError_cm, 50) <= 1 ? 120 : 40, telescope: false, bands: 1 };
+    },
     // Modo Difícil: pacote de baterias (placas) e placa de blindagem (dissipador metálico)
     battery: function (it) {
       return { kind: 'computer', boards: num(it.capacity_Wh, 10) >= 40 ? 2 : 1, heatsink: false };

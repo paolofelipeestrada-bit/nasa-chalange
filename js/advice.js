@@ -262,7 +262,10 @@
       else { key = 'cl.bad'; mood = 'sad'; }
       p.score = sco;
     }
-    return { name: who.name || '', role: MS.i18n.L(who.role) || '', look: who, mood: mood, key: key, text: t(key, p) };
+    // Cenário pode trocar as falas genéricas (clientLines: { conceptOk: T(...), ... }).
+    var own = sc.clientLines && sc.clientLines[key.slice(3)];
+    var text = own ? String(MS.i18n.L(own)).replace(/\{(\w+)\}/g, function (a, k) { return p[k] != null ? p[k] : a; }) : t(key, p);
+    return { name: who.name || '', role: MS.i18n.L(who.role) || '', look: who, mood: mood, key: key, text: text };
   }
 
   // ------------------------------------------- Valor científico dos instrumentos
