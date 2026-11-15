@@ -715,6 +715,8 @@
     var fk = focusKey();
     rootEl.innerHTML = renderHTML(state);
     try { document.body.setAttribute('data-level', MS.levels ? MS.levels.id(state) : 'normal'); } catch (e) { /* sem document */ }
+    // Marca visível nas ilustrações geradas por IA (regra do Space Apps), no idioma de cada um.
+    try { document.body.style.setProperty('--ai-tag', JSON.stringify('✦ ' + t('ai.tag'))); } catch (e) { /* sem document */ }
     stickHud();
     if (MS.viz && MS.viz.attachAll) MS.viz.attachAll(rootEl, state); // visual 3D (se a tela tiver um)
     if (MS.hangar) MS.hangar.attach(rootEl, state); // hangar 3D da coluna direita

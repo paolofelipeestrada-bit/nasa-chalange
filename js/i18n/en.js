@@ -332,7 +332,8 @@
     'about.simpleTitle': 'What we simplified',
     'about.simple': 'Numbers are realistic in order of magnitude but simplified for play: orbits are circular, the shadow is the worst case, prices are approximate (2026) and lifetimes are rough estimates. The game teaches trade-offs, not exact engineering.',
     'about.aiTitle': 'Use of AI',
-    'about.ai': 'Our team built this game with help from AI assistants (Claude) for code and text, which we reviewed and tested. The game uses no AI-generated images.',
+    'about.ai': "Our team built this game with help from AI assistants (Claude, by Anthropic) for code and text, which we reviewed and tested. The 14 illustrations (menu sky, customer cards and phase banners) were generated with AI (Higgsfield) and carry a visible “AI image” mark. Sounds are synthesized by the game's own code. No NASA logos, flags or mission insignia appear in generated content.",
+    'ai.tag': "AI image",
     'about.libsTitle': 'Open-source libraries',
     'about.libs': 'Three.js (MIT license) for the 3D view and PeerJS (MIT license) for team rooms.',
 

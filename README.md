@@ -1,48 +1,53 @@
 # Space Tinkers
 
 An educational game for the **NASA Space Apps Challenge 2026 — "Space Mission Design Game"**.
-Players design a small Earth-observation satellite (a CubeSat) for a real customer need and
+Players design a small satellite (a CubeSat) for a real customer need, on Earth or at the Moon, and
 learn that every choice costs something somewhere else: mass, power, budget, data, comms and time.
 
 **▶ Play now: [nasa-chalange-game.vercel.app](https://nasa-chalange-game.vercel.app)**
 
 ![Space Tinkers in 25 seconds: pick a customer, pull the orbit lever, flip the requirement cards, build the satellite, launch it through real NASA space weather and earn stars](docs/demo.gif)
 
-- For anyone aged 10 and up. No prior space knowledge needed: every number has a plain-language
-  sentence, a "See the math" box, and glossary tips on the technical words.
+*The GIF is a screen capture of the game. The illustrations in it were made with AI (see [Use of AI](#use-of-ai)).*
+
+- For players aged about 12 and up. No prior space knowledge needed: every number has a plain-language
+  sentence, a "See the math" box, and glossary tips on the technical words. Three difficulty levels.
 - In **English** by default, also in **Português** and **Español** (flag buttons at the top).
-- Solo or **cooperative team mode** (2 to 4 players, each one owns some subsystems).
+- Solo or **cooperative team mode** for up to 4 players: each one owns some subsystems, everyone must say
+  GO before the launch, and the team talks through quick shouts and a text chat.
 - A **crew of characters** (Mission Director, Payload scientist, Spacecraft engineer, Communications,
   Mission manager), each caring about a different goal, and a **customer** (a fictional person per
-  scenario) who reacts to your design in every phase.
+  mission) who reacts to your design in every phase.
+- Feels like a game: cockpit controls (levers, knobs, a big CONFIRM button), requirement cards that flip,
+  a launch checklist with a red LAUNCH button, sound effects (one 🔊/🔇 button), and 0–3 stars at the end.
 
 ## How to play
 
-Open `index.html` in a browser (double-click works). No install, no build, no login.
+Open the link above, or open `index.html` in a browser (double-click works). No install, no build, no login.
 
 The game follows the 6 steps NASA uses to design and develop a science mission, shown as the
 arrows at the top of the screen:
 
 | NASA step | In the game |
 |---|---|
-| 1. Identify Need & Goals | In three scenes (customer → the mission → how to play), pick one of 6 missions (Amazon deforestation, Cerrado fire scars, urban growth, floods and weather in southern Brazil with a weather imager, a lunar south pole mapper and a small lunar lander with a descent engine), meet your crew and read the goals. Mars and space-telescope missions are shown as "coming soon" |
-| 2. Define Concept | **Scene mode**: one choice per scene, explained by the crew member in charge, with cockpit controls (an altitude lever for the orbit, a knob for the rest, a big CONFIRM button) and a live 3D preview. Or the full cockpit to choose orbit, launcher and ground station, with **Compare the orbits**: coverage, image detail, contact with Earth and lifetime in plain words |
-| 3. Define Requirements | Each requirement as a chain: what the customer wants → the number that proves it → the choices that move that number → how it will be verified |
-| 4. Design | Scene mode (one part per scene, knob + CONFIRM) or the Mission Director's cockpit: parts in tabs by crew role (Science, Satellite, Comms), the satellite and its *ripple effect* in the center, the customer's goals and **crew advice** on the right. Each instrument shows its **science value** for this customer (0–100) |
-| 5. Build & Verify | Every requirement is checked; the four crew members vote **Go / No-Go** from their own goals; in a team room, **every player must say Go** before the launch; **predict** how much data will reach Earth before you launch |
-| 6. Implement | The launch plays in scenes (pad, Go/No-Go poll, countdown, liftoff, climb), then the mission runs in 3D (stages separate, live telemetry, time warp, fullscreen), with random surprises. When a problem comes up, **mission control calls inside the 3D view with a 10-second countdown**. The ISS is always in orbit; with the Station cargo ride, the cargo ship climbs by Hohmann transfer, docks and the CubeSat is released from the Station |
-| Mission Report | Score, why things happened, your prediction vs. the result, a side-by-side comparison with your previous attempt, and **learning cards** (systems-thinking laws after Peter Senge) unlocked by what you just lived |
+| 1. Identify Need & Goals | In three scenes (customer → the mission → how to play), pick one of 6 missions: Amazon deforestation, Cerrado fire scars, urban growth, floods and weather in southern Brazil, a lunar south pole mapper and a small lunar lander. Meet your crew and read the goals. A Mars mission and a space telescope are shown as "coming soon" |
+| 2. Define Concept | **Scene mode**: one choice per scene, explained by the crew member in charge, with cockpit controls (an altitude lever for the orbit, a knob for the rest, a big CONFIRM button) and a live 3D preview. Or the full cockpit to choose orbit, launcher and ground station, with **Compare the orbits** |
+| 3. Define Requirements | One **card per requirement**: the front says what the customer wants; flip it to see the number that proves it, the choices that move that number and how it will be verified |
+| 4. Design | Scene mode (one part per scene, knob + CONFIRM, the satellite assembles in a 3D hangar) or the Mission Director's cockpit: parts in tabs by crew role, the *ripple effect* of each choice, the customer's goals and **crew advice**. Each instrument shows its **science value** for this customer (0–100) |
+| 5. Build & Verify | A launch checklist: every requirement is checked; the four crew members vote **Go / No-Go**; **predict** how much data will reach Earth; pick the launch date; press LAUNCH. In a team room, **every player must say Go** first |
+| 6. Implement | The launch plays in scenes (pad, Go/No-Go poll, countdown, liftoff, climb). A rocket that should not fly is **scrubbed on the pad**. Then the mission runs in 3D (stages separate, live telemetry, time warp, fullscreen). Moon missions fly the whole trip: parking orbit, translunar injection, a ~4-day cruise and lunar orbit insertion or landing. When a problem comes up, **mission control calls inside the 3D view with a 10-second countdown** |
+| Mission Report | Score and **0–3 stars**, why things happened, your prediction vs. the result, a comparison with your previous attempt, **learning cards** (systems-thinking laws after Peter Senge) and **Sources & math** |
 
-The 6 resources the challenge asks for are always on screen (the panel stays visible while you
-scroll). Hover or focus an option to preview how it would change each resource before choosing.
-After each choice, a short "chain of effects" line shows what that choice changed.
+The 6 resources the challenge asks for are always on screen. Hover or focus an option to preview how it
+would change each resource before choosing. After each choice, a short "chain of effects" line shows what
+that choice changed.
 
-Each customer needs a different satellite: every scenario has at least two different winning
+Each customer needs a different satellite: every mission has at least two different winning
 designs (checked by an automatic test), so players have to trade off rather than find one answer.
 
 ### A living mission with real space weather
 
-In step 6 the player picks a launch date: **March 2019** (quiet Sun) or **March 2024** (solar maximum).
+In step 5 the player picks a launch date: **March 2019** (quiet Sun) or **March 2024** (solar maximum).
 The mission then runs day by day for one year through the space weather NASA actually recorded in that
 period (NASA DONKI, stored in `js/data/spaceweather.js`, so it works offline and without an API key):
 
@@ -59,52 +64,55 @@ The same design can succeed in 2019 and struggle in 2024. Charts and a mission d
 real NASA event) show cause and effect over time.
 
 ### Team mode
+
 "Play as a team" at the top. One person creates a room and shares the 6-letter code; the others
-join with it. Each player takes a role (Mission manager, Payload scientist, Spacecraft engineer,
-Communications and ground) and can only change the choices of that role; the Mission manager moves the
-team between phases. The person who created the room is the host and keeps the official game state.
-Needs internet (PeerJS public broker, only to introduce the browsers; game data goes directly
-between players).
+join with it (up to 4 players). Each player takes a role (Mission manager, Payload scientist, Spacecraft
+engineer, Communications and ground) and can only change the choices of that role; whoever has no choice
+in a phase watches a live **control tower**. The Mission manager moves the team between phases, and the
+launch needs **GO from every player**. Players talk through **shouts** (ask a role for a missing part,
+warn about a resource in the red) and a **text chat** (140 letters, 1 message per second, nothing saved).
+The person who created the room is the host and keeps the official game state. Needs internet (PeerJS
+public broker, only to introduce the browsers; game data goes directly between players).
 
-## NASA resources used
+## NASA resources
 
-- **Design and Develop Science Missions** (NASA, 2025): the 6-step process, the 4 mission segments
-  (launch, space, ground, user) and "every requirement comes with a verification".
-  https://www.nasa.gov/wp-content/uploads/2025/04/250323-design-and-develop-science-mission.pdf
-- **CubeSat 101** (NASA CubeSat Launch Initiative): CubeSat sizes, typical 18–24-month schedule,
-  budget reserve. https://www.nasa.gov/wp-content/uploads/2017/03/nasa_csli_cubesat_101_508.pdf
-- **Concept Maturity Levels** (NASA JPL): the CML 1–4 tag shown at each step.
-- **Build It Yourself: Satellite** (NASA Webb): inspiration for goal-driven design and self-explaining options.
-  https://science.nasa.gov/mission/webb/game-build-it-yourself/
-- **VIIRS** (NASA Earthdata): model for the wide-swath weather imager in the floods mission.
-  https://www.earthdata.nasa.gov/data/instruments/viirs
-- **Lunar Reconnaissance Orbiter** (NASA): model for the polar lunar mapping orbits.
-  https://science.nasa.gov/mission/lro/
-- **Deep Space Network** (NASA): the big antennas used as ground station in the Moon missions.
-  https://www.nasa.gov/communicating-with-missions/dsn/
-- **Artemis I** (NASA): carried 10 CubeSats toward the Moon; model for the Artemis ride.
-  https://www.nasa.gov/mission/artemis-i/
+### Official resources of this challenge
 
-In the game, **Sources & math** (in the Mission Report) lists every NASA resource used and the 12 formulas
-the engine calculates, each with what it means and the calculation for the player's own design.
+The challenge page lists these 9 resources. The 5 we use appear in the game under
+**Sources & math** (Mission Report), each with a link.
 
-### Optional NASA data we also use
+| Resource (as listed by the challenge) | Used? | Where and how |
+|---|---|---|
+| [Design and Develop Science Missions](https://www.nasa.gov/wp-content/uploads/2025/04/250323-design-and-develop-science-mission.pdf) (NASA, 2025) | **Yes, core** | The 6 phases of the game, the 4 mission segments (launch, space, ground, user) and "every requirement comes with a verification" (`js/data/phases.js`, Requirements cards, Build checklist) |
+| [Concept Maturity Levels (CMLs)](https://dataverse.jpl.nasa.gov/dataset.xhtml?persistentId=hdl:2014/44299) (NASA JPL) | **Yes** | The CML 1–4 tag shown at each step (`js/data/phases.js`) |
+| [CubeSat 101](https://www3.nasa.gov/sites/default/files/atoms/files/nasa_csli_cubesat_101_508.pdf) (NASA CubeSat Launch Initiative) | **Yes** | CubeSat sizes (U), the typical 18–24-month schedule and the ≥10% budget reserve (`js/data/catalog.js`, `js/data/scenarios.js`, crew advice) |
+| [NASA Mission Viz](https://nasa.github.io/mission-viz/) | **Yes** | Its Earth image (`X3Dom/EarthImage.jpg`) became our 1° land/ocean/desert/ice map (`js/data/earthmask.js`) that paints the 3D planet, so the satellite really photographs the Amazon. Its orbit propagator is the reference for `js/viz/orbit.js` |
+| [A Learning Game About Telescopes](https://science.nasa.gov/mission/webb/game-build-it-yourself/) (NASA Webb, "Build It Yourself") | **Yes, as inspiration** | Science goals drive the design, every option explains itself, an animated launch, then results (no data or code taken) |
+| [Mission Design Lab (MDL)](https://etd.gsfc.nasa.gov/capabilities/integrated-design-center/mission-design-lab/) (NASA Goddard) | **Inspiration only** | The idea behind team mode: specialists in different disciplines design one mission together. Not cited in the game |
+| [General Mission Analysis Tool (GMAT)](https://software.nasa.gov/software/GSC-19468-1) | No | A professional trajectory tool, too detailed for players aged 12. The game uses simplified circular orbits instead (see [What we simplified](#what-we-simplified)) |
+| Visualize a Space Mission Using Virtual Reality (Space Apps 2023 challenge) | No | No VR. The same goal (see the mission concept, trajectory and timeline in 3D) is met in the browser by the 3D mission view |
+| [CSA Digital Games and Activities](https://www.asc-csa.gc.ca/eng/youth-educators/digital-games-and-activities.asp) (Canadian Space Agency, partner) | No | — |
 
-- **DONKI — Space Weather Database Of Notifications, Knowledge, Information** (NASA CCMC): real storms,
-  flares and solar particle events of 2019–2020 and 2024–2025. https://ccmc.gsfc.nasa.gov/DONKI/
-- **ISS Trajectory Data** (NASA): the real Space Station orbit used in the 3D view and in the cargo-ship
-  docking. https://spotthestation.nasa.gov/trajectory_data.cfm
-- **NASA mission-viz** (web-based space mission visualization): the Earth image in `X3Dom/EarthImage.jpg`
-  became a 1° land/ocean/desert/ice map (`js/data/earthmask.js`) that paints the low-poly planet with the
-  real continents, so the satellite really photographs the Amazon. Its orbit propagator is our reference
-  for drawing orbits. https://github.com/nasa/mission-viz
+### Other NASA data and resources we use (not listed in the challenge)
+
+| Resource | Where and how |
+|---|---|
+| [DONKI](https://ccmc.gsfc.nasa.gov/DONKI/) — Space Weather Database Of Notifications, Knowledge, Information (NASA CCMC) | Real storms, flares and solar particle events of 2019–2020 and 2024–2025 that hit the satellite day by day (`js/data/spaceweather.js`, `js/life.js`); each event in the mission diary links to NASA's page |
+| [ISS Trajectory Data](https://spotthestation.nasa.gov/trajectory_data.cfm) (NASA) | The Space Station's typical orbit (418 km, 51.64°), drawn in the 3D view and used by the cargo-ship ride (`js/data/catalog.js`) |
+| [VIIRS](https://www.earthdata.nasa.gov/data/instruments/viirs) (NASA Earthdata) | Model for the wide-swath weather imager in the floods mission |
+| [Lunar Reconnaissance Orbiter](https://science.nasa.gov/mission/lro/) (NASA) | Model for the polar lunar mapping orbits in the Moon missions |
+| [Deep Space Network](https://www.nasa.gov/communicating-with-missions/dsn/) (NASA) | The big antennas used as ground station in the Moon missions |
+| [Artemis I](https://www.nasa.gov/mission/artemis-i/) (NASA) | Carried 10 CubeSats toward the Moon: the model for the Artemis ride in the Moon missions |
+
+**Sources & math** in the Mission Report lists these NASA sources too, and the 12 formulas the engine
+calculates, each with what it means and the calculation for the player's own design.
 
 ## What we simplified
 
 Numbers are realistic in order of magnitude but simplified for play: circular orbits, worst-case
-shadow, approximate 2026 prices, rough orbital lifetimes. The game teaches trade-offs, not exact
-engineering. Every formula is visible in the game under "See the math" and in the "Sources & math" panel.
-The battery is part of the power system, and each satellite carries one instrument.
+shadow, approximate 2026 prices, rough orbital lifetimes, a simplified Earth–Moon trip. The game teaches
+trade-offs, not exact engineering. Every formula is visible in the game under "See the math" and in
+"Sources & math". The battery is part of the power system, and each satellite carries one instrument.
 
 ## Coming soon
 
@@ -114,14 +122,27 @@ is a new data entry, not a new game.
 
 ## Use of AI
 
-Our team built this game with help from AI assistants (Claude, by Anthropic) for code and text,
-which we reviewed and tested. The game uses no AI-generated images, video or audio, and no NASA logos.
+Following the [Space Apps submission guide](https://www.spaceappschallenge.org/resources/project-submission-guide/),
+this is where and how we used AI tools:
 
-## Open-source libraries
+| What | AI used? | How it is marked |
+|---|---|---|
+| Code and text | Yes: AI assistants (Claude, by Anthropic) helped write code, game texts and translations. The team chose the idea and the design, reviewed everything and tested it (automatic tests in `tests.html`) | This section and the game's "About" screen |
+| Illustrations (14 images in `assets/img`: menu sky, 6 customer cards, 7 phase banners) | Yes: generated with Higgsfield | A visible **"✦ AI image"** mark on each illustration in the game; this section |
+| Demo GIF (`docs/demo.gif`) | No: screen capture of the game, assembled with ffmpeg. It shows the AI illustrations | The visible line "Contains AI-generated illustrations" on every frame |
+| Demo video | Any AI-generated footage carries a visible watermark | Watermark in the video |
+| Sound effects | No AI audio: the sounds are synthesized live by the game's code (WebAudio, `js/ui/sfx.js`), code written with AI help | This section |
+| 3D models, characters, icons | No AI images: drawn by code (Three.js low-poly parts, SVG characters) written with AI help | This section |
 
-- [Three.js](https://threejs.org/) 0.147 (MIT) — 3D mission view, loaded from a CDN.
+No generated content uses NASA logos, flags or mission insignia.
+
+## Open-source libraries and services
+
+- [Three.js](https://threejs.org/) 0.147 (MIT) — 3D views, loaded from a CDN.
   Without internet the game still works, with a timeline instead of the 3D view.
-- [PeerJS](https://peerjs.com/) 1.5 (MIT) — team rooms.
+- [PeerJS](https://peerjs.com/) 1.5 (MIT) — team rooms (uses the free PeerJS broker to connect players).
+- [Google Fonts](https://fonts.google.com/): Barlow and Pixelify Sans (SIL Open Font License).
+- Hosted on [Vercel](https://vercel.com/).
 
 ## For developers
 
@@ -133,6 +154,8 @@ Plain HTML + JavaScript, no build step and no dependencies to install.
 
 ```
 index.html            the game
+assets/img/           the 14 AI-generated illustrations (menu, customers, phase banners); marked in the game
+docs/demo.gif         the README GIF (screen capture of the game)
 css/style.css         look and feel (colors in variables at the top; light/dark follows the system)
 js/i18n/i18n.js       languages: MS.i18n.t('key'), MS.i18n.L({en,pt,es}), setLang('pt')
 js/i18n/en|pt|es.js   interface and engine texts (same keys in all three; a test checks it)
@@ -156,7 +179,8 @@ js/ui/core.js         header, steps, resource panel, previews, reusable pieces, 
                       glossary and the "Sources & math" panel
 js/ui/characters.js   the 5 crew characters drawn in SVG (with light, shadow, breathing and blinking) and the crew roster
 js/ui/scene.js        scene mode: phase 1 in 3 scenes; Concept and Design one choice per scene with knob,
-                      altitude lever and CONFIRM button (the full cockpit stays one click away)
+                      altitude lever and CONFIRM button; requirement cards that flip; the Build launch checklist;
+                      phase intro cards; the team control tower (the full cockpit stays one click away)
 js/ui/sfx.js          game sounds made live with WebAudio (no audio files): knob, CONFIRM, card flip, phase,
                       countdown, engine, abort siren, stars; one 🔊/🔇 button for the whole game
 js/ui/chat.js         team text chat (only in a room): 140 letters, 1 message per second, last 30 kept by the host
@@ -171,12 +195,13 @@ js/viz/earth.js       reads the 1° Earth map (pure, tested); data in js/data/ea
 js/viz/schedule.js    3D animation script (pure, tested)
 js/viz/orbit.js       Keplerian orbit propagator, after NASA mission-viz's OrbitalPropagator (pure, tested)
                       (also the Hohmann transfer the cargo ship flies to reach the Space Station)
-js/viz/mission3d.js   3D mission view (Three.js): staged launch, the player's satellite, flight telemetry,
+js/viz/mission3d.js   3D mission view (Three.js): staged launch, the Earth–Moon trip, the player's satellite, flight telemetry,
                       1×/5×/20× time warp, fullscreen, a trajectory colored by orbit status and the
                       mission-control alert with countdown
 js/viz/launchscene.js ground launch scene in chapters: pad, Go/No-Go poll, countdown, liftoff, climb
 js/net/team.js        team mode rules: roles and permissions (pure, tested)
-js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state; relays shouts and the ready check
+js/net/room.js        room by code (PeerJS): the host validates actions and broadcasts the state; relays shouts,
+                      the ready check (team GO) and the chat
 js/net/shouts.js      shout rules: which shouts make sense now, text in each player's language, validation (pure, tested)
 js/ui/team-panel.js   team panel and notifications
 js/ui/shouts-ui.js    Shout button, big alert with sound and screen shake, ready check bar

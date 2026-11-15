@@ -313,7 +313,8 @@
     'about.simpleTitle': 'O que simplificamos',
     'about.simple': 'Os números são realistas na ordem de grandeza, mas simplificados para o jogo: órbitas circulares, sombra no pior caso, preços aproximados (2026) e vidas orbitais estimadas. O jogo ensina compromissos, não engenharia exata.',
     'about.aiTitle': 'Uso de IA',
-    'about.ai': 'Nossa equipe fez este jogo com ajuda de assistentes de IA (Claude) para código e textos, que revisamos e testamos. O jogo não usa imagens geradas por IA.',
+    'about.ai': "Nossa equipe fez este jogo com ajuda de assistentes de IA (Claude, da Anthropic) para código e textos, que revisamos e testamos. As 14 ilustrações (céu do menu, cartões de cliente e faixas das fases) foram geradas com IA (Higgsfield) e levam a marca visível “Imagem IA”. Os sons são sintetizados pelo próprio código do jogo. Nenhum logo, bandeira ou insígnia de missão da NASA aparece em conteúdo gerado.",
+    'ai.tag': "Imagem IA",
     'about.libsTitle': 'Bibliotecas abertas',
     'about.libs': 'Three.js (licença MIT) para a visão 3D e PeerJS (licença MIT) para as salas de equipe.',
 
