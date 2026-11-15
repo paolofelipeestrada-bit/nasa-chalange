@@ -1,10 +1,13 @@
 # Space Tinkers
 
-An educational game for the **NASA Space Apps Challenge 2026 — "Space Mission Design Game"**.
-Players design a small satellite (a CubeSat) for a real customer need, on Earth or at the Moon, and
-learn that every choice costs something somewhere else: mass, power, budget, data, comms and time.
+## ▶ Play now: [spacetinkers.earth](https://spacetinkers.earth)
 
-**▶ Play now: [spacetinkers.earth](https://spacetinkers.earth)**
+*Free, in the browser, no install or login. English, Português, Español.*
+
+An educational game for the **NASA Space Apps Challenge 2026 — "Space Mission Design Game"**.
+Players design a small satellite (a CubeSat) for a real customer need, on Earth, at the Space Station
+or at the Moon, and learn that every choice costs something somewhere else: mass, power, budget,
+data, comms and time.
 
 ![Space Tinkers in 25 seconds: pick a customer, pull the orbit lever, flip the requirement cards, build the satellite, launch it through real NASA space weather and earn stars](docs/demo.gif)
 
@@ -30,7 +33,7 @@ arrows at the top of the screen:
 
 | NASA step | In the game |
 |---|---|
-| 1. Identify Need & Goals | In three scenes (customer → the mission → how to play), pick one of 6 missions: Amazon deforestation, Cerrado fire scars, urban growth, floods and weather in southern Brazil, a lunar south pole mapper and a small lunar lander. Meet your crew and read the goals. A Mars mission and a space telescope are shown as "coming soon" |
+| 1. Identify Need & Goals | In three scenes (customer → the mission → how to play), pick one of 8 missions: Amazon deforestation, Cerrado fire scars, urban growth, floods and weather in southern Brazil, docking with the Space Station, a hull inspector that flies around the Station, a lunar south pole mapper and a small lunar lander. Meet your crew and read the goals. A Mars mission and a space telescope are shown as "coming soon" |
 | 2. Define Concept | **Scene mode**: one choice per scene, explained by the crew member in charge, with cockpit controls (an altitude lever for the orbit, a knob for the rest, a big CONFIRM button) and a live 3D preview. Or the full cockpit to choose orbit, launcher and ground station, with **Compare the orbits** |
 | 3. Define Requirements | One **card per requirement**: the front says what the customer wants; flip it to see the number that proves it, the choices that move that number and how it will be verified |
 | 4. Design | Scene mode (one part per scene, knob + CONFIRM, the satellite assembles in a 3D hangar) or the Mission Director's cockpit: parts in tabs by crew role, the *ripple effect* of each choice, the customer's goals and **crew advice**. Each instrument shows its **science value** for this customer (0–100) |
@@ -98,7 +101,7 @@ The challenge page lists these 9 resources. The 5 we use appear in the game unde
 | Resource | Where and how |
 |---|---|
 | [DONKI](https://ccmc.gsfc.nasa.gov/DONKI/) — Space Weather Database Of Notifications, Knowledge, Information (NASA CCMC) | Real storms, flares and solar particle events of 2019–2020 and 2024–2025 that hit the satellite day by day (`js/data/spaceweather.js`, `js/life.js`); each event in the mission diary links to NASA's page |
-| [ISS Trajectory Data](https://spotthestation.nasa.gov/trajectory_data.cfm) (NASA) | The Space Station's typical orbit (418 km, 51.64°), drawn in the 3D view and used by the cargo-ship ride (`js/data/catalog.js`) |
+| [ISS Trajectory Data](https://spotthestation.nasa.gov/trajectory_data.cfm) (NASA) | The Space Station's typical orbit (418 km, 51.64°), drawn in the 3D view, used by the cargo-ship ride and by the two Space Station missions (docking and hull inspector) (`js/data/catalog.js`, `js/data/scenarios.js`) |
 | [VIIRS](https://www.earthdata.nasa.gov/data/instruments/viirs) (NASA Earthdata) | Model for the wide-swath weather imager in the floods mission |
 | [Lunar Reconnaissance Orbiter](https://science.nasa.gov/mission/lro/) (NASA) | Model for the polar lunar mapping orbits in the Moon missions |
 | [Deep Space Network](https://www.nasa.gov/communicating-with-missions/dsn/) (NASA) | The big antennas used as ground station in the Moon missions |
@@ -128,7 +131,7 @@ this is where and how we used AI tools:
 | What | AI used? | How it is marked |
 |---|---|---|
 | Code and text | Yes: AI assistants (Claude, by Anthropic) helped write code, game texts and translations. The team chose the idea and the design, reviewed everything and tested it (automatic tests in `tests.html`) | This section and the game's "About" screen |
-| Illustrations (14 images in `assets/img`: menu sky, 6 customer cards, 7 phase banners) | Yes: generated with Higgsfield | A visible **"✦ AI image"** mark on each illustration in the game; this section |
+| Illustrations (16 images in `assets/img`: menu sky, 8 customer cards, 7 phase banners) | Yes: generated with Higgsfield | A visible **"✦ AI image"** mark on each illustration in the game; this section |
 | Demo GIF (`docs/demo.gif`) | No: screen capture of the game, assembled with ffmpeg. It shows the AI illustrations | The visible line "Contains AI-generated illustrations" on every frame |
 | Demo video | Any AI-generated footage carries a visible watermark | Watermark in the video |
 | Sound effects | No AI audio: the sounds are synthesized live by the game's code (WebAudio, `js/ui/sfx.js`), code written with AI help | This section |
@@ -154,7 +157,7 @@ Plain HTML + JavaScript, no build step and no dependencies to install.
 
 ```
 index.html            the game
-assets/img/           the 14 AI-generated illustrations (menu, customers, phase banners); marked in the game
+assets/img/           the 16 AI-generated illustrations (menu, customers, phase banners); marked in the game
 docs/demo.gif         the README GIF (screen capture of the game)
 css/style.css         look and feel (colors in variables at the top; light/dark follows the system)
 js/i18n/i18n.js       languages: MS.i18n.t('key'), MS.i18n.L({en,pt,es}), setLang('pt')
