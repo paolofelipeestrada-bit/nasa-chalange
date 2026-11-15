@@ -213,6 +213,75 @@
     return '<div class="sc-back"><button type="button" class="btn small" data-action="scene-mode">' + h.icon('rocket', { size: 16 }) + h.esc(t('sc.toScene')) + '</button></div>';
   }
 
+  // ------------------------------------- Construir: checklist de lançamento
+  // checar → palpite → data → lançar (o botão vermelho é o mesmo "next" do
+  // rodapé, então o GO da equipe e o lançamento seguem as mesmas regras).
+  function buildSteps(p) { return ['check', 'predict'].concat(p.window ? ['window'] : []).concat(['launch']); }
+  function buildScene(state, result) {
+    var p = ui.buildParts(state, result), steps = buildSteps(p);
+    var cur = steps.indexOf(local.buildStep) >= 0 ? local.buildStep : 'check', i = steps.indexOf(cur);
+    var key = 'build|' + cur, enter = local.sceneLastKey !== key;
+    local.sceneLastKey = key;
+    var done = { check: !p.fails, predict: !!state.prediction, window: !!state.period, launch: false };
+    var railH = '<ol class="sc-rail">' + steps.map(function (s, k) {
+      return '<li class="' + (s === cur ? 'on' : k < i && done[s] ? 'done' : '') + '"><button type="button" data-action="build-step" data-step="' + s + '"' + (s === cur ? ' aria-current="step"' : '') + '>' +
+        '<span class="sc-dot">' + (k < i && done[s] ? h.icon('ok', { size: 14, stroke: 3 }) : k + 1) + '</span><span class="sc-rl">' + h.esc(t('sc.build.' + s)) + '</span></button></li>';
+    }).join('') + '</ol>';
+    var body;
+    if (cur === 'launch') {
+      var can = MS.store.canAdvance(state), lock = ui.phaseLock ? ui.phaseLock(state) : null;
+      var g = ui.teamGo ? ui.teamGo(state) : { need: false };
+      var label = g.need && !g.all ? (g.asked && !g.no ? t('go.wait', { n: g.yes, total: g.total }) : g.no ? t('go.again') : t('go.ask')) : t('sc.launch');
+      var off = !can.ok || (g.need ? (g.all && !!lock) || (g.asked && !g.no && !g.all) : !!lock);
+      body = (g.need ? p.go : '') + '<div class="sc-launch"><p class="sc-launch-q">' + h.esc(t(p.fails ? 'sc.launchRisky' : 'sc.launchQ')) + '</p>' +
+        '<button type="button" class="sc-press sc-big" data-action="next"' + (off ? ' disabled' : '') + '><span class="sp-cap"></span><span class="sp-txt">' + h.esc(label) + '</span></button>' +
+        (lock && !g.need ? '<p class="small muted">' + h.esc(lock) + '</p>' : '') + '</div>';
+    } else {
+      body = p[cur] + '<div class="sc-next"><button type="button" class="btn primary big-go" data-action="build-step" data-step="' + steps[i + 1] + '">' +
+        h.esc(t('sc.build.go.' + steps[i + 1])) + ' →</button></div>';
+    }
+    return '<div class="scene sc-build' + (enter ? ' sc-enter' : '') + '"><div class="sc-top">' + railH +
+      '<button type="button" class="btn small sc-mode" data-action="scene-mode">' + h.icon('eye', { size: 16 }) + h.esc(t('sc.full')) + '</button></div>' +
+      '<div class="sc-grid sc-one"><div>' + body + '</div></div></div>';
+  }
+  ui.actions['build-step'] = function (d) { local.buildStep = d.step; rerender(); root.scrollTo(0, 0); };
+  // Palpite e data escolhidos já levam para a próxima cena.
+  ['predict', 'period'].forEach(function (name) {
+    var orig = ui.actions[name];
+    ui.actions[name] = function (d) {
+      orig(d);
+      var st = MS.store.state;
+      if (!local.sceneMode || !st || st.phase !== 'build') return;
+      var p = ui.buildParts(st, MS.sim.run(st)), steps = buildSteps(p), i = steps.indexOf(local.buildStep);
+      if (i >= 0 && i < steps.length - 1 && (name === 'period' || st.prediction)) { local.buildStep = steps[i + 1]; rerender(); }
+    };
+  });
+
+  // ------------------------------------- Abertura de fase (transição)
+  // Ao trocar de fase, um cartão grande por 1,8 s: "Passo 4 de 6 · Projeto",
+  // com o personagem que comanda a fase. Clique para pular.
+  var PHASE_CHAR = { need: 'dir', concept: 'mgr', requirements: 'sci', design: 'eng', build: 'eng', implement: 'com', report: 'dir' };
+  ui.phaseIntro = function (state) {
+    if (!root.document || (MS.tutorial && MS.tutorial.active) || local.menuOpen) return;
+    var reduce = false;
+    try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
+    if (reduce) return;
+    var ph = MS.store.phaseInfo(state).current;
+    var old = root.document.querySelector('.ph-intro');
+    if (old) old.remove();
+    var el = root.document.createElement('div');
+    el.className = 'ph-intro';
+    el.setAttribute('role', 'status');
+    el.innerHTML = '<div class="pi-card"><span class="pi-step pixel">' + h.esc(ph.nasaStep ? t('ui.stepOf', { n: ph.nasaStep, total: 6 }) : t('ui.finalStep')) + '</span>' +
+      h.character(PHASE_CHAR[state.phase] || 'dir', 120, { anim: true }) +
+      '<h2 class="pi-title pixel">' + h.esc(L(ph.title)) + '</h2><p class="pi-sub">' + h.esc(L(ph.subtitle) || '') + '</p></div>';
+    el.addEventListener('click', function () { el.remove(); });
+    root.document.body.appendChild(el);
+    click(440, 0.08); setTimeout(function () { click(660, 0.12); }, 110);
+    setTimeout(function () { el.classList.add('out'); }, 1500);
+    setTimeout(function () { if (el.parentNode) el.remove(); }, 1900);
+  };
+
   // ----------------------------------------------- Fase 1 em 3 cenas
   // cliente → missão → como jogar; o botão grande leva para a próxima.
   var NEED = ['client', 'brief', 'play'];
@@ -244,6 +313,15 @@
   };
 
   // Embrulha as telas: com o modo cena ligado, a cena; senão, o painel de antes.
+  (function () {
+    var scr = ui.screens.build;
+    if (!scr || !ui.buildParts) return;
+    var orig = scr.render;
+    scr.render = function (state, result) {
+      if (local.sceneMode && !(MS.tutorial && MS.tutorial.active)) return buildScene(state, result);
+      return (local.sceneMode === false && !(MS.tutorial && MS.tutorial.active) ? modeBar() : '') + orig(state, result);
+    };
+  })();
   (function () {
     var scr = ui.screens.need;
     if (!scr || !ui.needParts) return;

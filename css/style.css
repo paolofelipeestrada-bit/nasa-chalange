@@ -1341,3 +1341,39 @@ main:has(.scene) .guide-only { display: none; }
 @keyframes vc-vote { from { opacity: 0; transform: translateX(30px) scale(.9); } to { opacity: 1; transform: none; } }
 @media (max-width: 560px) { .viz3d.cine-on .vc-poll { width: auto; } .viz3d.cine-on .vc-poll li { font-size: 15px; } .viz3d.cine-on .vc-poll li .char { width: 30px; height: 30px; } }
 @media (prefers-reduced-motion: reduce) { .viz3d.cine-on .vc-poll li { animation: none; } }
+
+/* Construir em cenas: checklist até o botão de lançar */
+.sc-build .launch-window .card, .sc-build .predict { margin: 0 0 14px; }
+.sc-launch { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 16px 10px; text-align: center; }
+.sc-launch-q { font-size: 20px; font-weight: 800; margin: 0; max-width: 560px; }
+.sc-press.sc-big { width: 190px; height: 190px; }
+.sc-press.sc-big .sp-txt { font-size: 22px; }
+@media (max-width: 760px) { .sc-press.sc-big { width: 150px; height: 150px; } }
+
+/* Abertura de fase */
+.ph-intro { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, rgba(20, 36, 84, .92), rgba(5, 9, 24, .96));
+  animation: pi-in .35s ease both; cursor: pointer; }
+.ph-intro.out { animation: pi-out .4s ease both; }
+.pi-card { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 0 16px; animation: pi-zoom .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+.pi-card .char { width: 120px; height: 120px; filter: drop-shadow(0 12px 24px rgba(0, 0, 0, .5)); }
+.pi-step { color: #ffd23f; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+.pi-title { font-size: clamp(30px, 6vw, 56px); margin: 0; color: #fff; text-shadow: 0 4px 18px rgba(127, 178, 255, .5); }
+.pi-sub { color: var(--muted); font-size: 18px; margin: 0; }
+@keyframes pi-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pi-out { to { opacity: 0; transform: scale(1.04); } }
+@keyframes pi-zoom { from { opacity: 0; transform: scale(.8) translateY(20px); } to { opacity: 1; transform: none; } }
+
+/* Estrelas e comemoração no relatório */
+.rep-stars { position: relative; overflow: hidden; text-align: center; padding: 18px 16px 8px; margin-bottom: 16px; border-radius: var(--radius);
+  background: radial-gradient(circle at 50% 0%, rgba(255, 210, 63, .18), transparent 70%); }
+.rs-row { display: flex; justify-content: center; gap: 14px; }
+.rs-star { font-size: 72px; line-height: 1; color: #2a3d6b; text-shadow: 0 2px 0 #0b1430; }
+.rs-star.on { color: #ffd23f; text-shadow: 0 0 22px rgba(255, 210, 63, .7), 0 3px 0 #b88a00; animation: rs-pop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes rs-pop { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.rs-line { font-size: 20px; font-weight: 800; margin: 8px 0 0; }
+.rep-stars.n-0 .rs-line { color: var(--fail); }
+.rep-confetti { position: absolute; inset: 0; pointer-events: none; }
+.rep-confetti i { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; opacity: 0; animation: cf-fall 2.4s ease-in 1 both; }
+@keyframes cf-fall { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 0; transform: translateY(220px) rotate(540deg); } }
+@media (max-width: 560px) { .rs-star { font-size: 54px; } }
+@media (prefers-reduced-motion: reduce) { .ph-intro, .pi-card, .rs-star.on, .rep-confetti i { animation: none; } .rep-confetti { display: none; } }

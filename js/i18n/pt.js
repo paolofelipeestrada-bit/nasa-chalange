@@ -819,6 +819,21 @@
     "cine.ch.scrub": "Cena 4 · Lançamento cancelado",
     "cine.cap.scrub": "ABORTAR! O foguete não consegue levar este satélite. O diretor de lançamento para a contagem e o foguete fica na plataforma.",
     "cine.abort": "ABORTAR",
+    "sc.build.check": "Verificação",
+    "sc.build.predict": "Seu palpite",
+    "sc.build.window": "Data de lançamento",
+    "sc.build.launch": "Lançar!",
+    "sc.build.go.predict": "Dar o palpite",
+    "sc.build.go.window": "Escolher a data",
+    "sc.build.go.launch": "Ir para a plataforma",
+    "sc.launch": "Lançar",
+    "sc.launchQ": "Tudo conferido. Aperte o botão para lançar!",
+    "sc.launchRisky": "Algumas verificações falharam. Dá para lançar mesmo assim, mas a missão pode dar errado.",
+    "rep.stars": "{n} de 3 estrelas",
+    "rep.starsLine.0": "Missão perdida. Veja o porquê abaixo, ajuste e tente de novo!",
+    "rep.starsLine.1": "Funcionou em parte. Mais um ajuste e você chega lá!",
+    "rep.starsLine.2": "Ótima missão! O cliente ficou feliz.",
+    "rep.starsLine.3": "Missão perfeita! Trabalho de nível NASA.",
     "go.needAll": "Todos precisam dizer GO antes do lançamento."
   };
 })(globalThis);
