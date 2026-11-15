@@ -15,6 +15,7 @@
  *     fanfare  3 estrelas
  *     fail     missão perdida (notas descendo)
  *     beep     bipe de rádio (frequência no 2º argumento)
+ *     chat     mensagem nova no chat da equipe
  *   MS.sfx.muted() · MS.sfx.toggle()   um só botão 🔊/🔇 para o jogo todo
  *
  * O mudo é o mesmo de antes (ui.local.shoutMute, guardado no aparelho),
@@ -106,6 +107,7 @@
     star: function (k) { var f = 880 * Math.pow(1.26, k || 0); tone(f, { len: 0.5, vol: 0.06, type: 'sine' }); tone(f * 2, { len: 0.25, vol: 0.02, type: 'sine' }); },
     fanfare: function () { [523, 659, 784, 1047].forEach(function (f, k) { tone(f, { at: k * 0.12, len: k === 3 ? 0.7 : 0.18, vol: 0.06, type: 'triangle' }); }); },
     fail: function () { [392, 330, 262].forEach(function (f, k) { tone(f, { at: k * 0.22, len: 0.3, vol: 0.06, type: 'triangle' }); }); },
+    chat: function () { tone(880, { len: 0.07, vol: 0.04, type: 'sine' }); tone(1320, { at: 0.07, len: 0.1, vol: 0.035, type: 'sine' }); },
     beep: function (f) { tone(f || 880, { len: 0.14, vol: 0.08, type: 'square' }); }
   };
 

@@ -722,6 +722,7 @@
     if (MS.coach) MS.coach.attach(rootEl, state);   // balões de ensino
     if (ui.sceneAfter) ui.sceneAfter(rootEl, state); // modo cena: prévia da opção em foco (js/ui/scene.js)
     if (MS.sfx) MS.sfx.after(rootEl, state);         // sons: alerta no vermelho e estrelas (js/ui/sfx.js)
+    if (ui.chatAfter) ui.chatAfter(state);           // chat da equipe aparece só com sala (js/ui/chat.js)
     if (state.phase !== lastPhase) {
       if (lastPhase && ui.phaseIntro) ui.phaseIntro(state); // cartão de abertura da fase (js/ui/scene.js)
       root.scrollTo(0, 0);

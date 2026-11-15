@@ -155,6 +155,8 @@ js/ui/scene.js        scene mode: phase 1 in 3 scenes; Concept and Design one ch
                       altitude lever and CONFIRM button (the full cockpit stays one click away)
 js/ui/sfx.js          game sounds made live with WebAudio (no audio files): knob, CONFIRM, card flip, phase,
                       countdown, engine, abort siren, stars; one 🔊/🔇 button for the whole game
+js/ui/chat.js         team text chat (only in a room): 140 letters, 1 message per second, last 30 kept by the host
+                      for late joiners; nothing saved on any server
 js/ui/coach.js        short teaching bubbles the first time each phase opens
 js/ui/screen*.js      one screen per phase, registered with MS.ui.register(id, screen)
 js/viz/looks.js       3D look of each catalog item, derived from its data (pure, tested)
