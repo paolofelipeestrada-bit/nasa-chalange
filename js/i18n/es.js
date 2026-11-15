@@ -838,6 +838,11 @@
     "sc.tower.note": "Tu equipo está eligiendo estas piezas ahora. Sigue el 3D y las metas; habla o grita si algo parece mal.",
     "sc.tower.choosing": "eligiendo…",
     "sc.tower.see": "Ver",
+    "sc.req.flip": "Toca para dar vuelta la carta",
+    "sc.req.prev": "Anterior",
+    "sc.req.next": "Siguiente carta",
+    "sc.req.flipLast": "¡Da vuelta la última carta!",
+    "sc.req.allSeen": "Todos los requisitos vistos. ¡Ahora diseña el satélite abajo!",
     "go.needAll": "Todos deben decir GO antes del lanzamiento."
   };
 })(globalThis);

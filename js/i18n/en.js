@@ -858,6 +858,11 @@
     "sc.tower.note": "Your teammates are choosing these parts now. Watch the 3D view and the goals; talk or shout if something looks wrong.",
     "sc.tower.choosing": "choosing…",
     "sc.tower.see": "See",
+    "sc.req.flip": "Tap to flip the card",
+    "sc.req.prev": "Previous",
+    "sc.req.next": "Next card",
+    "sc.req.flipLast": "Flip the last card!",
+    "sc.req.allSeen": "All requirements seen. Now design the satellite at the bottom!",
     "go.needAll": "Everyone must say Go before the launch."
   };
 })(globalThis);
