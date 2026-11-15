@@ -1026,6 +1026,9 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .sf-live { color: var(--muted); }
 .sf-live span { color: var(--ok); font-weight: 600; }
 
+/* "Ver o lançamento" quando o navegador pede menos movimento */
+.viz-replay { position: absolute; right: 12px; top: 12px; z-index: 5; background: rgba(10, 18, 48, .85) !important; }
+.viz3d.cine-on .viz-replay { display: none; }
 /* ------------------------------------------------ Níveis de dificuldade */
 .lvl-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .lvl { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; font: inherit;

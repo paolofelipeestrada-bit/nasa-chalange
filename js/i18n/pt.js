@@ -719,6 +719,7 @@
     'src.f.cost.plain': "Tudo o que o cliente paga. O CubeSat 101 aconselha guardar pelo menos 10% do orçamento de reserva.",
     'src.f.science.name': "Valor científico",
     'src.f.science.formula': "valor = média(min(1, meta ÷ valor)) × 100",
-    'src.f.science.plain': "O quanto um instrumento cumpre as metas científicas do cliente (detalhe, revisita) na órbita escolhida. Nota criada pelo jogo, explicada em cada cartão de instrumento."
+    'src.f.science.plain': "O quanto um instrumento cumpre as metas científicas do cliente (detalhe, revisita) na órbita escolhida. Nota criada pelo jogo, explicada em cada cartão de instrumento.",
+    'cine.replay': "Ver o lançamento"
   };
 })(globalThis);
