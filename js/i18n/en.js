@@ -865,6 +865,16 @@
     "sc.req.allSeen": "All requirements seen. Now design the satellite at the bottom!",
     "sfx.on": "Turn sound on",
     "sfx.off": "Turn sound off",
+    "chat.open": "Chat",
+    "chat.title": "Team chat",
+    "chat.close": "Close chat",
+    "chat.placeholder": "Write to your team…",
+    "chat.send": "Send",
+    "chat.empty": "No messages yet. Say hi to your team!",
+    "chat.note": "Only people in this room see it. Nothing is saved. Be kind!",
+    "chat.slow": "Wait a second before the next message.",
+    "chat.you": "You",
+    "chat.new": "{n} new messages",
     "go.needAll": "Everyone must say Go before the launch."
   };
 })(globalThis);

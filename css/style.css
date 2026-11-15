@@ -1502,3 +1502,39 @@ main { overflow-x: clip; }
   .top-actions { gap: 2px; }
   .top-actions .btn.small[data-action="team-toggle"], .top-actions .btn.small[data-action="glossary"], .top-actions .btn.small[data-action="coach"], .top-actions .sfx-btn { width: 38px; }
 }
+
+/* Chat da equipe (fora da tela redesenhada: #chat no body) */
+.ct-wrap { position: fixed; right: 16px; bottom: 76px; z-index: 41; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.ct-wrap[hidden] { display: none; }
+.ct-fab { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 18px; border-radius: 99px; cursor: pointer; font: inherit; font-weight: 800; font-size: 17px;
+  color: #06122e; background: var(--accent); border: 2px solid rgba(255, 255, 255, .35); box-shadow: 0 8px 22px rgba(0, 0, 0, .45); }
+.ct-fab span[aria-hidden] { font-size: 20px; }
+.ct-wrap.open .ct-fab { background: var(--surface-2); color: var(--text); border-color: var(--line); }
+.ct-badge { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--fail); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; animation: rs-pop .35s ease-out both; }
+.ct-badge[hidden] { display: none; }
+.ct-panel { width: min(360px, calc(100vw - 24px)); height: min(440px, 55vh); display: flex; flex-direction: column; background: var(--surface); border: 1.5px solid var(--accent); border-radius: var(--radius); box-shadow: 0 16px 40px rgba(0, 0, 0, .5); overflow: hidden; animation: mn-in .2s ease-out both; }
+.ct-panel[hidden] { display: none; }
+.ct-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.ct-x { width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--surface-3); color: var(--text); font-size: 20px; cursor: pointer; }
+.ct-log { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+.ct-m { display: flex; gap: 8px; align-items: flex-start; }
+.ct-m .sh-av { width: 30px; height: 30px; flex: none; }
+.ct-b { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 6px 10px; border-radius: 12px; background: var(--surface-2); max-width: 85%; }
+.ct-m.mine { flex-direction: row-reverse; }
+.ct-m.mine .ct-b { background: rgba(127, 178, 255, .18); }
+.ct-who { font-size: 12px; font-weight: 700; color: var(--muted); }
+.ct-who time { font-weight: 400; opacity: .7; margin-left: 4px; }
+.ct-x2 { font-size: 15px; overflow-wrap: anywhere; }
+.ct-empty { color: var(--muted); text-align: center; margin: auto 0; }
+.ct-form { display: flex; gap: 6px; padding: 8px 10px 4px; border-top: 1px solid var(--line); }
+.ct-in { flex: 1; min-width: 0; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-3); color: var(--text); font: inherit; font-size: 16px; }
+.ct-in:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.ct-note { margin: 0; padding: 2px 12px 8px; font-size: 11.5px; color: var(--faint); }
+@media (max-width: 560px) {
+  .ct-wrap { right: 12px; bottom: 128px; }
+  .ct-fab { padding: 8px 14px; }
+  .ct-fab .ct-lbl { display: none; }
+  .ct-wrap.open { left: 12px; }
+  .ct-panel { width: 100%; height: 50vh; }
+}
+@media (prefers-reduced-motion: reduce) { .ct-panel, .ct-badge { animation: none; } }

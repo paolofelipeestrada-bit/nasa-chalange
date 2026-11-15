@@ -15,6 +15,11 @@
  *   MS.net.shout(grito)           grito rápido para a equipe ({ t: 'shout' }); não mexe no state
  *   MS.net.askReady() · answerReady(sim)   "todos prontos?" ({ t: 'ready' })
  *   MS.net.onShout(msg) · onReady(ready)   avisos para a tela (js/ui/shouts-ui.js)
+ *   MS.net.chat(texto) · chatLog() · onChat(m)   chat de texto da equipe
+ *     ({ t: 'chat' }); o anfitrião limpa o texto (MS.net.cleanChat), segura
+ *     1 mensagem por segundo por pessoa, guarda as últimas 30 (quem entra
+ *     depois recebe) e repassa a todos. Nada vai para servidor: some quando
+ *     a sala fecha. Tela: js/ui/chat.js.
  * ===================================================================== */
 (function (root) {
   'use strict';
@@ -23,10 +28,22 @@
   var PREFIX = 'nasa-chalange-sim-';
   var CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var JOIN_TIMEOUT_MS = 15000;
+  var CHAT_MAX = 140, CHAT_KEEP = 30, CHAT_GAP_MS = 900;
   var R = null;     // sessão atual da sala (null = jogando sozinho)
   var lastError = '';
 
-  var net = MS.net = { onUpdate: null, onToast: null, onShout: null, onReady: null };
+  var net = MS.net = { onUpdate: null, onToast: null, onShout: null, onReady: null, onChat: null };
+
+  // Texto do chat: sem quebras nem caracteres de controle, espaços juntos,
+  // no máximo CHAT_MAX letras. Vazio → null.
+  function cleanChat(x) {
+    if (typeof x !== 'string') return null;
+    var s = x.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!s) return null;
+    return Array.from(s).slice(0, CHAT_MAX).join('');
+  }
+  net.cleanChat = cleanChat;
+  net.CHAT_MAX = CHAT_MAX;
 
   function notify() { if (net.onUpdate) net.onUpdate(); }
   function toast(msg) { if (net.onToast) net.onToast(msg); }
@@ -99,6 +116,7 @@
       R.members.push({ id: id, name: team.cleanName(msg.name), roles: [] });
       send(conn, { t: 'welcome', you: id });
       send(conn, { t: 'state', state: MS.store.state });
+      if (R.chat && R.chat.length) send(conn, { t: 'chat-log', log: R.chat });
       broadcastRoom();
       toast(t('net.joined', { name: nameOf(id) }));
       return;
@@ -106,6 +124,7 @@
     if (!R.conns[id]) return; // não se apresentou
     if (msg.t === 'roles') { applyRoles(id, msg.roles); return; }
     if (msg.t === 'shout') { relayShout(id, msg.s); return; }
+    if (msg.t === 'chat') { relayChat(id, msg.x); return; }
     if (msg.t === 'ready-ask') { startReady(id); return; }
     if (msg.t === 'ready-ans') { setReady(id, msg.ok); return; }
     if (msg.t === 'action') applyAction(id, msg.name, msg.args);
@@ -120,6 +139,20 @@
     var msg = { t: 'shout', s: sh, by: nameOf(id), byId: id };
     broadcast(msg);
     if (id !== 'host' && net.onShout) net.onShout(msg);
+    return true;
+  }
+
+  // Chat: o anfitrião limpa, segura o ritmo, guarda as últimas e repassa.
+  function relayChat(id, raw) {
+    var x = cleanChat(raw), now = Date.now();
+    R.lastChat = R.lastChat || {};
+    if (!x || (R.lastChat[id] && now - R.lastChat[id] < CHAT_GAP_MS)) return false;
+    R.lastChat[id] = now;
+    R.chatSeq = (R.chatSeq || 0) + 1;
+    var m = { n: R.chatSeq, by: nameOf(id), byId: id, x: x, at: now };
+    R.chat = (R.chat || []).concat([m]).slice(-CHAT_KEEP);
+    broadcast({ t: 'chat', m: m });
+    if (net.onChat) net.onChat(m);
     return true;
   }
 
@@ -230,6 +263,17 @@
       }
     } else if (msg.t === 'shout') {
       if (msg.byId !== R.me && net.onShout) net.onShout(msg);
+    } else if (msg.t === 'chat') {
+      var m = msg.m;
+      if (!m || typeof m !== 'object' || !cleanChat(m.x)) return;
+      m = { n: Number(m.n) || 0, by: String(m.by || ''), byId: String(m.byId || ''), x: cleanChat(m.x), at: Number(m.at) || Date.now() };
+      R.chat = (R.chat || []).concat([m]).slice(-CHAT_KEEP);
+      if (net.onChat) net.onChat(m);
+    } else if (msg.t === 'chat-log') {
+      R.chat = (Array.isArray(msg.log) ? msg.log : []).filter(function (m) { return m && cleanChat(m.x); }).slice(-CHAT_KEEP).map(function (m) {
+        return { n: Number(m.n) || 0, by: String(m.by || ''), byId: String(m.byId || ''), x: cleanChat(m.x), at: Number(m.at) || 0 };
+      });
+      if (net.onChat) net.onChat(null);
     } else if (msg.t === 'ready') {
       R.ready = msg.ready || null;
       if (net.onReady) net.onReady(R.ready);
@@ -279,6 +323,18 @@
     send(R.conn, { t: 'shout', s: sh });
     return true;
   }
+  // Chat de texto. Devolve true se saiu (false: sem sala, vazio ou rápido demais).
+  function chat(text) {
+    if (!R || R.status !== 'online') return false;
+    var x = cleanChat(text);
+    if (!x) return false;
+    if (R.isHost) return relayChat('host', x);
+    var now = Date.now();
+    if (R.myLastChat && now - R.myLastChat < CHAT_GAP_MS) return false;
+    R.myLastChat = now;
+    send(R.conn, { t: 'chat', x: x });
+    return true;
+  }
   function askReady() {
     if (!R || R.status !== 'online') return;
     if (R.isHost) startReady('host'); else send(R.conn, { t: 'ready-ask' });
@@ -291,6 +347,8 @@
   function readyKey(s) { return JSON.stringify([s.design, s.period || null]); }
   net.readyKey = readyKey;
   net.shout = shout;
+  net.chat = chat;
+  net.chatLog = function () { return R && R.chat ? R.chat.slice() : []; };
   net.askReady = askReady;
   net.answerReady = answerReady;
   net.host = host;

@@ -846,6 +846,16 @@
     "sc.req.allSeen": "Todos os requisitos vistos. Agora projete o satélite lá embaixo!",
     "sfx.on": "Ligar o som",
     "sfx.off": "Desligar o som",
+    "chat.open": "Chat",
+    "chat.title": "Chat da equipe",
+    "chat.close": "Fechar chat",
+    "chat.placeholder": "Escreva para a equipe…",
+    "chat.send": "Enviar",
+    "chat.empty": "Nenhuma mensagem ainda. Dê um oi para a equipe!",
+    "chat.note": "Só quem está nesta sala vê. Nada fica salvo. Seja gentil!",
+    "chat.slow": "Espere um segundo para mandar a próxima.",
+    "chat.you": "Você",
+    "chat.new": "{n} mensagens novas",
     "go.needAll": "Todos precisam dizer GO antes do lançamento."
   };
 })(globalThis);

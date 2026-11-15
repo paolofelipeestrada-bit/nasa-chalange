@@ -845,6 +845,16 @@
     "sc.req.allSeen": "Todos los requisitos vistos. ¡Ahora diseña el satélite abajo!",
     "sfx.on": "Activar el sonido",
     "sfx.off": "Silenciar",
+    "chat.open": "Chat",
+    "chat.title": "Chat del equipo",
+    "chat.close": "Cerrar chat",
+    "chat.placeholder": "Escribe a tu equipo…",
+    "chat.send": "Enviar",
+    "chat.empty": "Aún no hay mensajes. ¡Saluda a tu equipo!",
+    "chat.note": "Solo quien está en esta sala lo ve. Nada se guarda. ¡Sé amable!",
+    "chat.slow": "Espera un segundo antes del próximo mensaje.",
+    "chat.you": "Tú",
+    "chat.new": "{n} mensajes nuevos",
     "go.needAll": "Todos deben decir GO antes del lanzamiento."
   };
 })(globalThis);
