@@ -878,3 +878,37 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .orb-stars.s2 i.on { background: var(--warn); }
 .orb-stars.s1 i.on { background: var(--fail); }
 .concept-ck .ck-parts .specs > * { display: revert; }
+
+/* ---------- Requisitos: cadeia objetivo → requisito → escolhas → teste ---------- */
+.req-panel .ck-head { flex-wrap: wrap; gap: 8px; }
+.req-strip { display: flex; flex-wrap: wrap; gap: 6px; }
+.req-strip .rs { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+.rs.s-ok { color: var(--ok); background: var(--ok-soft); }
+.rs.s-fail { color: var(--fail); background: var(--fail-soft); }
+.rs.s-pending { color: var(--pending); background: var(--pending-soft); }
+.req-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.req-chain { border: 1.5px solid var(--line); border-left: 5px solid var(--pending); border-radius: var(--radius); background: var(--surface-2); padding: 14px 16px; }
+.req-chain.s-ok { border-left-color: var(--ok); }
+.req-chain.s-fail { border-left-color: var(--fail); }
+.req-chain.s-warn { border-left-color: var(--warn); }
+.req-steps { display: grid; grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 1fr) auto minmax(0, 1.2fr) auto minmax(0, 1fr); gap: 10px; align-items: stretch; }
+.req-step { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.req-step .eyebrow { display: inline-flex; align-items: center; gap: 5px; }
+.req-goal p { margin: 0; font-style: italic; color: var(--text); line-height: 1.35; }
+.req-title { font-size: 1rem; }
+.req-target { font-size: 1.35rem; color: var(--accent-strong); line-height: 1.1; }
+.req-arrow { display: flex; align-items: flex-start; padding-top: 24px; color: var(--faint); }
+.req-target.ref { font-size: .95rem; font-weight: 700; }
+.req-drivers ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.req-dr { display: flex; flex-direction: column; padding: 4px 8px; border-radius: 8px; border: 1px dashed var(--line); font-size: .8rem; line-height: 1.25; }
+.req-dr b { font-size: .78rem; color: var(--muted); font-weight: 600; }
+.req-dr span { color: var(--faint); }
+.req-dr.set { border-style: solid; background: var(--accent-soft); }
+.req-dr.set span { color: var(--text); }
+.req-verif b { font-size: .95rem; }
+.req-now { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-size: .9rem; }
+.req-now .hint { flex-basis: 100%; margin: 0; }
+@media (max-width: 860px) {
+  .req-steps { grid-template-columns: 1fr; gap: 6px; }
+  .req-arrow { justify-content: center; align-items: center; padding-top: 0; transform: rotate(90deg); height: 18px; }
+}

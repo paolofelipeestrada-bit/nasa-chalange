@@ -598,6 +598,20 @@
     'orb.yours': "sua",
     'orb.refCam': "Estimativa com a {cam} (câmera ainda não escolhida).",
     'orb.refGs': "Contato com a {gs} (estação ainda não escolhida).",
-    'coach.concept.4': "Compare as órbitas antes de escolher: mais alta vê mais largo, com menos detalhe, e dura mais; mais baixa é mais nítida, mas cai antes."
+    'coach.concept.4': "Compare as órbitas antes de escolher: mais alta vê mais largo, com menos detalhe, e dura mais; mais baixa é mais nítida, mas cai antes.",
+    'req3.note': "Siga cada linha: o que o cliente quer, o número que prova isso, as escolhas que mexem nesse número e o teste que confere. Esse teste é uma",
+    'req3.goal': "O cliente quer",
+    'req3.req': "requisito",
+    'req3.drivers': "Depende de",
+    'req3.verify': "Como conferimos",
+    'req3.refTarget': "≥ {m}",
+    'req3.inDesign': "escolha no Projeto",
+    'req3.notYet': "ainda não escolhido",
+    'req3.waiting': "Esperando as escolhas do Projeto para ter um número.",
+    'req3.now': "Agora: {v}",
+    'req3.nOk': "{n} cumpridos",
+    'req3.nFail': "{n} falhando",
+    'req3.nPending': "{n} esperando",
+    'coach.requirements.2': "Cada linha liga um desejo do cliente a um número e às peças que mudam esse número. Se trocar uma peça depois, você já sabe qual meta está arriscando."
   };
 })(globalThis);

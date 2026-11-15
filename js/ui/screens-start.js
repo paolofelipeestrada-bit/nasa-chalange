@@ -115,32 +115,60 @@
   });
 
   // ------------------------------------------------------- Requirements
+  // Cada requisito como uma cadeia: objetivo do cliente → requisito (número e
+  // meta) → escolhas de que depende → como será verificado. Embaixo, o estado
+  // agora. As escolhas vêm do motor (requirement.drivers ← MS.sim.metricSlots).
+  var OPS_REQ = { '<=': '≤', '>=': '≥', '<': '<', '>': '>' };
+  function driverChip(state, sc, slotId) {
+    var slot = sc.slots.filter(function (x) { return x.id === slotId; })[0];
+    if (!slot) return '';
+    var cur = state.design[slotId], cat = MS.data.catalog[slot.source] || {};
+    var name = cur && cat[cur] ? L(cat[cur].name) : t(slot.phase === 'design' ? 'req3.inDesign' : 'req3.notYet');
+    return '<li class="req-dr' + (cur ? ' set' : '') + '"><b>' + h.esc(L(slot.label)) + '</b><span>' + h.esc(name) + '</span></li>';
+  }
+  function reqChain(state, sc, r, goal, v, metric) {
+    var target = r.ref ? t('req3.refTarget', { m: L((MS.sim.metricInfo()[r.ref] || {}).label) || r.ref })
+      : (OPS_REQ[r.op] || r.op) + ' ' + U.withUnit(r.threshold, r.unit, r.threshold === Math.round(r.threshold) ? 0 : 1);
+    var now = r.status === 'pending'
+      ? '<span class="muted">' + h.esc(t('req3.waiting')) + '</span>'
+      : h.stateTag(r.status) + ' <span>' + h.esc(t('req3.now', { v: U.withUnit(r.value, r.unit, metric ? metric.decimals : 1) })) + '</span>';
+    var arrow = '<span class="req-arrow" aria-hidden="true">' + h.icon('arrow', { size: 18 }) + '</span>';
+    return '<li class="req-chain s-' + r.status + '">' +
+      '<div class="req-steps">' +
+        '<div class="req-step req-goal"><span class="eyebrow">' + h.icon('team', { size: 14 }) + h.esc(t('req3.goal')) + '</span>' +
+          '<p>“' + h.rich(goal || '') + '”</p></div>' + arrow +
+        '<div class="req-step req-main"><span class="eyebrow">' + h.esc(r.id) + ' · ' + h.esc(t('req3.req')) + '</span>' +
+          '<b class="req-title">' + h.esc(r.title) + '</b><span class="req-target' + (r.ref ? ' ref' : ' pixel') + '">' + h.esc(target) + '</span></div>' + arrow +
+        '<div class="req-step req-drivers"><span class="eyebrow">' + h.icon('eng', { size: 14 }) + h.esc(t('req3.drivers')) + '</span>' +
+          '<ul>' + (r.drivers || []).map(function (id) { return driverChip(state, sc, id); }).join('') + '</ul></div>' + arrow +
+        '<div class="req-step req-verif"><span class="eyebrow">' + h.icon('ok', { size: 14 }) + h.esc(t('req3.verify')) + '</span>' +
+          (v ? '<b>' + h.esc(v.method) + '</b><span class="small">' + h.esc(v.title) + '</span>' : '<span class="muted small">—</span>') + '</div>' +
+      '</div>' +
+      '<div class="req-now">' + now + (r.hint ? '<span class="hint" data-label="' + h.esc(t('ui.tip')) + '">' + h.esc(r.hint) + '</span>' : '') + '</div>' +
+      h.explain(r.rationale, t('scr.req.whyValue')) + '</li>';
+  }
+
   ui.register('requirements', {
     nextLabel: 'scr.req.next',
     render: function (state, result) {
       var sc = h.scenario(state);
       var goals = {};
-      sc.goals.forEach(function (g) { goals[g.id] = L(g.text); });
+      sc.goals.forEach(function (g) { goals[g.id] = g.text; });
       // Como cada requisito será verificado (plano da fase Build & Verify).
       var verif = {};
       result.verification.forEach(function (v) {
         v.items.forEach(function (it) { if (it.kind === 'requirement') verif[it.id] = v; });
       });
+      var n = { ok: 0, fail: 0, pending: 0 };
+      result.requirements.forEach(function (r) { n[r.status === 'ok' ? 'ok' : r.status === 'pending' ? 'pending' : 'fail']++; });
+      var chip = function (k, ic, key) { return n[k] ? '<span class="rs s-' + k + '">' + h.icon(ic, { size: 14, stroke: 2.6 }) + h.esc(t(key, { n: n[k] })) + '</span>' : ''; };
+      var strip = '<div class="req-strip">' + chip('ok', 'ok', 'req3.nOk') + chip('fail', 'fail', 'req3.nFail') + chip('pending', 'pending', 'req3.nPending') + '</div>';
       var rows = result.requirements.map(function (r) {
-        var now = r.status === 'pending'
-          ? '<span class="muted small">' + h.esc(t('scr.req.pending')) + '</span>'
-          : h.badge(r.status) + ' <span class="small">' + h.esc(t('scr.req.now')) + ' ' + h.esc(U.withUnit(r.value, r.unit, result.metrics[r.metric].decimals)) + '</span>';
-        var v = verif[r.id];
-        return '<li><div class="row-head"><strong>' + h.esc(r.id + ' · ' + r.title) + '</strong>' +
-          (r.goal ? '<span class="small muted">' + h.esc(t('scr.req.fromGoal', { id: r.goal })) + '</span>' : '') + '</div>' +
-          '<p style="margin:4px 0">' + h.esc(r.text) + '</p>' +
-          (r.goal ? '<p class="small muted" style="margin:0 0 4px">' + h.esc(t('scr.req.goal', { id: r.goal })) + ' ' + h.rich(goals[r.goal] || '') + '</p>' : '') +
-          (v ? '<p class="verif-by"><span>' + h.esc(t('scr.req.verifiedBy')) + '</span> <b>' + h.esc(v.method) + '</b> — ' + h.esc(v.title) + '</p>' : '') +
-          h.explain(r.rationale, t('scr.req.whyValue')) + '<div style="margin-top:6px">' + now + '</div></li>';
+        return reqChain(state, sc, r, r.goal ? goals[r.goal] : '', verif[r.id], result.metrics[r.metric]);
       }).join('');
-      return '<div class="card"><h2>' + h.esc(t('scr.req.title', { n: result.requirements.length })) + '</h2>' +
-        '<p class="section-note">' + h.esc(t('scr.req.note1')) + ' ' + h.term('verification', t('scr.req.noteTerm')) + ' ' + h.esc(t('scr.req.note2')) + '</p>' +
-        '<ul class="rows">' + rows + '</ul></div>';
+      return '<div class="ck-panel req-panel"><div class="ck-head"><h2>' + h.esc(t('scr.req.title', { n: result.requirements.length })) + '</h2>' + strip + '</div>' +
+        '<p class="section-note">' + h.esc(t('req3.note')) + ' ' + h.term('verification', t('scr.req.noteTerm')) + '.</p>' +
+        '<ol class="req-list">' + rows + '</ol></div>';
     }
   });
 })(globalThis);

@@ -617,6 +617,20 @@
     'orb.yours': "yours",
     'orb.refCam': "Estimate with the {cam} (camera not chosen yet).",
     'orb.refGs': "Contact with the {gs} (station not chosen yet).",
-    'coach.concept.4': "Compare the orbits before choosing: higher sees wider but with less detail and lasts longer; lower is sharper but falls sooner."
+    'coach.concept.4': "Compare the orbits before choosing: higher sees wider but with less detail and lasts longer; lower is sharper but falls sooner.",
+    'req3.note': "Follow each line: what the customer wants, the number that proves it, the choices that move that number, and the test that checks it. That test is a",
+    'req3.goal': "Customer wants",
+    'req3.req': "requirement",
+    'req3.drivers': "Depends on",
+    'req3.verify': "How we check it",
+    'req3.refTarget': "≥ {m}",
+    'req3.inDesign': "choose in Design",
+    'req3.notYet': "not chosen yet",
+    'req3.waiting': "Waiting for the Design choices to get a number.",
+    'req3.now': "Now: {v}",
+    'req3.nOk': "{n} met",
+    'req3.nFail': "{n} failing",
+    'req3.nPending': "{n} waiting",
+    'coach.requirements.2': "Each line links a customer wish to a number and to the parts that change it. Change a part later and you already know which goal you are risking."
   };
 })(globalThis);

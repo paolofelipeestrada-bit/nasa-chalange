@@ -32,7 +32,8 @@
       { at: '.orb-panel', key: 'coach.concept.4' }
     ],
     requirements: [
-      { at: 'main .card', key: 'coach.requirements.1' }
+      { at: '.req-panel', key: 'coach.requirements.1' },
+      { at: '.req-chain', key: 'coach.requirements.2' }
     ],
     design: [
       { at: '.ck-tabs', key: 'coach.design.1' },
