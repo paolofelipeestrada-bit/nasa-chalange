@@ -486,6 +486,11 @@
   }
 
   // Caixa "O que fazer aqui" + o que a NASA faz neste passo.
+  // Só as dicas e "o que a NASA faz" (recolhidas); a frase principal vai no cabeçalho da fase.
+  function guideMore(phase) {
+    if (!phase.guide || (!(phase.tips || []).length && !phase.nasa)) return '';
+    return guide(phase).replace(/^[\s\S]*?(<details class="guide-more">[\s\S]*<\/details>)[\s\S]*$/, '<div class="guide-only">$1</div>');
+  }
   function guide(phase) {
     if (!phase.guide) return '';
     var tips = (phase.tips || []).map(function (x) { return '<li>' + rich(x) + '</li>'; }).join('');
@@ -611,8 +616,10 @@
     return (result ? header(state, info, result) : '') + '<main>' + warn + (ui.teamPanel ? ui.teamPanel(state) : '') +
       aboutPanel() + sourcesPanel(state, result) + glossaryPanel() +
       '<div class="phase-head' + (ph.image ? ' has-art' : '') + '"' + (ph.image ? ' style="--ph-art:url(\'' + esc(absUrl(ph.image)) + '\')"' : '') + '><span class="eyebrow">' + esc(eyebrow) + '</span>' +
-      '<h1>' + esc(L(ph.title)) + '</h1><p class="muted">' + esc(L(ph.subtitle) || '') + '</p></div>' +
-      (ui.clientLine ? ui.clientLine(state, result) : '') + guide(ph) + body + (ui.calcPanel && result ? ui.calcPanel(state, result) : '') + '</main>' + footer(state, info, screen) +
+      '<h1>' + esc(L(ph.title)) + '</h1>' +
+      (ph.guide ? '<p class="ph-do"><b>' + esc(t('ui.whatToDo')) + ':</b> ' + rich(ph.guide) + '</p>' : '<p class="muted">' + esc(L(ph.subtitle) || '') + '</p>') +
+      (ui.clientLine ? ui.clientLine(state, result) : '') + '</div>' +
+      guideMore(ph) + body + (ui.calcPanel && result ? ui.calcPanel(state, result) : '') + '</main>' + footer(state, info, screen) +
       (ui.shoutDock && result ? ui.shoutDock(state, result) : ''); // gritos da equipe (js/ui/shouts-ui.js)
   }
 

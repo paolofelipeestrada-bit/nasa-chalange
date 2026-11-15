@@ -88,12 +88,15 @@
       var limits = sc.constraints.map(function (c) { return '<li>' + h.rich(c) + '</li>'; }).join('') +
         '<li>' + h.esc(t('scr.need.aoi', { name: L(sc.aoi.name), area: U.withUnit(sc.aoi.area_km2, 'km²', 0), lat: U.fmt(Math.abs(lat), 0) + '° ' + (lat >= 0 ? 'N' : 'S') })) + '</li>';
       return '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2>' + scenarioCards(state) + '</div>' +
-        '<div class="card level-card"><h2>' + h.esc(t('lvl.title')) + '</h2>' + h.levelPicker(state) + '</div>' +
-        lobby() + (h.crewRoster ? h.crewRoster(state) : '') +
         '<div class="card mission-brief"><h2>' + h.esc(t('scr.need.goals')) + '</h2>' +
         '<p class="brief-need">' + h.rich(sc.need) + '</p>' +
         '<ul class="goal-list">' + goals + '</ul>' +
-        '<details class="brief-limits"><summary>' + h.esc(t('scr.need.constraints')) + '</summary><ul>' + limits + '</ul></details></div>';
+        '<details class="brief-limits"><summary>' + h.esc(t('scr.need.constraints')) + '</summary><ul>' + limits + '</ul></details></div>' +
+        '<div class="card how-play"><h2>' + h.esc(t('scr.need.howPlay')) + '</h2>' +
+        '<div class="hp-row"><span class="hp-cap">' + h.esc(t('lvl.title')) + '</span>' + h.levelPicker(state) + '</div>' +
+        '<div class="hp-row"><span class="hp-cap">' + h.esc(t('lobby.title')) + '</span>' + lobby() + '</div>' +
+        (h.crewRoster ? '<details class="hp-crew"><summary>' + h.esc(t('scr.need.meetCrew')) + '</summary>' + h.crewRoster(state) + '</details>' : '') +
+        '</div>';
     }
   });
 
@@ -128,10 +131,11 @@
     var refs = [];
     if (cmp.refPayload) refs.push(t('orb.refCam', { cam: L(cat.components[cmp.refPayload].name) }));
     if (cmp.refStation) refs.push(t('orb.refGs', { gs: L(cat.groundStations[cmp.refStation].name) }));
-    return '<div class="ck-panel orb-panel"><div class="ck-head"><h2>' + h.icon('eye', { size: 16 }) + h.esc(t('orb.title')) + '</h2></div>' +
+    // Recolhida: o jogador abre quando quer comparar (no Difícil já vem aberta).
+    return '<details class="ck-panel orb-panel"' + (h.uiMode() === 'full' ? ' open' : '') + '><summary class="ck-head"><h2>' + h.icon('eye', { size: 16 }) + h.esc(t('orb.title')) + '</h2></summary>' +
       '<p class="section-note">' + h.esc(t('orb.note', { region: L(h.scenario(state).aoi.name) })) + '</p>' +
       '<ul class="orb-cmp">' + body + '</ul>' +
-      (refs.length ? '<p class="small muted">' + h.esc(refs.join(' ')) + '</p>' : '') + '</div>';
+      (refs.length ? '<p class="small muted">' + h.esc(refs.join(' ')) + '</p>' : '') + '</details>';
   }
 
   ui.register('concept', {

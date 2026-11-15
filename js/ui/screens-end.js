@@ -69,7 +69,9 @@
       var hasLife = !!(MS.life && MS.data.spaceWeather);
       return '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + predictPanel(state, !!lock) +
         (hasLife ? '<div class="launch-window">' + ui.life.periodPicker(state, !!lock) + '</div>' : '') + '</div></div>' +
-        alert + '<div class="verif-grid">' + rows + '</div>' + riskCard(result);
+        alert + '<details class="fold"' + (fails ? ' open' : '') + '><summary>' + h.esc(t('build.seeChecks', { n: v.length, f: fails })) + '</summary>' +
+        '<div class="verif-grid">' + rows + '</div></details>' +
+        (result.risks.length ? '<details class="fold"><summary>' + h.esc(t('build.seeRisks', { n: count(result.risks, 'warn') })) + '</summary>' + riskCard(result) + '</details>' : '');
     }
   });
 
