@@ -21,7 +21,7 @@
   try { local.shoutMute = root.localStorage.getItem(MUTE_KEY) === '1'; } catch (e) { local.shoutMute = false; }
 
   function rerender() { if (MS.store.state) ui.render(MS.store.state); }
-  function sc() { return MS.data.scenarios[MS.store.state.scenarioId]; }
+  function sc() { var s = MS.store.state; return MS.levels ? MS.levels.scenario(s) : MS.data.scenarios[s.scenarioId]; }
   function info() { return MS.net ? MS.net.info() : { inRoom: false }; }
   function memberRole(members, id) {
     var m = (members || []).filter(function (x) { return x.id === id; })[0];

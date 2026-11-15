@@ -40,7 +40,7 @@
     return '<span class="badge s-' + esc(status) + '">' + esc(text || statusText(status)) + '</span>';
   }
   function value(m) { return m && m.value != null ? U.withUnit(m.value, m.unit, m.decimals) : '—'; }
-  function scenario(state) { return MS.data.scenarios[state.scenarioId]; }
+  function scenario(state) { return MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId]; }
   // Termo do glossário com dica (MS.data.glossary). label opcional.
   function term(key, label) {
     var g = MS.data.glossary && MS.data.glossary[key];
@@ -61,11 +61,19 @@
   function labelOf(key, label) { return TERM_OF[key] ? term(TERM_OF[key], label) : esc(label); }
 
   function explain(text, label) {
-    return text ? '<details><summary>' + esc(label || t('ui.howCalc')) + '</summary>' + esc(text) + '</details>' : '';
+    return text ? '<details' + (uiMode === 'full' ? ' open' : '') + '><summary>' + esc(label || t('ui.howCalc')) + '</summary>' + esc(text) + '</details>' : '';
   }
 
   // Campos que aparecem nos cartões de opção: [campo, unidade, casas].
   // Rótulo: t('spec.<campo>'). Campo novo no catálogo? Acrescente aqui.
+  // Nível de dificuldade da tela atual: 'simple' (Fácil) mostra menos números,
+  // 'full' (Difícil) mostra tudo e abre as contas (js/data/levels.js → ui).
+  var uiMode = '';
+  function setLevelUI(state) {
+    var d = MS.levels ? MS.levels.def(MS.levels.id(state)) : null;
+    uiMode = (d && d.ui) || '';
+  }
+  var SIMPLE_SPECS = ['altitude_km', 'lifetime_years', 'mass_kg', 'power_W', 'cost_k'];
   var SPEC_FIELDS = [
     ['altitude_km', 'km', 0], ['inclination_deg', '°', 1],
     ['lifetime_years', 'years', 1], ['orbits', 'orbits'], ['waitMonths', 'months', 0],
@@ -74,7 +82,7 @@
     ['requiredPointing_deg', '°', 2], ['capacity_U', 'U', 1],
     ['solarPower_W', 'W', 0], ['accuracy_deg', '°', 2],
     ['band', 'text'], ['dataRate_kbps', 'rate'], ['storage_GB', 'GB', 0],
-    ['compressionRatio', 'ratio'],
+    ['compressionRatio', 'ratio'], ['capacity_Wh', 'Wh', 0],
     ['mass_kg', 'kg', 2], ['power_W', 'W', 1], ['volume_U', 'U', 1],
     ['cost_k', 'k$', 0], ['maturity', 'maturity']
   ];
@@ -94,6 +102,7 @@
   function specs(item, ff) {
     var rows = SPEC_FIELDS.map(function (f) {
       var v = item[f[0]];
+      if (uiMode === 'simple' && SIMPLE_SPECS.indexOf(f[0]) === -1) return '';
       if (v == null || (f[0] === 'power_W' && v === 0) || (f[0] === 'volume_U' && v === 0)) return '';
       var text;
       if (typeof v === 'object' && !Array.isArray(v)) {
@@ -147,6 +156,9 @@
     var room = roomInfo(), sc = scenario(state);
     return sc.slots.filter(function (s) { return s.phase === phaseId && (!only || only.indexOf(s.id) >= 0); }).map(function (slot) {
       var cur = state.design[slot.id];
+      if (slot.auto) return autoSlot(state, sc, slot, cur);
+      var rec = MS.levels ? MS.levels.recommended(state, slot.id) : null;
+      var hinted = rec && ui.local.hints && ui.local.hints[slot.id];
       var owner = room ? MS.team.slotOwner(sc, room.members, slot.id) : null;
       var locked = room && !MS.team.can(sc, room.members, room.me, 'select', [slot.id]).ok;
       var ownerTag = owner && owner.role
@@ -159,20 +171,46 @@
         // Imagem 3D da peça (js/viz/parts3d.js); sem Three.js fica sem imagem.
         var pic = MS.parts3d && MS.parts3d.thumb ? MS.parts3d.thumb(slot.source, id) : '';
         var tip = [L(it.description), it.source ? t('ui.source') + ' ' + L(it.source) : ''].filter(Boolean).join(' — ');
-        return '<button type="button" class="option' + (sel ? ' selected' : '') + (pic ? ' has-thumb' : '') + '" aria-pressed="' + sel + '" data-chosen="' + esc(t('ui.chosen')) + '"' + (locked ? ' disabled' : '') +
+        var star = hinted && id === rec;
+        return '<button type="button" class="option' + (sel ? ' selected' : '') + (pic ? ' has-thumb' : '') + (star ? ' hinted' : '') + '" aria-pressed="' + sel + '" data-chosen="' + esc(t('ui.chosen')) + '"' + (locked ? ' disabled' : '') +
           (tip ? ' title="' + esc(tip) + '"' : '') +
           ' data-action="select" data-slot="' + esc(slot.id) + '" data-option="' + esc(id) + '">' +
           (pic ? '<span class="option-thumb"><img src="' + esc(pic) + '" alt="" draggable="false"></span>' : '') +
+          (star ? '<span class="hint-star">⭐ ' + esc(t('ui.hint')) + '</span>' : '') +
           '<span class="option-name">' + esc(L(it.name)) + '</span>' + (sv ? sciValue(sv.options[id]) : '') +
+          (uiMode === 'full' && it.description ? '<span class="option-desc">' + esc(L(it.description)) + '</span>' : '') +
           (it.pros || it.cons ? '<span class="pc">' + (it.pros ? '<span class="pro"><span><b>' + esc(t('ui.pro')) + '</b> ' + esc(L(it.pros)) + '</span></span>' : '') +
             (it.cons ? '<span class="con"><span><b>' + esc(t('ui.con')) + '</b> ' + esc(L(it.cons)) + '</span></span>' : '') + '</span>' : '') +
           specs(it, ff) + '</button>';
       }).join('');
       return '<section class="slot"><div class="slot-head"><h3>' + rich(slot.label) + '</h3>' + segmentChip(slot.segment) +
         (cur ? '<span class="slot-done">✓ ' + esc(t('ui.chosen')) + '</span>' : '<span class="slot-todo">' + esc(t('ui.chooseOne')) + '</span>') + ownerTag +
+        (rec && !hinted ? '<button type="button" class="btn small hint-btn" data-action="hint" data-slot="' + esc(slot.id) + '">💡 ' + esc(t('ui.hintAsk')) + '</button>' : '') +
         '</div>' + (slot.help ? '<p class="slot-why"><b>' + esc(t('ui.whyMatters')) + '</b> ' + rich(slot.help) + '</p>' : '') +
         '<div class="options">' + cards + '</div></section>';
     }).join('');
+  }
+
+  // Escolha feita pelo jogo (nível Fácil): mostra o que foi escolhido e por quê.
+  function autoSlot(state, sc, slot, cur) {
+    var it = cur ? (MS.data.catalog[slot.source] || {})[cur] : null;
+    var from = slot.follows ? (sc.slots.filter(function (x) { return x.id === slot.follows; })[0] || {}).label : null;
+    var line = it ? '<b>' + esc(L(it.name)) + '</b>' : esc(t('ui.autoWait', { slot: from ? L(from) : '' }));
+    return '<section class="slot slot-auto"><div class="slot-head"><h3>' + rich(slot.label) + '</h3>' +
+      '<span class="slot-done">✓ ' + esc(slot.auto === 'follow' ? t('ui.autoFollow', { slot: from ? L(from) : '' }) : t('ui.autoFixed')) + '</span></div>' +
+      '<p class="auto-line">' + line + (slot.help ? ' — ' + rich(slot.help) : '') + '</p></section>';
+  }
+
+  // Seletor do nível de dificuldade (menu inicial e fase 1).
+  function levelPicker(state) {
+    if (!MS.levels) return '';
+    var cur = MS.levels.id(state), lock = phaseLock(state);
+    return '<div class="lvl-pick" role="radiogroup" aria-label="' + esc(t('lvl.title')) + '">' + MS.levels.ids().map(function (id) {
+      var d = MS.levels.def(id), on = id === cur;
+      return '<button type="button" role="radio" aria-checked="' + on + '" class="lvl lvl-' + esc(id) + (on ? ' on' : '') + '" data-action="level" data-level="' + esc(id) + '"' + (lock ? ' disabled title="' + esc(lock) + '"' : '') + '>' +
+        '<span class="lvl-top"><span class="lvl-ic" aria-hidden="true">' + esc(d.icon || '') + '</span><b>' + esc(L(d.name)) + '</b></span>' +
+        '<span class="lvl-tag">' + esc(L(d.tagline)) + '</span></button>';
+    }).join('') + '</div>';
   }
 
   // Lista de métricas do motor: frase simples + a conta para quem quiser.
@@ -266,14 +304,15 @@
   //   res: recursos do motor que o cartão resume (o status é o pior deles)
   var HUD = [
     { id: 'mass',  res: ['mass', 'volume'] },
-    { id: 'power', res: ['power'] },
+    { id: 'power', res: ['power', 'battery'] },  // bateria: só no modo Difícil
     { id: 'cost',  res: ['cost'] },
     { id: 'data',  res: ['storage'], metric: 'dataPerDay_Gbit' },
     { id: 'comms', res: ['downlink'] },
     { id: 'time',  res: ['time'] }
   ];
   function resById(result, id) { return result.resources.filter(function (r) { return r.id === id; })[0]; }
-  function hudStatus(card, result) { return U.worst(card.res.map(function (id) { return resById(result, id).status; })); }
+  function hudRes(card, result) { return card.res.map(function (id) { return resById(result, id); }).filter(Boolean); }
+  function hudStatus(card, result) { return U.worst(hudRes(card, result).map(function (r) { return r.status; })); }
   function hudValue(card, result) {
     if (card.metric) { var m = result.metrics[card.metric]; return m.value == null ? '—' : U.withUnit(m.value, m.unit, 1) + t('u.slashDay'); }
     var r = resById(result, card.res[0]);
@@ -298,8 +337,7 @@
   function hudDetail(id, result) {
     var card = HUD.filter(function (c) { return c.id === id; })[0];
     if (!card) return '';
-    var body = card.res.map(function (rid) {
-      var r = resById(result, rid);
+    var body = hudRes(card, result).map(function (r) {
       return '<div class="hud-d-item"><div class="row-head"><strong>' + labelOf(r.id, r.label) + '</strong>' + badge(r.status) + '</div>' +
         (r.plain ? '<p class="plain">' + esc(r.plain) + '</p>' : '') + '<p class="small">' + esc(r.explanation) + '</p>' +
         explain(r.details.filter(Boolean).join(' '), t('ui.seeMath')) + '</div>';
@@ -412,6 +450,10 @@
     }).join('') + '</div>';
   }
 
+  function levelTag(state) {
+    var d = MS.levels ? MS.levels.def(MS.levels.id(state)) : null;
+    return d && MS.levels.id(state) !== 'normal' ? ' · ' + esc((d.icon ? d.icon + ' ' : '') + L(d.name)) : '';
+  }
   function header(state, info, result) {
     var lock = phaseLock(state), room = MS.net ? MS.net.info() : { inRoom: false };
     var steps = info.phases.map(function (p, i) {
@@ -423,7 +465,7 @@
         '<span class="lbl-s">' + esc(L(p.short)) + '</span></button></li>';
     }).join('');
     return '<header class="top"><div class="brand">' +
-      '<div class="logo">' + EMBLEM + '<span class="logo-sep" aria-hidden="true"></span><div><strong class="pixel">' + esc(t('app.name')) + '</strong><span>' + esc(L(scenario(state).title)) + '</span></div></div>' +
+      '<div class="logo">' + EMBLEM + '<span class="logo-sep" aria-hidden="true"></span><div><strong class="pixel">' + esc(t('app.name')) + '</strong><span>' + esc(L(scenario(state).title)) + levelTag(state) + '</span></div></div>' +
       '<div class="top-actions">' + (ui.menuHTML ? '<button type="button" class="btn small" data-action="menu-open">' + icon('back', { size: 16 }) + esc(t('menu.open')) + '</button>' : '') +
       langSwitch() +
       '<button type="button" class="btn small' + (room.inRoom ? ' on' : '') + '" data-action="team-toggle">' + icon('team', { size: 16 }) +
@@ -538,6 +580,7 @@
   }
 
   function renderHTML(state) {
+    setLevelUI(state);
     if (ui.local.menuOpen && ui.menuHTML) return ui.menuHTML(state); // menu inicial (js/ui/menu.js)
     var info = MS.store.phaseInfo(state);
     var screen = screens[info.current.screen];
@@ -574,6 +617,8 @@
   var ACTIONS = {
     select: function (d) { dispatch('select', [d.slot, d.option]); },
     scenario: function (d) { dispatch('setScenario', [d.id]); },
+    level: function (d) { ui.local.hints = {}; dispatch('setDifficulty', [d.level]); },
+    hint: function (d) { ui.local.hints = ui.local.hints || {}; ui.local.hints[d.slot] = true; rerender(); },
     next: function () { dispatch('nextPhase'); },
     prev: function () { dispatch('prevPhase'); },
     goto: function (d) { dispatch('goToPhase', [d.phase]); },
@@ -632,6 +677,7 @@
 
     var fk = focusKey();
     rootEl.innerHTML = renderHTML(state);
+    try { document.body.setAttribute('data-level', MS.levels ? MS.levels.id(state) : 'normal'); } catch (e) { /* sem document */ }
     stickHud();
     if (MS.viz && MS.viz.attachAll) MS.viz.attachAll(rootEl, state); // visual 3D (se a tela tiver um)
     if (MS.hangar) MS.hangar.attach(rootEl, state); // hangar 3D da coluna direita
@@ -677,6 +723,6 @@
     dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,
     h: { esc: esc, badge: badge, icon: icon, credits: credits, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
          term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
-         choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel }
+         choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel, levelPicker: levelPicker }
   });
 })(globalThis);

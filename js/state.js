@@ -26,7 +26,10 @@
   function data() { return MS.data; }
   function flow() { return data().flow; }
   function phaseIds() { return flow().phases.map(function (p) { return p.id; }); }
-  function scenarioOf(s) { return data().scenarios[s.scenarioId]; }
+  // Cenário no nível de dificuldade do state (js/levels.js; sem ele, o cenário puro).
+  function scenarioOf(s) { return MS.levels ? MS.levels.scenario(s) : data().scenarios[s.scenarioId]; }
+  function levelOk(l) { return !MS.levels || MS.levels.ids().indexOf(l) !== -1; }
+  function autoFill(s) { if (MS.levels) s.design = MS.levels.autoFill(scenarioOf(s), s.design); return s; }
   function findSlot(sc, id) { return sc.slots.filter(function (s) { return s.id === id; })[0] || null; }
 
   function newSeed() {
@@ -46,17 +49,18 @@
   }
 
   // ------------------------------------------------------------- Criação
-  function createState(scenarioId) {
+  function createState(scenarioId, difficulty) {
     var sid = scenarioId || flow().defaultScenario || Object.keys(data().scenarios)[0];
-    var sc = data().scenarios[sid];
-    if (!sc) throw new Error('Cenário desconhecido: ' + sid);
-    var design = {};
-    sc.slots.forEach(function (slot) { design[slot.id] = null; });
+    if (!data().scenarios[sid]) throw new Error('Cenário desconhecido: ' + sid);
+    var lvl = levelOk(difficulty) && difficulty ? difficulty : (MS.levels ? MS.levels.id({}) : 'normal');
     var first = flow().phases[0].id;
-    // period: janela de lançamento (clima espacial real); decisions: escolhas durante a missão
-    // prediction: palpite antes de lançar (PREDICTIONS); attempts: tentativas anteriores (só escolhas)
-    return { version: VERSION, scenarioId: sid, phase: first, reached: first, attempt: 1, seed: newSeed(), design: design, period: null, decisions: {},
-             prediction: null, attempts: [] };
+    // difficulty: nível (js/data/levels.js) · period: janela de lançamento (clima espacial real)
+    // decisions: escolhas durante a missão · prediction: palpite antes de lançar (PREDICTIONS)
+    // attempts: tentativas anteriores (só escolhas)
+    var s = { version: VERSION, scenarioId: sid, difficulty: lvl, phase: first, reached: first, attempt: 1, seed: newSeed(), design: {}, period: null, decisions: {},
+              prediction: null, attempts: [] };
+    scenarioOf(s).slots.forEach(function (slot) { s.design[slot.id] = null; });
+    return autoFill(s);
   }
 
   // Escolhas que faltam para sair da fase indicada (inclui fases anteriores).
@@ -92,7 +96,7 @@
   function sanitize(raw) {
     if (!raw || typeof raw !== 'object' || raw.version !== VERSION) return null;
     if (!data().scenarios[raw.scenarioId]) return null;
-    var s = createState(raw.scenarioId);
+    var s = createState(raw.scenarioId, levelOk(raw.difficulty) ? raw.difficulty : null);
     scenarioOf(s).slots.forEach(function (slot) {
       var v = raw.design && raw.design[slot.id];
       if (typeof v === 'string' && slot.options.indexOf(v) !== -1) s.design[slot.id] = v;
@@ -110,7 +114,7 @@
     }
     if (PREDICTIONS.indexOf(raw.prediction) !== -1) s.prediction = raw.prediction;
     if (Array.isArray(raw.attempts)) s.attempts = raw.attempts.map(cleanAttempt.bind(null, s)).filter(Boolean).slice(-MAX_ATTEMPTS);
-    return clampPhases(s);
+    return clampPhases(autoFill(s));
   }
 
   // Tentativa guardada: só as escolhas (o resultado é sempre recalculado).
@@ -150,6 +154,7 @@
     }
     var s = draft();
     s.design[slotId] = optionId == null ? null : optionId;
+    autoFill(s);         // escolhas automáticas do nível (ex.: no Fácil o foguete segue a órbita)
     s.decisions = {};    // outro satélite: a missão (e suas decisões) recomeça
     s.prediction = null; // e o palpite também
     s.reached = s.phase; // projeto mudou: as fases seguintes precisam ser refeitas
@@ -263,20 +268,37 @@
 
   // Começar do zero (opcionalmente em outro cenário).
   function reset(scenarioId) {
-    commit(createState(scenarioId));
+    commit(createState(scenarioId, store.state && store.state.difficulty));
+  }
+
+  // Trocar o nível de dificuldade: guarda as escolhas que continuam valendo.
+  function setDifficulty(level) {
+    if (!levelOk(level)) throw new Error('Nível desconhecido: ' + level);
+    if (level === store.state.difficulty) return true;
+    var s = createState(store.state.scenarioId, level);
+    scenarioOf(s).slots.forEach(function (slot) {
+      var v = store.state.design[slot.id];
+      if (!slot.auto && v && slot.options.indexOf(v) !== -1) s.design[slot.id] = v;
+    });
+    autoFill(s);
+    s.phase = store.state.phase;
+    s.attempt = store.state.attempt;
+    s.seed = store.state.seed;
+    commit(clampPhases(s));
+    return true;
   }
 
   // Trocar de missão (cliente/objetivo) na fase 1: guarda as escolhas que
   // também existem no cenário novo, sorteia imprevistos novos.
   function setScenario(scenarioId) {
-    var sc = data().scenarios[scenarioId];
-    if (!sc) throw new Error('Cenário desconhecido: ' + scenarioId);
+    if (!data().scenarios[scenarioId]) throw new Error('Cenário desconhecido: ' + scenarioId);
     if (scenarioId === store.state.scenarioId) return true;
-    var s = createState(scenarioId);
-    sc.slots.forEach(function (slot) {
+    var s = createState(scenarioId, store.state.difficulty);
+    scenarioOf(s).slots.forEach(function (slot) {
       var v = store.state.design[slot.id];
-      if (v && slot.options.indexOf(v) !== -1) s.design[slot.id] = v;
+      if (!slot.auto && v && slot.options.indexOf(v) !== -1) s.design[slot.id] = v;
     });
+    autoFill(s);
     s.phase = store.state.phase;
     s.attempt = store.state.attempt;
     commit(clampPhases(s));
@@ -349,7 +371,7 @@
     select: select, selectComponent: selectComponent,
     setOrbit: setOrbit, setLauncher: setLauncher, setGroundStation: setGroundStation,
     nextPhase: nextPhase, prevPhase: prevPhase, goToPhase: goToPhase,
-    retry: retry, reset: reset, setSeed: setSeed, setScenario: setScenario,
+    retry: retry, reset: reset, setSeed: setSeed, setScenario: setScenario, setDifficulty: setDifficulty,
     setPeriod: setPeriod, decide: decide, setPrediction: setPrediction, PREDICTIONS: PREDICTIONS,
     // multiplayer
     onChange: onChange, load: loadRemote, setPersistence: setPersistence,

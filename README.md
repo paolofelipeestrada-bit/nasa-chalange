@@ -129,11 +129,13 @@ js/data/catalog.js    orbits, launchers, ground stations and components
 js/data/scenarios.js  customers (scenarios): need, choices, requirements, verification, events, roles
 js/data/glossary.js   glossary terms (tips on dotted words)
 js/data/tutorial.js   steps of the optional guided tour (target on screen + text)
+js/data/levels.js     difficulty levels: Easy (age 12+, fewer choices, tips), Normal, Hard (battery, radiation shielding, tighter budget)
 js/data/shouts.js     team shouts: ask a role for a missing part, resource warnings, quick lines, "everyone ready?"
 js/sim.js             pure engine: MS.sim.run(state) → metrics, checks, requirements, mission, score
 js/advice.js          pure crew advice: each role judges the design by its own goal (Go/No-Go),
                       prediction buckets, previous-attempt comparison, learning cards, the customer's
                       line per phase (client), orbit comparison and instruments' science value
+js/levels.js          applies the difficulty level to a scenario (pure, tested)
 js/life.js            pure day-by-day mission: altitude, memory, panels, battery + real space weather + decisions
 js/data/spaceweather.js  real NASA DONKI events (2019–2020, 2024–2025)
 js/state.js           single state + actions + localStorage (MS.store)
@@ -181,6 +183,7 @@ results are always recomputed. The language belongs to each player and is not pa
 | Customer (scenario) | `variant('id', {...})` in `scenarios.js` (changes only what differs from the base) |
 | Help text of a phase | `phases.js` → `guide`, `tips`, `nasa` |
 | Glossary term | `glossary.js`; in data texts use `[[key]]` or `[[key\|text]]` |
+| Difficulty level | `levels.js` → budget/deadline/margin/chance factors, fixed or following choices, tips, extra slots and events |
 | Tutorial step | `tutorial.js` → `steps` (`phase`, `target` CSS selector, `title`, `text`); a test checks that every target exists |
 | Team role | `scenarios.js` → `team.roles` |
 | Crew advice or a learning card | `js/advice.js` (`crew`, `cards`) + texts `crew.*` / `card.*` in the 3 languages |

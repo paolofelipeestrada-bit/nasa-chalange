@@ -87,6 +87,7 @@
       var limits = sc.constraints.map(function (c) { return '<li>' + h.rich(c) + '</li>'; }).join('') +
         '<li>' + h.esc(t('scr.need.aoi', { name: L(sc.aoi.name), area: U.withUnit(sc.aoi.area_km2, 'km²', 0), lat: U.fmt(Math.abs(lat), 0) + '° ' + (lat >= 0 ? 'N' : 'S') })) + '</li>';
       return '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2>' + scenarioCards(state) + '</div>' +
+        '<div class="card level-card"><h2>' + h.esc(t('lvl.title')) + '</h2>' + h.levelPicker(state) + '</div>' +
         lobby() + (h.crewRoster ? h.crewRoster(state) : '') +
         '<div class="card mission-brief"><h2>' + h.esc(t('scr.need.goals')) + '</h2>' +
         '<p class="brief-need">' + h.rich(sc.need) + '</p>' +

@@ -89,7 +89,7 @@
   var BY_ROLE = { payload: scientist, bus: engineer, ground: comms, manager: manager };
 
   function crew(state, result) {
-    var sc = MS.data.scenarios[state.scenarioId];
+    var sc = MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId];
     var roles = (sc.team && sc.team.roles) || [];
     return ORDER.map(function (id) {
       var role = roles.filter(function (r) { return r.id === id; })[0];
@@ -132,7 +132,7 @@
   }
   // O que mudou entre duas tentativas: slots trocados.
   function changes(prevState, state) {
-    var sc = MS.data.scenarios[state.scenarioId];
+    var sc = MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId];
     return sc.slots.filter(function (s) { return prevState.design[s.id] !== state.design[s.id]; }).map(function (s) {
       var cat = MS.data.catalog[s.source] || {};
       var name = function (id) { return id && cat[id] ? MS.i18n.L(cat[id].name) : '—'; };
@@ -180,7 +180,7 @@
     { id: 'life', metric: 'lifetime_years', better: 'high' }
   ];
   function orbitCompare(state) {
-    var sc = MS.data.scenarios[state.scenarioId];
+    var sc = MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId];
     var slot = function (id) { return sc.slots.filter(function (s) { return s.id === id; })[0]; };
     var pay = slot('payload'), gs = slot('groundStation');
     var ref = {
@@ -217,7 +217,7 @@
   // que falha, o voto da equipe, o alerta da missão, a nota final.
   // → { name, role, look, mood: happy|neutral|worried|sad, key, text }
   function client(state, result) {
-    var sc = MS.data.scenarios[state.scenarioId], who = sc.contact || {};
+    var sc = MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId], who = sc.contact || {};
     var reqs = result.requirements || [], goals = {};
     (sc.goals || []).forEach(function (g) { goals[g.id] = MS.i18n.L(g.text); });
     var fail = reqs.filter(function (r) { return r.status === 'fail'; })[0];
@@ -279,7 +279,7 @@
     return r.value >= r.threshold ? 1 : Math.max(0, r.value / r.threshold);
   }
   function scienceValue(state) {
-    var sc = MS.data.scenarios[state.scenarioId];
+    var sc = MS.levels ? MS.levels.scenario(state) : MS.data.scenarios[state.scenarioId];
     var pay = sc.slots.filter(function (s) { return s.id === 'payload'; })[0];
     var orb = sc.slots.filter(function (s) { return s.id === 'orbit'; })[0];
     if (!pay) return null;
