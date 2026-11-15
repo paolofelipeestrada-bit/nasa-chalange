@@ -653,6 +653,10 @@
     'cl.flying': "It's up there working! The first images are arriving. Thank you!",
     'cl.great': "{score} points! You gave me exactly what I needed. Best team ever!",
     'cl.okish': "{score} points. It helped, but it's not everything I asked for. One more try?",
-    'cl.bad': "{score} points… This doesn't solve my problem yet. Let's look at what happened and try again."
+    'cl.bad': "{score} points… This doesn't solve my problem yet. Let's look at what happened and try again.",
+    'sv.title': "Science value",
+    'sv.goal': "goal",
+    'sv.report': "{name}: science value {v}/100 for this customer.",
+    'sv.better': "With {name} it would be {v}/100: the best instrument is the one that fits what the customer needs, not the most powerful one."
   };
 })(globalThis);

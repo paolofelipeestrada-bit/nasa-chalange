@@ -634,6 +634,10 @@
     'cl.flying': "Ele está lá em cima trabalhando! As primeiras imagens estão chegando. Que alegria!",
     'cl.great': "{score} pontos! Você me deu exatamente o que eu precisava. Melhor equipe!",
     'cl.okish': "{score} pontos. Ajudou, mas não é tudo o que eu pedi. Mais uma tentativa?",
-    'cl.bad': "{score} pontos… Isso ainda não resolve meu problema. Vamos ver o que aconteceu e tentar de novo."
+    'cl.bad': "{score} pontos… Isso ainda não resolve meu problema. Vamos ver o que aconteceu e tentar de novo.",
+    'sv.title': "Valor científico",
+    'sv.goal': "meta",
+    'sv.report': "{name}: valor científico {v}/100 para este cliente.",
+    'sv.better': "Com {name} seria {v}/100: o melhor instrumento é o que atende o que o cliente precisa, não o mais potente."
   };
 })(globalThis);

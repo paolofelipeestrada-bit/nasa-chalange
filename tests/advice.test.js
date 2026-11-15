@@ -158,4 +158,18 @@
     var c = MS.advice.client(bad, MS.sim.run(bad));
     assert.equal(c.mood, 'worried'); assert.equal(c.key, 'cl.fail');
   });
+
+  T.group('Valor científico');
+
+  test('o melhor instrumento depende do cliente', function () {
+    function best(sc) {
+      var v = MS.advice.scienceValue(stateWith({ orbit: 'sso500' }, { scenarioId: sc })).options;
+      return Object.keys(v).sort(function (a, b) { return v[b].value - v[a].value; })[0];
+    }
+    assert.equal(best('eo_cubesat'), 'cam_mid', 'Amazônia: a câmera média cobre a área todo mês');
+    assert.equal(best('city_map'), 'cam_hr', 'cidade: precisa do telescópio');
+    var amazon = MS.advice.scienceValue(stateWith({ orbit: 'sso500' })).options;
+    assert(amazon.cam_hr.value < amazon.cam_mid.value, 'o maior instrumento nem sempre é o melhor');
+    Object.keys(amazon).forEach(function (k) { assert(amazon[k].value >= 0 && amazon[k].value <= 100); });
+  });
 })(globalThis);

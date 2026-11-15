@@ -951,3 +951,17 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .cl-who { display: block; font-size: .76rem; color: var(--muted); }
 .cl-who b { color: var(--text); }
 .cl-bubble p { margin: 2px 0 0; font-size: .95rem; line-height: 1.4; }
+
+/* ---------- Valor científico (cartões dos instrumentos e relatório) ---------- */
+.sci-val { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--line); text-align: left; }
+.sv-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: .78rem; color: var(--sci); }
+.sv-n { font-family: 'Pixelify Sans', sans-serif; font-size: 1.15rem; color: var(--text); }
+.sv-n small { font-size: .7rem; color: var(--muted); }
+.sv-bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.sv-bar i { display: block; height: 100%; }
+.sci-val.s-ok .sv-bar i { background: var(--ok); }
+.sci-val.s-warn .sv-bar i { background: var(--warn); }
+.sci-val.s-fail .sv-bar i { background: var(--fail); }
+.sv-why { font-size: .72rem; line-height: 1.3; color: var(--muted); }
+.rep-sci { display: flex; align-items: flex-start; gap: 6px; margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); font-size: .9rem; }
+.rep-sci svg { color: var(--sci); flex: none; margin-top: 2px; }

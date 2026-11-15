@@ -265,6 +265,41 @@
     return { name: who.name || '', role: MS.i18n.L(who.role) || '', look: who, mood: mood, key: key, text: t(key, p) };
   }
 
-  MS.advice = { crew: crew, client: client, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE, orbitCompare: orbitCompare,
+  // ------------------------------------------- Valor científico dos instrumentos
+  // Quanto cada instrumento cumpre os objetivos CIENTÍFICOS do cliente: os
+  // requisitos que dependem do instrumento e não do envio de dados (resolução,
+  // revisita...), na órbita escolhida (ou na de referência, a 1ª da lista).
+  // Crédito parcial: meta ≤ x vale x/valor; meta ≥ x vale valor/x (até 1).
+  // → { orbitRef, reqs: [id], options: { id: { value 0–100, parts: [...] } } }
+  var DELIVERY = ['groundStation', 'comms', 'obc'];
+  function credit(r) {
+    if (r.value == null || r.threshold == null) return null;
+    if (!isFinite(r.value)) return r.op.charAt(0) === '<' ? 0 : 1;
+    if (r.op.charAt(0) === '<') return r.value <= r.threshold ? 1 : Math.max(0, r.threshold / r.value);
+    return r.value >= r.threshold ? 1 : Math.max(0, r.value / r.threshold);
+  }
+  function scienceValue(state) {
+    var sc = MS.data.scenarios[state.scenarioId];
+    var pay = sc.slots.filter(function (s) { return s.id === 'payload'; })[0];
+    var orb = sc.slots.filter(function (s) { return s.id === 'orbit'; })[0];
+    if (!pay) return null;
+    var orbit = state.design.orbit || (orb ? orb.options[0] : null);
+    var out = { orbitRef: !state.design.orbit && orbit, reqs: [], options: {} };
+    pay.options.forEach(function (id) {
+      var design = Object.assign({}, state.design, { payload: id });
+      if (orbit) design.orbit = orbit;
+      var r = MS.sim.run(Object.assign({}, state, { design: design }));
+      var sci = r.requirements.filter(function (q) {
+        return (q.drivers || []).indexOf('payload') >= 0 && !(q.drivers || []).some(function (d) { return DELIVERY.indexOf(d) >= 0; });
+      });
+      if (!out.reqs.length) out.reqs = sci.map(function (q) { return q.id; });
+      var parts = sci.map(function (q) { return { id: q.id, title: q.title, value: q.value, unit: q.unit, op: q.op, threshold: q.threshold, credit: credit(q), ok: q.status === 'ok' }; });
+      var c = parts.map(function (x) { return x.credit; }).filter(function (x) { return x != null; });
+      out.options[id] = { value: c.length ? Math.round(100 * c.reduce(function (a, b) { return a + b; }, 0) / c.length) : null, parts: parts };
+    });
+    return out;
+  }
+
+  MS.advice = { crew: crew, client: client, scienceValue: scienceValue, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE, orbitCompare: orbitCompare,
                 dataFraction: dataFraction, bucket: bucket, previous: previous, changes: changes, cards: cards, CARDS: CARDS };
 })(globalThis);

@@ -126,6 +126,19 @@
   }
 
   // ---------------------------------------------------------- Componentes
+  // Selo "valor científico" de um instrumento: número, barra e o porquê.
+  var OPS_SHORT = { '<=': '≤', '>=': '≥', '<': '<', '>': '>' };
+  function sciValue(o) {
+    if (!o || o.value == null) return '';
+    var cls = o.value >= 90 ? 'ok' : o.value >= 60 ? 'warn' : 'fail';
+    var why = o.parts.map(function (p) {
+      var dec = Math.abs(p.value) < 10 ? 1 : 0;
+      return (p.ok ? '✓ ' : '✗ ') + p.title + ' ' + MS.sim.util.withUnit(p.value, p.unit, dec) + ' (' + t('sv.goal') + ' ' + (OPS_SHORT[p.op] || p.op) + ' ' + MS.sim.util.withUnit(p.threshold, p.unit, 0) + ')';
+    }).join(' · ');
+    return '<span class="sci-val s-' + cls + '"><span class="sv-top"><b>' + esc(t('sv.title')) + '</b><span class="sv-n">' + o.value + '<small>/100</small></span></span>' +
+      '<span class="sv-bar"><i style="width:' + o.value + '%"></i></span><span class="sv-why">' + esc(why) + '</span></span>';
+  }
+
   // Cartões de escolha para todos os slots da fase indicada (vem dos dados).
   function choices(state, phaseId, only) {
     var cat = MS.data.catalog;
@@ -139,6 +152,8 @@
       var ownerTag = owner && owner.role
         ? '<span class="owner' + (owner.member && owner.member.id === room.me ? ' mine' : '') + '">' +
           esc(L(owner.role.name) + ': ' + (owner.member ? owner.member.name : t('ui.free'))) + '</span>' : '';
+      // Instrumentos: valor científico para ESTE cliente (MS.advice.scienceValue).
+      var sv = slot.id === 'payload' && MS.advice && MS.advice.scienceValue ? MS.advice.scienceValue(state) : null;
       var cards = slot.options.map(function (id) {
         var it = cat[slot.source][id], sel = cur === id;
         // Imagem 3D da peça (js/viz/parts3d.js); sem Three.js fica sem imagem.
@@ -148,7 +163,7 @@
           (tip ? ' title="' + esc(tip) + '"' : '') +
           ' data-action="select" data-slot="' + esc(slot.id) + '" data-option="' + esc(id) + '">' +
           (pic ? '<span class="option-thumb"><img src="' + esc(pic) + '" alt="" draggable="false"></span>' : '') +
-          '<span class="option-name">' + esc(L(it.name)) + '</span>' +
+          '<span class="option-name">' + esc(L(it.name)) + '</span>' + (sv ? sciValue(sv.options[id]) : '') +
           (it.pros || it.cons ? '<span class="pc">' + (it.pros ? '<span class="pro"><span><b>' + esc(t('ui.pro')) + '</b> ' + esc(L(it.pros)) + '</span></span>' : '') +
             (it.cons ? '<span class="con"><span><b>' + esc(t('ui.con')) + '</b> ' + esc(L(it.cons)) + '</span></span>' : '') + '</span>' : '') +
           specs(it, ff) + '</button>';
