@@ -10,6 +10,7 @@
   function stateWith(sid, level, design) {
     var s = MS.store.createState(sid, level);
     s.design = LV.autoFill(LV.scenario(s), Object.assign({}, s.design, design || {}));
+    s.seed = null; // sem sorteio: a nota não depende da sorte
     return s;
   }
   function resOf(r, id) { return r.resources.filter(function (x) { return x.id === id; })[0]; }
@@ -106,5 +107,45 @@
     T.assert.includes(html, 'data-slot="battery"');
     T.assert.includes(html, 'data-slot="shield"');
     MS.ui.renderHTML(MS.store.createState('eo_cubesat')); // volta o modo da tela ao Normal
+  });
+  test('Fácil tem só 4 escolhas do jogador; Normal sem "Ver a conta"; Difícil com tudo aberto', function () {
+    var easy = LV.scenario({ scenarioId: 'eo_cubesat', difficulty: 'easy' });
+    assert.equal(easy.slots.filter(function (x) { return !x.auto; }).map(function (x) { return x.id; }).join(','), 'orbit,payload,structure,power');
+    var conc = function (lvl) {
+      return Object.assign(stateWith('eo_cubesat', lvl, { orbit: 'sso500', launcher: 'rideshare_sso', groundStation: 'gs_polar' }), { phase: 'concept', reached: 'concept' });
+    };
+    var calc = MS.ui.h.esc(MS.i18n.t('ui.howCalc'));
+    assert(MS.ui.renderHTML(conc('normal')).indexOf(calc) === -1, 'Normal sem as contas');
+    assert(MS.ui.renderHTML(conc('easy')).indexOf(calc) === -1, 'Fácil sem as contas');
+    var full = MS.ui.renderHTML(conc('hard'));
+    T.assert.includes(full, calc);
+    T.assert.includes(full, 'calc-panel');
+    assert(MS.ui.renderHTML(conc('normal')).indexOf('calc-panel') === -1, 'cálculos só no Difícil');
+    MS.ui.renderHTML(MS.store.createState('eo_cubesat'));
+  });
+
+  test('Calcule você mesmo: cada equação dá o mesmo número que o motor e a resolução fecha', function () {
+    var st = stateWith('eo_cubesat', 'hard', Object.assign({}, GOOD, { battery: 'bat_20', shield: 'shield_ta' }));
+    var r = MS.sim.run(st), m = r.metrics, R = 6371, MU = 398600.4418;
+    MS.data.calcs.forEach(function (c) {
+      var g = c.given(m, r.selection), ans = c.answer(m);
+      assert(g && ans != null, c.id + ' deveria estar liberado com o projeto completo');
+      ['en', 'pt', 'es'].forEach(function (l) { assert(c.title[l] && c.why[l], c.id + ' sem texto ' + l); });
+      c.steps.forEach(function (s) {
+        var keys = (s.pt.match(/\{(\w+)\}/g) || []).map(function (x) { return x.slice(1, -1); });
+        var w = c.work ? c.work(m) : {};
+        keys.forEach(function (k) { assert(k === 'answer' || k in g || k in w, c.id + ': {' + k + '} sem valor'); });
+      });
+    });
+    var p = function (id) { return MS.data.calcs.filter(function (c) { return c.id === id; })[0]; };
+    var a = R + m.altitude_km.value;
+    assert(Math.abs(p('period').answer(m) - 2 * Math.PI * Math.sqrt(a * a * a / MU) / 60) < 1e-6, 'período');
+    var cam = r.selection.payload;
+    assert(Math.abs(p('gsd').answer(m) - m.altitude_km.value * 1000 * cam.pixel_um * 1e-6 / (cam.focal_mm * 1e-3)) < 1e-6, 'GSD');
+    assert.equal(MS.ui.calcCheck(94.6, MS.ui.calcParse('94,5')), 'ok');
+    assert.equal(MS.ui.calcCheck(94.6, MS.ui.calcParse('5676')), 'units', 'segundos em vez de minutos');
+    assert.equal(MS.ui.calcCheck(94.6, MS.ui.calcParse('80')), 'no');
+    assert.equal(MS.ui.calcCheck(94.6, MS.ui.calcParse('abc')), 'nan');
+    assert.equal(MS.ui.calcParse('1.234,5'), 1234.5);
   });
 })(globalThis);

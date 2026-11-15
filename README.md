@@ -129,7 +129,8 @@ js/data/catalog.js    orbits, launchers, ground stations and components
 js/data/scenarios.js  customers (scenarios): need, choices, requirements, verification, events, roles
 js/data/glossary.js   glossary terms (tips on dotted words)
 js/data/tutorial.js   steps of the optional guided tour (target on screen + text)
-js/data/levels.js     difficulty levels: Easy (age 12+, fewer choices, tips), Normal, Hard (battery, radiation shielding, tighter budget)
+js/data/levels.js     difficulty levels: Easy (age 12+, 4 choices, tips), Normal (key numbers), Hard (battery, shielding, every number)
+js/data/calcs.js      Hard mode "work it out yourself": mission equations solved with the player's own numbers
 js/data/shouts.js     team shouts: ask a role for a missing part, resource warnings, quick lines, "everyone ready?"
 js/sim.js             pure engine: MS.sim.run(state) → metrics, checks, requirements, mission, score
 js/advice.js          pure crew advice: each role judges the design by its own goal (Go/No-Go),
@@ -161,6 +162,7 @@ js/net/room.js        room by code (PeerJS): the host validates actions and broa
 js/net/shouts.js      shout rules: which shouts make sense now, text in each player's language, validation (pure, tested)
 js/ui/team-panel.js   team panel and notifications
 js/ui/shouts-ui.js    Shout button, big alert with sound and screen shake, ready check bar
+js/ui/calcs.js        Hard mode equation panel: given data, answer check (±3%), step-by-step solution
 js/ui/menu.js         start menu (play solo / team / tutorial / how it works) with a light 3D Earth behind it
 js/ui/tutorial.js     guided tour: spotlight + bubble over an example design (the player's design is untouched)
 js/ui/mission-life.js launch date, decision cards, day-by-day charts and mission diary

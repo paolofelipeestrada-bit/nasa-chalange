@@ -144,8 +144,12 @@
         '<span class="ck-count">' + h.esc(t('ck.chosen', { n: done, total: all.length })) + '</span></div>' + h.choices(state, 'concept') + '</section>' +
         '<div class="ck-right"><section class="ck-center"><div class="card hangar-card"><div data-viz="hangar"></div></div>' + orbitPanel(state) + '</section>' +
         '<aside class="ck-side"><div class="ck-panel"><div class="ck-head"><h2>' + h.esc(t('scr.concept.defines')) + '</h2></div>' +
-        '<p class="section-note">' + h.esc(t('scr.concept.note')) + '</p>' +
-        h.metricRows(result, ['altitude_km', 'lifetime_years', 'eclipse_pct', 'contactMinPerDay', 'launchWait_months']) +
+        '<p class="section-note">' + h.esc(t(h.uiMode() === 'full' ? 'scr.concept.note' : 'scr.concept.noteShort')) + '</p>' +
+        h.metricRows(result, h.byMode({
+          simple: ['altitude_km', 'lifetime_years'],
+          medium: ['altitude_km', 'lifetime_years', 'contactMinPerDay'],
+          full: ['altitude_km', 'period_min', 'orbitsPerDay', 'eclipse_pct', 'lifetime_years', 'passesPerDay', 'contactMinPerDay', 'launchWait_months']
+        })) +
         '</div><div class="ck-panel"><div class="ck-head"><h2>' + h.esc(t('scr.compat')) + '</h2></div><p class="section-note">' + h.esc(t('scr.compatNote')) + '</p>' + h.statusRows(checks) + '</div></aside></div></div>';
     }
   });

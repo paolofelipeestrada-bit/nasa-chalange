@@ -30,26 +30,26 @@
     easy: {
       icon: '🟢',
       name: T('Easy', 'Fácil', 'Fácil'),
-      tagline: T('From age 12. Fewer choices, simple words and tips.', 'A partir de 12 anos. Menos escolhas, palavras simples e dicas.', 'Desde los 12 años. Menos elecciones, palabras simples y pistas.'),
+      tagline: T('From age 12. Only 4 choices, simple words and tips.', 'A partir de 12 anos. Só 4 escolhas, palavras simples e dicas.', 'Desde los 12 años. Solo 4 elecciones, palabras simples y pistas.'),
       budgetFactor: 1.3, deadlineAdd: 6, marginFactor: 0.5, chanceFactor: 0.5,
-      fixed: { adcs: 'adcs_wheels', obc: 'obc_basic' },
+      fixed: { adcs: 'adcs_wheels', obc: 'obc_basic', groundStation: 'gs_polar', comms: 'com_sband' },
       follow: { launcher: 'orbit' },
       hints: true,
       ui: 'simple',
       recommend: {
-        eo_cubesat: { orbit: 'sso500', groundStation: 'gs_polar', payload: 'cam_mid', structure: 'struct_3u', power: 'eps_deploy', comms: 'com_sband' },
-        fire_watch: { orbit: 'sso500', groundStation: 'gs_polar', payload: 'cam_wide', structure: 'struct_3u', power: 'eps_deploy', comms: 'com_sband' },
-        city_map: { orbit: 'sso500', groundStation: 'gs_polar', payload: 'cam_hr', structure: 'struct_6u', power: 'eps_body', comms: 'com_sband' }
+        eo_cubesat: { orbit: 'sso500', payload: 'cam_mid', structure: 'struct_3u', power: 'eps_deploy' },
+        fire_watch: { orbit: 'sso500', payload: 'cam_wide', structure: 'struct_3u', power: 'eps_deploy' },
+        city_map: { orbit: 'sso500', payload: 'cam_hr', structure: 'struct_6u', power: 'eps_body' }
       },
       help: {
         orbit: T('How high the satellite flies. Lower = sharper photos, but air slowly pulls it down.', 'A altura em que o satélite voa. Mais baixo = fotos mais nítidas, mas o ar vai puxando ele para baixo.', 'La altura a la que vuela el satélite. Más bajo = fotos más nítidas, pero el aire lo va bajando.'),
         launcher: T('The game picks the rocket that goes to your orbit.', 'O jogo escolhe o foguete que vai para a sua órbita.', 'El juego elige el cohete que va a tu órbita.'),
-        groundStation: T('The antenna on Earth that talks to the satellite. More visits per day = more photos arrive.', 'A antena na Terra que conversa com o satélite. Mais visitas por dia = mais fotos chegam.', 'La antena en la Tierra que habla con el satélite. Más visitas por día = llegan más fotos.'),
+        groundStation: T('An antenna near the pole: the satellite passes over it many times a day.', 'Uma antena perto do polo: o satélite passa por ela muitas vezes por dia.', 'Una antena cerca del polo: el satélite pasa por ella muchas veces al día.'),
         payload: T('The camera. Sharper cameras see small things but are heavier and make more photos to send.', 'A câmera. Câmeras mais nítidas veem coisas pequenas, mas pesam mais e geram mais fotos para enviar.', 'La cámara. Las más nítidas ven cosas pequeñas, pero pesan más y generan más fotos para enviar.'),
         structure: T('The box. Everything must fit inside. A bigger box holds more but costs more.', 'A caixa. Tudo precisa caber dentro. Caixa maior cabe mais, mas custa mais.', 'La caja. Todo debe caber dentro. Una caja más grande cabe más, pero cuesta más.'),
         power: T('Solar panels. They must make more energy than the satellite uses.', 'Painéis solares. Eles precisam gerar mais energia do que o satélite gasta.', 'Paneles solares. Deben generar más energía de la que usa el satélite.'),
         adcs: T('Reaction wheels keep the camera pointed.', 'Rodas de reação mantêm a câmera apontada.', 'Ruedas de reacción mantienen la cámara apuntando.'),
-        comms: T('The radio that sends photos home. Faster radio = more photos arrive.', 'O rádio que manda as fotos para casa. Rádio mais rápido = mais fotos chegam.', 'La radio que manda las fotos a casa. Radio más rápida = llegan más fotos.'),
+        comms: T('A fast radio that sends the photos home.', 'Um rádio rápido que manda as fotos para casa.', 'Una radio rápida que manda las fotos a casa.'),
         obc: T('The computer that saves the photos.', 'O computador que guarda as fotos.', 'La computadora que guarda las fotos.')
       }
     },
@@ -57,14 +57,15 @@
     normal: {
       icon: '🟡',
       name: T('Normal', 'Normal', 'Normal'),
-      tagline: T('The full mission, like the game was designed.', 'A missão completa, como o jogo foi pensado.', 'La misión completa, como se pensó el juego.'),
-      budgetFactor: 1, deadlineAdd: 0, marginFactor: 1, chanceFactor: 1
+      tagline: T('All 9 choices, with the key numbers.', 'As 9 escolhas, com os números principais.', 'Las 9 elecciones, con los números principales.'),
+      budgetFactor: 1, deadlineAdd: 0, marginFactor: 1, chanceFactor: 1,
+      ui: 'medium'
     },
 
     hard: {
       icon: '🔴',
       name: T('Hard', 'Difícil', 'Difícil'),
-      tagline: T('Less money and time, more surprises, battery and radiation shielding, every number shown.', 'Menos dinheiro e prazo, mais imprevistos, bateria e blindagem contra radiação, todos os números à mostra.', 'Menos dinero y plazo, más imprevistos, batería y blindaje contra radiación, todos los números a la vista.'),
+      tagline: T('Less money and time, battery and shielding, every number, and equations for you to solve.', 'Menos dinheiro e prazo, bateria e blindagem, todos os números e equações para você resolver.', 'Menos dinero y plazo, batería y blindaje, todos los números y ecuaciones para resolver.'),
       budgetFactor: 0.85, deadlineAdd: -2, marginFactor: 1.5, chanceFactor: 1.5,
       ui: 'full',
       // Variáveis novas (motor: métricas batteryNeed_Wh / battery_Wh e o imprevisto de radiação)

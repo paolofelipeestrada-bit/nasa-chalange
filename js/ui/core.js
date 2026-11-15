@@ -61,6 +61,8 @@
   function labelOf(key, label) { return TERM_OF[key] ? term(TERM_OF[key], label) : esc(label); }
 
   function explain(text, label) {
+    var math = !label || label === t('ui.seeMath') || label === t('ui.howCalc');
+    if (uiMode === 'simple' || (uiMode === 'medium' && math)) return '';
     return text ? '<details' + (uiMode === 'full' ? ' open' : '') + '><summary>' + esc(label || t('ui.howCalc')) + '</summary>' + esc(text) + '</details>' : '';
   }
 
@@ -73,7 +75,10 @@
     var d = MS.levels ? MS.levels.def(MS.levels.id(state)) : null;
     uiMode = (d && d.ui) || '';
   }
-  var SIMPLE_SPECS = ['altitude_km', 'lifetime_years', 'mass_kg', 'power_W', 'cost_k'];
+  // Escolhe a lista do modo atual: byMode({ simple: [...], medium: [...], full: [...] }).
+  function byMode(o) { return o[uiMode] || o.medium || o.full; }
+  var SIMPLE_SPECS = ['altitude_km', 'mass_kg', 'power_W', 'cost_k'];
+  var MEDIUM_SPECS = ['altitude_km', 'lifetime_years', 'mass_kg', 'power_W', 'volume_U', 'cost_k', 'capacity_U', 'solarPower_W', 'dataRate_kbps', 'capacity_Wh'];
   var SPEC_FIELDS = [
     ['altitude_km', 'km', 0], ['inclination_deg', '°', 1],
     ['lifetime_years', 'years', 1], ['orbits', 'orbits'], ['waitMonths', 'months', 0],
@@ -103,6 +108,7 @@
     var rows = SPEC_FIELDS.map(function (f) {
       var v = item[f[0]];
       if (uiMode === 'simple' && SIMPLE_SPECS.indexOf(f[0]) === -1) return '';
+      if (uiMode === 'medium' && MEDIUM_SPECS.indexOf(f[0]) === -1) return '';
       if (v == null || (f[0] === 'power_W' && v === 0) || (f[0] === 'volume_U' && v === 0)) return '';
       var text;
       if (typeof v === 'object' && !Array.isArray(v)) {
@@ -348,7 +354,8 @@
   function hud(state, result) {
     var open = ui.local.hudOpen;
     return '<div class="hud-wrap"><div class="hud" role="group" aria-label="' + esc(t('hud.title')) + '">' +
-      HUD.map(function (c) { return hudCard(c, result, open === c.id); }).join('') + '</div>' +
+      HUD.filter(function (c) { return uiMode !== 'simple' || ['mass', 'power', 'cost'].indexOf(c.id) !== -1; })
+        .map(function (c) { return hudCard(c, result, open === c.id); }).join('') + '</div>' +
       (open ? hudDetail(open, result) : '') +
       // No Design a cadeia aparece no centro do cockpit (cartão "Ripple effect").
       '<div class="cascade" aria-live="polite">' + (state.phase !== 'design' && ui.local.cascade && ui.local.cascade.phase === state.phase ? ui.local.cascade.html : '') + '</div></div>';
@@ -603,7 +610,7 @@
       aboutPanel() + sourcesPanel(state, result) + glossaryPanel() +
       '<div class="phase-head"><span class="eyebrow">' + esc(eyebrow) + '</span>' +
       '<h1>' + esc(L(ph.title)) + '</h1><p class="muted">' + esc(L(ph.subtitle) || '') + '</p></div>' +
-      (ui.clientLine ? ui.clientLine(state, result) : '') + guide(ph) + body + '</main>' + footer(state, info, screen) +
+      (ui.clientLine ? ui.clientLine(state, result) : '') + guide(ph) + body + (ui.calcPanel && result ? ui.calcPanel(state, result) : '') + '</main>' + footer(state, info, screen) +
       (ui.shoutDock && result ? ui.shoutDock(state, result) : ''); // gritos da equipe (js/ui/shouts-ui.js)
   }
 
@@ -723,6 +730,6 @@
     dispatch: dispatch, roomInfo: roomInfo, phaseLock: phaseLock, preview: previewOption, clearPreview: clearPreview,
     h: { esc: esc, badge: badge, icon: icon, credits: credits, stateTag: stateTag, stateIcon: stateIcon, value: value, explain: explain, specs: specs, scenario: scenario,
          term: term, rich: rich, labelOf: labelOf, segmentChip: segmentChip, statusText: statusText,
-         choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel, levelPicker: levelPicker }
+         choices: choices, metricRows: metricRows, statusRows: statusRows, resourcePanel: resourcePanel, levelPicker: levelPicker, byMode: byMode, uiMode: function () { return uiMode; } }
   });
 })(globalThis);

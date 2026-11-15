@@ -1056,3 +1056,34 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .auto-line b { color: var(--text); }
 /* Difícil: todos os números nos cartões do cockpit */
 body[data-level="hard"] .ck-parts .specs > .sp { display: inline-flex !important; }
+
+/* Fácil: só o essencial na tela */
+body[data-level="easy"] .guide-more, body[data-level="easy"] .ck-mel, body[data-level="easy"] .rep-more,
+body[data-level="easy"] .brief-limits, body[data-level="easy"] .orb-cmp, body[data-level="easy"] .req-drivers,
+body[data-level="easy"] .hud-detail .small { display: none !important; }
+
+/* ------------------------------------------------ Calcule você mesmo (js/ui/calcs.js, Difícil) */
+.calc-panel { border-color: rgba(255, 107, 107, .45); }
+.calc-count { font-weight: 800; color: var(--accent); }
+.calc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: calc; }
+.calc { padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1.5px solid var(--line); border-left: 4px solid var(--accent); }
+.calc.solved { border-left-color: var(--ok); }
+.calc.locked { opacity: .65; border-left-color: var(--pending); }
+.calc-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.calc-top b { font-size: 16px; }
+.calc-eq { font-size: 16px; padding: 3px 10px; border-radius: 8px; background: #0c1736; color: #b9d3ff; }
+.calc-why { margin: 6px 0 8px; font-size: 14px; color: var(--muted); }
+.calc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.calc-cap { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 4px; }
+.calc-given { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 14px; }
+.calc-given code { color: var(--text); }
+.calc-row { display: flex; align-items: center; gap: 6px; }
+.calc-in { width: 140px; min-height: 40px; padding: 6px 10px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 16px; }
+.calc-in:focus { outline: 2px solid var(--accent); }
+.calc-u { color: var(--muted); }
+.calc-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.calc-fb { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 14.5px; font-weight: 600; }
+.calc-fb.ok { color: var(--ok); } .calc-fb.no { color: var(--warn); }
+.calc-steps { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size: 14.5px; }
+.calc-steps code { color: #b9d3ff; }
+@media (max-width: 700px) { .calc-body { grid-template-columns: 1fr; } }
