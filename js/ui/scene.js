@@ -63,7 +63,9 @@
     if (want === DONE && slots.every(function (s) { return state.design[s.id]; })) return null;
     var hit = slots.filter(function (s) { return s.id === want; })[0];
     if (hit) return hit;
-    return slots.filter(function (s) { return !state.design[s.id]; })[0] || null;
+    // Em equipe, abre primeiro uma escolha vazia que é MINHA.
+    var empty = slots.filter(function (s) { return !state.design[s.id]; });
+    return empty.filter(function (s) { return !editLock(state, s); })[0] || empty[0] || null;
   }
   function focusIdx(state, slot, opts) {
     var i = local.sceneIdx[slot.id];
@@ -313,7 +315,8 @@
       var st = MS.store.state; if (!st) return;
       click(180, 0.18);
       // Próxima cena: a próxima escolha ainda vazia (ou o resumo).
-      var slots = slotsOf(st), after = slots.filter(function (s) { return s.id !== d.slot && !st.design[s.id]; })[0];
+      var rest = slotsOf(st).filter(function (s) { return s.id !== d.slot && !st.design[s.id]; });
+      var after = rest.filter(function (s) { return !editLock(st, s); })[0] || rest[0];
       local.sceneSlot[st.phase] = after ? after.id : DONE;
       delete local.sceneIdx[d.slot];
       ui.clearPreview();

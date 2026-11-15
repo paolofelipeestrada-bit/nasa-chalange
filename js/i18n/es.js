@@ -288,7 +288,7 @@
     'net.cantJoin': 'No se pudo entrar a la sala {code}.', 'net.hostLeft': 'La sala terminó: el anfitrión salió.', 'net.full': 'La sala está llena.',
 
     'viz.noThree': 'La vista 3D necesita internet para cargar la biblioteca Three.js. La línea de tiempo de abajo muestra la misión.',
-    'viz.aoi': 'Área de interés', 'viz.cov': 'Imágenes tomadas', 'viz.con': 'Contacto con la estación', 'viz.launchFail': 'Falla en el lanzamiento',
+    'viz.aoi': 'Área de interés', 'viz.cov': 'Imágenes tomadas', 'viz.con': 'Contacto con la estación', 'viz.launchFail': 'Lanzamiento cancelado: no despegó',
     'viz.safeMode': 'Modo seguro', 'viz.stationDown': 'Estación fuera de servicio', 'viz.delayed': 'Lanzamiento postergado', 'viz.random': 'IMPREVISTO', 'viz.end': 'Fin de la simulación',
     'viz.lost': 'Misión perdida', 'viz.done': 'Misión completa', 'viz.pause': 'Pausar', 'viz.play': 'Continuar', 'viz.restart': 'Reiniciar', 'viz.skipEnd': 'Fin',
     'viz.speed': 'Velocidad', 'viz.cam.auto': 'Cámara: automática', 'viz.cam.follow': 'Cámara: satélite', 'viz.cam.free': 'Cámara: libre',
@@ -815,6 +815,9 @@
     "about.nasa11.name": "Artemis I (NASA)",
     "about.nasa11.use": "Artemis I llevó 10 CubeSats hacia la Luna: el modelo del viaje en Artemis de las misiones a la Luna.",
     "about.nasa11.url": "https://www.nasa.gov/mission/artemis-i/",
+    "cine.ch.scrub": "Escena 4 · Lanzamiento cancelado",
+    "cine.cap.scrub": "¡ABORTAR! El cohete no puede llevar este satélite. El director de lanzamiento detiene la cuenta y el cohete se queda en la plataforma.",
+    "cine.abort": "ABORTAR",
     "go.needAll": "Todos deben decir GO antes del lanzamiento."
   };
 })(globalThis);

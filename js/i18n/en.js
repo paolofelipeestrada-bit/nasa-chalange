@@ -307,7 +307,7 @@
 
     // 3D
     'viz.noThree': 'The 3D view needs internet to load the Three.js library. The timeline below shows the mission.',
-    'viz.aoi': 'Area of interest', 'viz.cov': 'Images taken', 'viz.con': 'Contact with the station', 'viz.launchFail': 'Launch failure',
+    'viz.aoi': 'Area of interest', 'viz.cov': 'Images taken', 'viz.con': 'Contact with the station', 'viz.launchFail': 'Launch cancelled: did not take off',
     'viz.safeMode': 'Safe mode', 'viz.stationDown': 'Station down', 'viz.delayed': 'Launch delayed', 'viz.random': 'SURPRISE', 'viz.end': 'End of simulation',
     'viz.lost': 'Mission lost', 'viz.done': 'Mission complete', 'viz.pause': 'Pause', 'viz.play': 'Continue', 'viz.restart': 'Restart', 'viz.skipEnd': 'End',
     'viz.speed': 'Speed', 'viz.cam.auto': 'Camera: automatic', 'viz.cam.follow': 'Camera: satellite', 'viz.cam.free': 'Camera: free',
@@ -835,6 +835,9 @@
     "about.nasa11.name": "Artemis I (NASA)",
     "about.nasa11.use": "Artemis I carried 10 CubeSats toward the Moon: the model for the Artemis ride in the Moon missions.",
     "about.nasa11.url": "https://www.nasa.gov/mission/artemis-i/",
+    "cine.ch.scrub": "Scene 4 · Launch cancelled",
+    "cine.cap.scrub": "ABORT! The rocket cannot take this satellite. The launch director stops the count and the rocket stays on the pad.",
+    "cine.abort": "ABORT",
     "go.needAll": "Everyone must say Go before the launch."
   };
 })(globalThis);

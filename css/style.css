@@ -1325,3 +1325,19 @@ main:has(.scene) .guide-only { display: none; }
 .sc-need .scen-grid { gap: 14px; }
 .sc-next { display: flex; justify-content: flex-end; }
 .sc-need .roster { margin-top: 14px; }
+
+/* Lançamento cancelado (launchscene opts.scrub) */
+.vc-count.abort { color: #ff4d4d; font-size: 96px; letter-spacing: .06em; text-shadow: 0 0 24px rgba(255, 40, 40, .8); animation: vc-abort .5s steps(2) infinite; }
+@keyframes vc-abort { 50% { opacity: .35; } }
+.viz-cine.vc-scrub { box-shadow: inset 0 0 0 4px rgba(255, 60, 60, .7), inset 0 0 80px rgba(255, 0, 0, .25); }
+@media (max-width: 560px) { .vc-count.abort { font-size: 54px; } }
+@media (prefers-reduced-motion: reduce) { .vc-count.abort { animation: none; } }
+
+/* Votação Go/No-Go maior: é o momento de emoção antes da contagem */
+.viz3d.cine-on .vc-poll { width: min(400px, 52%); padding: 14px; gap: 8px; background: rgba(8, 14, 34, .88); border: 1.5px solid rgba(127, 178, 255, .45); border-radius: 16px; }
+.viz3d.cine-on .vc-poll li { font-size: 18px; padding: 6px 10px; animation: vc-vote .35s cubic-bezier(.3, 1.5, .5, 1) both; }
+.viz3d.cine-on .vc-poll li .char { width: 40px; height: 40px; }
+.viz3d.cine-on .vc-poll b { font-size: 16px; padding: 4px 14px; }
+@keyframes vc-vote { from { opacity: 0; transform: translateX(30px) scale(.9); } to { opacity: 1; transform: none; } }
+@media (max-width: 560px) { .viz3d.cine-on .vc-poll { width: auto; } .viz3d.cine-on .vc-poll li { font-size: 15px; } .viz3d.cine-on .vc-poll li .char { width: 30px; height: 30px; } }
+@media (prefers-reduced-motion: reduce) { .viz3d.cine-on .vc-poll li { animation: none; } }
