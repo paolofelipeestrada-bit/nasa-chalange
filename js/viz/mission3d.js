@@ -524,11 +524,15 @@
 
     // ---- Foguete: subida, separação do 1º estágio, carenagem, chegada à órbita
     if (T < S.orbitStart || S.launchFailed) {
-      if (S.launchFailed && s >= 0.5) {
-        if (!m.exploded) {
-          m.exploded = true; m.rocket.visible = false;
-          spawn(launchPoint(0.5), 0xff7a1a, 320, 0.25); spawn(launchPoint(0.5), 0xffe08a, 160, 0.15);
-        }
+      if (S.launchFailed) {
+        // Não pôde ser lançado: o foguete fica parado na base (nada de subida).
+        var p0 = launchPoint(0), d0 = p0.clone().normalize(); // em pé, apontando para o alto
+        m.rocket.visible = true;
+        m.rocket.position.copy(p0);
+        if (d0.lengthSq() > 0) m.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d0);
+        if (ud.flame1) ud.flame1.visible = false;
+        if (ud.flame2) ud.flame2.visible = false;
+        s = 0;
         flags.push(t('viz.launchFail'));
       } else {
         var p = launchPoint(s), q = launchPoint(Math.min(1, s + 0.01)), dir = q.clone().sub(p).normalize();
@@ -563,7 +567,7 @@
       tele.vel = u8.withUnit(0.41 + (vOrb - 0.41) * Math.pow(s, 1.6), 'km/s', 2);
       tele.stage = m.sep1 ? t('viz.stage.2') : t('viz.stage.1');
       tele.fuel = m.sep1 ? 1 - (s - SEP1) / (1 - SEP1) * 0.88 : 1 - s / SEP1;
-      tele.status = S.launchFailed && m.exploded ? 'fail' : 'sub';
+      tele.status = S.launchFailed ? 'fail' : 'sub';
     } else {
       // Em órbita: o estágio gasto se afasta durante a separação e some.
       if (fx === 'separation') {
@@ -889,7 +893,8 @@
     if (V.cine) {
       // Ritmo das cenas: a contagem anda em segundos reais; o resto vai mais
       // devagar para dar tempo de ver (plataforma, votação, decolagem, subida).
-      var cd = V.playing ? dt * V.speed * (CINE_PACE[MS.launchScene.chapterAt(V.cine.t)] || 1) : 0;
+      var chNow = V.cine.scrub && V.cine.t >= MS.launchScene.SCRUB_T ? 'scrub' : MS.launchScene.chapterAt(V.cine.t);
+      var cd = V.playing ? dt * V.speed * (CINE_PACE[chNow] || 1) : 0;
       V.cine.t += cd;
       var res = V.cine.obj.update(V.cine.t, cd, V.camera);
       if (res.done) endCine(false);
@@ -968,7 +973,7 @@
   // Antes da vista orbital, o lançamento é contado em cenas (js/viz/launchscene.js):
   // plataforma, votação Go/No-Go, contagem, decolagem e subida. Depois corta
   // para a órbita com o foguete já subindo. Pulada com "menos movimento".
-  var CINE_PACE = { pad: 0.6, poll: 0.4, count: 1, liftoff: 0.6, ascent: 0.65 };
+  var CINE_PACE = { pad: 0.6, poll: 0.4, count: 1, liftoff: 0.6, ascent: 0.65, scrub: 0.75 };
   function countdown() { startCine(); }
   function startCine(force) {
     endCine(true);
@@ -994,7 +999,13 @@
     if (room && room.members.length > 1 && MS.ui.teamGo) {
       crew = room.members.map(function (m) { return { key: MS.ui.teamGo.charOf(m), name: m.name, vote: 'go' }; });
     }
-    V.cine = { t: 0, obj: MS.launchScene.create(look), crew: crew, key: '' };
+    // Lançamento impossível: a cena para na contagem (o foguete não decola).
+    var S0 = V.mission.schedule, scrub = !!S0.launchFailed, why = '';
+    if (scrub) {
+      var ev = (V.mission.result.mission.events || []).filter(function (e) { return e.fx === 'launch'; })[0];
+      why = ev && ev.causes && ev.causes.length ? ev.causes[0] : '';
+    }
+    V.cine = { t: 0, obj: MS.launchScene.create(look, { scrub: scrub }), crew: crew, key: '', scrub: scrub, why: why };
     V.wrap.classList.add('cine-on');
     var el = V.wrap.querySelector('.viz-cine');
     if (!el) { el = document.createElement('div'); el.className = 'viz-cine'; V.wrap.appendChild(el); }
@@ -1111,9 +1122,15 @@
     if (key !== c.key) {
       c.key = key;
       el.querySelector('.vc-chapter').textContent = t('cine.ch.' + res.chapter);
-      el.querySelector('.vc-caption').textContent = t('cine.cap.' + res.chapter, { site: V.mission.siteName });
-      el.querySelector('.vc-count').textContent = res.count ? String(res.count) : '';
-      el.querySelector('.vc-count').classList.toggle('on', !!res.count);
+      el.querySelector('.vc-caption').textContent = res.chapter === 'scrub'
+        ? t('cine.cap.scrub') + (c.why ? ' ' + c.why : '')
+        : t('cine.cap.' + res.chapter, { site: V.mission.siteName });
+      var abort = res.chapter === 'scrub';
+      el.querySelector('.vc-count').textContent = abort ? t('cine.abort') : res.count ? String(res.count) : '';
+      el.querySelector('.vc-count').classList.toggle('on', !!res.count || abort);
+      el.querySelector('.vc-count').classList.toggle('abort', abort);
+      el.classList.toggle('vc-scrub', abort);
+      if (abort) { alertBeep(330); setTimeout(function () { alertBeep(330); }, 260); setTimeout(function () { alertBeep(330); }, 520); }
       if (res.count) { var cn = el.querySelector('.vc-count'); cn.classList.remove('pop'); void cn.offsetWidth; cn.classList.add('pop'); }
     }
     // Votação: os conselheiros respondem um a um (mesmos votos da verificação).
@@ -1126,11 +1143,12 @@
         var nogo = c.crew.filter(function (a) { return a.vote === 'nogo'; }).length;
         poll.innerHTML = c.crew.slice(0, n).map(function (a) {
           var go = a.vote !== 'nogo';
-          return '<li class="r-' + a.key + '"><span>' + (MS.ui.h.character ? MS.ui.h.character(a.key, 22) : '') + esc(a.name) + '</span><b class="' + (go ? 'go' : 'nogo') + '">' + esc(t(go ? 'ck.go' : 'ck.nogo')) + '</b></li>';
+          return '<li class="r-' + a.key + '"><span>' + (MS.ui.h.character ? MS.ui.h.character(a.key, 40) : '') + esc(a.name) + '</span><b class="' + (go ? 'go' : 'nogo') + '">' + esc(t(go ? 'ck.go' : 'ck.nogo')) + '</b></li>';
         }).join('') + (n > c.crew.length ? '<li class="vc-dir"><span>' + esc(nogo ? t('cine.dirNoGo', { n: nogo }) : t('cine.dirGo')) + '</span></li>' : '');
       }
     }
-    el.querySelector('.vc-fade').style.opacity = String(Math.max(0, Math.min(1, (c.t - (MS.launchScene.END - 0.6)) / 0.6)));
+    var endT = c.obj.end || MS.launchScene.END;
+    el.querySelector('.vc-fade').style.opacity = String(Math.max(0, Math.min(1, (c.t - (endT - 0.6)) / 0.6)));
   }
 
   viz.debug = function () { return V; };
