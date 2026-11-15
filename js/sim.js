@@ -564,12 +564,29 @@
     };
   }
 
+  // Escolhas (slots) que mudam cada métrica: as mesmas listas dos pend() acima.
+  // A fase Requisitos mostra, para cada requisito, de quais escolhas ele depende.
+  var METRIC_SLOTS = {
+    altitude_km: ['orbit'], lifetime_years: ['orbit'], eclipse_pct: ['orbit'],
+    gsd_m: ['orbit', 'payload'], swath_km: ['orbit', 'payload'], revisit_days: ['orbit', 'payload'],
+    dataPerDay_Gbit: ['orbit', 'payload', 'obc'], contactMinPerDay: ['orbit', 'groundStation'],
+    downlink_Gbit_day: ['orbit', 'groundStation', 'comms'], powerGen_W: ['orbit', 'structure', 'power'],
+    massLimit_kg: ['launcher', 'structure'], storage_Gbit: ['obc'], launchWait_months: ['launcher']
+  };
+  function driversOf(rq) {
+    var out = [];
+    [rq.metric, rq.ref].forEach(function (m) {
+      (METRIC_SLOTS[m] || []).forEach(function (s) { if (out.indexOf(s) < 0) out.push(s); });
+    });
+    return out;
+  }
+
   function evaluateRequirements(sc, metrics) {
     return (sc.requirements || []).map(function (rq) {
       var r = compareMetric(rq, metrics);
       return {
         id: rq.id, title: L(rq.title), text: L(rq.text), goal: rq.goal || null, rationale: L(rq.rationale) || '',
-        weight: isNum(rq.weight) ? rq.weight : 1, metric: rq.metric, op: rq.op,
+        weight: isNum(rq.weight) ? rq.weight : 1, metric: rq.metric, ref: rq.ref || null, op: rq.op, drivers: driversOf(rq),
         status: r.status, value: r.value, threshold: r.threshold, unit: r.unit || '',
         explanation: r.explanation, plain: r.plain || '', hint: r.status === 'fail' ? (L(rq.hint) || null) : null
       };
@@ -695,6 +712,13 @@
         explanation: why, def: re, mitigationResults: mit
       };
     });
+  }
+
+  // A missão terminou antes de o satélite chegar à órbita?
+  function neverFlew(mission) {
+    if (!mission || !mission.aborted) return false;
+    var ev = (mission.events || []).filter(function (e) { return e.id === mission.aborted; })[0];
+    return !!ev && (ev.fx === 'launch' || ev.fx === 'delay');
   }
 
   function runMission(ctx, env, risks) {
@@ -912,7 +936,9 @@
       mel: mel, metrics: metrics, resources: resources, checks: checks,
       requirements: requirements, verification: verification,
       risks: risks.map(function (x) { var o = Object.assign({}, x); delete o.def; delete o.mitigationResults; return o; }),
-      mission: mission, score: score, life: life, period: state && state.period || null,
+      mission: mission, score: score,
+      // Missão perdida antes de chegar à órbita (lançamento ou atraso): o ano em órbita não aconteceu.
+      life: neverFlew(mission) ? null : life, period: state && state.period || null,
       lessons: collectLessons(requirements, checks, risks, life)
     };
   }
@@ -1099,6 +1125,8 @@
   // ----------------------------------------------------------- Exportação
   MS.sim = {
     run: run,
+    neverFlew: neverFlew,
+    metricSlots: METRIC_SLOTS, // escolhas que mudam cada métrica     // missão terminou antes da órbita (lançamento ou atraso)
     validate: validate,
     metricDefs: METRICS,      // métricas disponíveis para requisitos/eventos
     metricInfo: metricDefs,   // idem, com rótulo e unidade no idioma atual

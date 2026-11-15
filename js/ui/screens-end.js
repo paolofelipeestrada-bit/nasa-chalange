@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
   var MS = root.MS, ui = MS.ui, h = ui.h, U = MS.sim.util;
-  var t = MS.i18n.t;
+  var t = MS.i18n.t, L = MS.i18n.L;
 
   function count(list, status) { return list.filter(function (x) { return x.status === status; }).length; }
   function riskText(status) { return t({ ok: 'risk.protected', warn: 'risk.exposed', na: 'risk.na' }[status] || 'st.' + status); }
@@ -121,6 +121,17 @@
     return '<div class="card"><h2>' + h.esc(t('rep.whyTitle')) + '</h2><ul class="why why-all">' + out.join('') + '</ul></div>';
   }
 
+  // Valor científico do instrumento escolhido, com o melhor da lista para comparar.
+  function sciLine(state) {
+    var sv = MS.advice.scienceValue && MS.advice.scienceValue(state), id = state.design.payload;
+    if (!sv || !id || !sv.options[id] || sv.options[id].value == null) return '';
+    var cat = MS.data.catalog.components, best = id;
+    Object.keys(sv.options).forEach(function (k) { if ((sv.options[k].value || 0) > (sv.options[best].value || 0)) best = k; });
+    var v = sv.options[id].value;
+    return '<p class="rep-sci s-' + (v >= 90 ? 'ok' : v >= 60 ? 'warn' : 'fail') + '">' + h.icon('sci', { size: 16 }) + ' <span>' +
+      h.esc(t('sv.report', { v: v, name: L(cat[id].name) })) + (best !== id ? ' ' + h.esc(t('sv.better', { name: L(cat[best].name), v: sv.options[best].value })) : '') + '</span></p>';
+  }
+
   // A missão no tempo, resumida: gráficos + números + o ano escolhido.
   function lifeReport(result) {
     var life = result.life;
@@ -207,7 +218,7 @@
       return '<div class="card"><div class="score"><div class="score-ring" style="--p:' + Math.round(s.total / s.max * 100) + ';--ring:' + ringColor + '">' +
         '<span>' + s.total + '</span></div><div><div class="small muted">' + h.esc(t('rep.of', { max: s.max })) + '</div><h2 style="margin:2px 0 0">' + h.esc(s.grade || '') + '</h2></div></div>' +
         '<p class="small muted">' + h.esc(t('rep.line', { n: state.attempt, cost: h.value(cost), sched: h.value(result.metrics.schedule_months) })) + '</p>' +
-        h.explain(result.mission.explanation, t('ui.seeMath')) + '</div>' +
+        h.explain(result.mission.explanation, t('ui.seeMath')) + sciLine(state) + '</div>' +
         whyList(result) +
         '<div class="card"><h2>' + h.esc(t('rep.lessons')) + '</h2>' + lessons +
         '<div class="actions"><button type="button" class="btn primary" data-action="retry">' + h.esc(t('ui.retry')) + '</button>' +

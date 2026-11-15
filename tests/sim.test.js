@@ -284,4 +284,30 @@
   test('mesma entrada, mesma saída', function () {
     assert.equal(JSON.stringify(runWith()), JSON.stringify(runWith()));
   });
+
+  T.group('De que escolhas cada métrica depende');
+
+  test('metricSlots bate com o motor: sem a escolha listada, a métrica fica pendente', function () {
+    var FULL = { orbit: 'sso500', launcher: 'rideshare_sso', groundStation: 'gs_polar', payload: 'cam_mid',
+      structure: 'struct_3u', power: 'eps_deploy', adcs: 'adcs_wheels', comms: 'com_sband', obc: 'obc_basic' };
+    var M = MS.sim.metricSlots;
+    Object.keys(M).forEach(function (metric) {
+      Object.keys(FULL).forEach(function (slot) {
+        var s = MS.store.createState();
+        Object.keys(FULL).forEach(function (k) { if (k !== slot) s.design[k] = FULL[k]; });
+        var v = MS.sim.run(s).metrics[metric].value;
+        if (M[metric].indexOf(slot) >= 0) assert(v == null, metric + ' deveria depender de ' + slot);
+        else assert(v != null, metric + ' não deveria depender de ' + slot);
+      });
+    });
+  });
+
+  test('cada requisito traz as escolhas de que depende', function () {
+    var s = MS.store.createState();
+    var r = MS.sim.run(s).requirements;
+    var by = {}; r.forEach(function (x) { by[x.id] = x.drivers; });
+    assert.equal(by.R1.join(), 'orbit,payload');
+    assert(by.R3.indexOf('comms') >= 0 && by.R3.indexOf('obc') >= 0, 'R3 junta envio e dados gerados');
+    assert.equal(by.R4.join(), 'orbit');
+  });
 })(globalThis);

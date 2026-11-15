@@ -760,7 +760,8 @@
   // ---------------------------------------------------------------- Câmera
   function camText(mode) { return t('viz.cam.' + mode); }
   function updateCamera(satPos, dt) {
-    var m = V.mission, S = m.schedule, cam = V.camera, k = 1 - Math.exp(-dt * 2.5);
+    var m = V.mission, S = m.schedule, cam = V.camera, k = V.snapCam ? 1 : 1 - Math.exp(-dt * 2.5);
+    V.snapCam = false;
     V.controls.enabled = V.camMode === 'free';
     if (V.camMode === 'free') { V.controls.update(); return; }
     var target, want;
@@ -797,6 +798,12 @@
         title.textContent = e.title;
         title.style.color = STATUS_COLOR[e.status] || '';
         text.textContent = e.text;
+      } else if (V.t >= S.duration && m.result.mission.status === 'decide') {
+        // Parada esperando a resposta ao alerta do controle da missão.
+        when.textContent = t('alert.call', { day: m.result.mission.decision.day + 1 });
+        title.textContent = t('alert.waitTitle');
+        title.style.color = STATUS_COLOR.warn;
+        text.textContent = '';
       } else if (V.t >= S.duration) {
         var o = m.result.mission.outcome;
         when.textContent = t('viz.end');
@@ -830,8 +837,9 @@
   function onControl(act, data) {
     var bar = V.wrap;
     if (act === 'play') V.playing = !V.playing;
-    if (act === 'restart') { buildMission(V.mission.state, V.mission.result); V.hudKey = null; }
-    if (act === 'end') { V.t = V.mission.schedule.duration; V.playing = true; }
+    if (act === 'restart') { buildMission(V.mission.state, V.mission.result); V.hudKey = null; startCine(); }
+    if (act === 'skip') endCine(false);
+    if (act === 'end') { endCine(false); V.t = V.mission.schedule.duration; V.playing = true; }
     if (act === 'warp' && data) V.speed = +data.x || 1;
     if (act === 'cam') { V.camMode = V.camMode === 'auto' ? 'follow' : V.camMode === 'follow' ? 'free' : 'auto'; }
     if (act === 'full') {
@@ -855,8 +863,14 @@
     V.last = now;
     if (!V.mission) return;
     var S = V.mission.schedule;
-    // Contagem regressiva na plataforma: o tempo da missão só anda depois do "Liftoff!".
-    if (V.holdUntil && now < V.holdUntil) dt = 0;
+    if (V.cine) {
+      var cd = V.playing ? dt * V.speed : 0;
+      V.cine.t += cd;
+      var res = V.cine.obj.update(V.cine.t, cd, V.camera);
+      if (res.done) endCine(false);
+      else { cineHud(res); V.renderer.render(V.cine.obj.scene, V.camera); return; }
+    }
+    alertTick(dt);
     if (V.playing) {
       V.t += dt * V.speed;
       if (S.launchFailed) V.t = Math.min(V.t, S.orbitStart + 3);
@@ -903,6 +917,7 @@
     if (key !== V.key) {
       var same = V.baseKey === base, keepT = V.t;
       V.key = key; V.baseKey = base; V.hudKey = null; V.flagKey = null;
+      hideAlert();
       buildMission(state, result);
       if (same) {
         // Só mudou uma decisão da missão: segue do mesmo ponto, sem repetir a decolagem.
@@ -916,19 +931,166 @@
     if (!V.raf) { V.last = 0; V.raf = root.requestAnimationFrame(frame); }
   };
 
-  // 3, 2, 1, Liftoff! sobre o foguete na plataforma (pulado com menos movimento).
-  function countdown() {
+  // ------------------------------------------------ Cena de lançamento no chão
+  // Antes da vista orbital, o lançamento é contado em cenas (js/viz/launchscene.js):
+  // plataforma, votação Go/No-Go, contagem, decolagem e subida. Depois corta
+  // para a órbita com o foguete já subindo. Pulada com "menos movimento".
+  function countdown() { startCine(); }
+  function startCine() {
+    endCine(true);
     var reduce = false;
     try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
-    var el = V.wrap.querySelector('.viz-countdown');
-    if (!el) { el = document.createElement('div'); el.className = 'viz-countdown'; el.setAttribute('aria-hidden', 'true'); V.wrap.appendChild(el); }
-    if (reduce) { V.holdUntil = 0; el.innerHTML = ''; return; }
-    el.innerHTML = '<span>3</span><span>2</span><span>1</span><span class="go">' + MS.ui.h.esc(t('viz.liftoff')) + '</span>';
-    el.classList.remove('run'); void el.offsetWidth; el.classList.add('run');
-    V.holdUntil = (root.performance ? root.performance.now() : Date.now()) + 3000;
+    if (reduce || !MS.launchScene || !V.mission) return;
+    var look = MS.looks.resolve('launchers', V.mission.result.selection.launcher);
+    var crew = MS.advice ? MS.advice.crew(V.mission.state, V.mission.result) : [];
+    V.cine = { t: 0, obj: MS.launchScene.create(look), crew: crew, key: '' };
+    V.wrap.classList.add('cine-on');
+    var el = V.wrap.querySelector('.viz-cine');
+    if (!el) { el = document.createElement('div'); el.className = 'viz-cine'; V.wrap.appendChild(el); }
+    el.innerHTML = '<div class="vc-chapter pixel"></div><div class="vc-count pixel" aria-hidden="true"></div>' +
+      '<ul class="vc-poll"></ul><p class="vc-caption" aria-live="polite"></p>' +
+      '<button type="button" class="btn small vc-skip" data-viz-act="skip">⏭ ' + MS.ui.h.esc(t('cine.skip')) + '</button><div class="vc-fade"></div>';
+    V.controls.enabled = false;
+    V.t = 0;
+  }
+  // Fim da cena: volta à vista orbital com o foguete já no meio da subida.
+  function endCine(silent) {
+    if (!V || !V.cine) return;
+    V.cine.obj.dispose();
+    V.cine = null;
+    V.wrap.classList.remove('cine-on');
+    if (silent || !V.mission) return;
+    var S = V.mission.schedule;
+    V.t = Math.max(V.t, 1.2 + 0.3 * Math.max(0, S.orbitStart - 1.2));
+    V.snapCam = true;
+    update(0);
+  }
+  // ------------------------------------------- Alerta do controle da missão
+  // Quando o voo chega ao dia de um problema (result.mission.decision), o
+  // controle chama dentro da vista 3D: bipes, borda vermelha e 10 s para
+  // responder. Sem resposta, vale MS.life.NO_ANSWER (o satélite segue como
+  // está). Sem contagem com "menos movimento" ou quando a vez é de outro na
+  // equipe. Os botões usam data-action="decide", igual ao cartão da página.
+  var ALERT_SECONDS = 10;
+  var sfx = null;
+  function alertBeep(f) {
+    if (MS.ui.local.shoutMute) return;
+    try {
+      var AC = root.AudioContext || root.webkitAudioContext;
+      if (!AC) return;
+      sfx = sfx || new AC();
+      if (sfx.state === 'suspended') sfx.resume();
+      var o = sfx.createOscillator(), g = sfx.createGain(), t0 = sfx.currentTime;
+      o.type = 'square'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      o.connect(g); g.connect(sfx.destination); o.start(t0); o.stop(t0 + 0.15);
+    } catch (e) { /* sem som */ }
+  }
+  function hideAlert() {
+    if (!V || !V.alert) return;
+    V.alert = null;
+    V.wrap.classList.remove('alert-on');
+    var el = V.wrap.querySelector('.viz-alert');
+    if (el) el.remove();
+  }
+  function showAlert(pend, now) {
+    var esc = MS.ui.h.esc, st = V.mission.state;
+    var locked = !!(MS.ui.phaseLock && MS.ui.phaseLock(st));
+    var reduce = false;
+    try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
+    var timed = !locked && !reduce;
+    var none = MS.life.NO_ANSWER[pend.id];
+    V.alert = { key: pend.id + '|' + pend.day, timed: timed, left: ALERT_SECONDS * 1000, shown: ALERT_SECONDS + 1, none: none };
+    var el = document.createElement('div');
+    el.className = 'viz-alert';
+    el.setAttribute('role', 'alertdialog');
+    el.setAttribute('aria-label', t('life.dec.' + pend.id + '.title'));
+    el.innerHTML = '<div class="va-top"><span class="va-tag pixel">' + esc(t('alert.call', { day: pend.day + 1 })) + '</span>' +
+      (timed ? '<span class="va-clock pixel" aria-hidden="true">' + ALERT_SECONDS + '</span>' : '') + '</div>' +
+      '<h3>' + esc(t('life.dec.' + pend.id + '.title')) + '</h3><p>' + MS.ui.life.decisionText(pend) + '</p>' +
+      '<div class="va-opts">' + pend.options.map(function (o) {
+        return '<button type="button" class="btn small' + (o === none ? '' : ' primary') + '" data-action="decide" data-id="' + esc(pend.id) + '" data-choice="' + esc(o) + '"' + (locked ? ' disabled' : '') + '>' +
+          esc(t('life.opt.' + pend.id + '.' + o)) + '</button>';
+      }).join('') + '</div>' +
+      '<p class="va-note">' + esc(timed ? t('alert.noAnswer', { opt: t('life.opt.' + pend.id + '.' + none) }) : t('life.dec.rule')) + '</p>' +
+      (timed ? '<div class="va-bar"><i></i></div>' : '');
+    V.wrap.appendChild(el);
+    V.wrap.classList.add('alert-on');
+    alertBeep(880); setTimeout(function () { alertBeep(660); }, 160);
+    if (!timed) return;
+    var first = el.querySelector('.va-opts .btn');
+    if (first) { try { first.focus({ preventScroll: true }); } catch (e) { /* ok */ } }
+  }
+  function alertTick(dt) {
+    var mission = V.mission && V.mission.result.mission;
+    var pend = mission && mission.status === 'decide' ? mission.decision : null;
+    if (!pend || V.t < V.mission.schedule.duration - 0.05) { hideAlert(); return; }
+    if (!V.alert || V.alert.key !== pend.id + '|' + pend.day) { hideAlert(); showAlert(pend, 0); }
+    var a = V.alert;
+    if (!a.timed || !V.playing) return;
+    a.left -= dt * 1000;
+    var sec = Math.max(0, Math.ceil(a.left / 1000));
+    if (sec !== a.shown) {
+      a.shown = sec;
+      var c = V.wrap.querySelector('.va-clock');
+      if (c) { c.textContent = String(sec); c.classList.toggle('hot', sec <= 3); }
+      if (sec <= 3 && sec > 0) alertBeep(sec === 1 ? 990 : 740);
+    }
+    var bar = V.wrap.querySelector('.va-bar i');
+    if (bar) bar.style.width = Math.max(0, a.left / (ALERT_SECONDS * 1000) * 100) + '%';
+    if (a.left <= 0 && !a.fired) {
+      a.fired = true;
+      var b = V.wrap.querySelector('.viz-alert [data-choice="' + a.none + '"]');
+      var toast = document.createElement('div');
+      toast.className = 'viz-toast';
+      toast.setAttribute('role', 'status');
+      toast.textContent = t('alert.timeout', { opt: t('life.opt.' + pend.id + '.' + a.none) });
+      V.wrap.appendChild(toast);
+      setTimeout(function () { toast.remove(); }, 4500);
+      alertBeep(330);
+      if (b) b.click();
+    }
+  }
+
+  function cineHud(res) {
+    var c = V.cine, el = V.wrap.querySelector('.viz-cine'), esc = MS.ui.h.esc;
+    if (!el) return;
+    var key = res.chapter + '|' + (res.count || '') + '|' + MS.i18n.lang;
+    if (key !== c.key) {
+      c.key = key;
+      el.querySelector('.vc-chapter').textContent = t('cine.ch.' + res.chapter);
+      el.querySelector('.vc-caption').textContent = t('cine.cap.' + res.chapter, { site: V.mission.siteName });
+      el.querySelector('.vc-count').textContent = res.count ? String(res.count) : '';
+      el.querySelector('.vc-count').classList.toggle('on', !!res.count);
+      if (res.count) { var cn = el.querySelector('.vc-count'); cn.classList.remove('pop'); void cn.offsetWidth; cn.classList.add('pop'); }
+    }
+    // Votação: os conselheiros respondem um a um (mesmos votos da verificação).
+    var poll = el.querySelector('.vc-poll');
+    var showPoll = res.chapter === 'poll' && c.crew.length;
+    poll.style.display = showPoll ? '' : 'none';
+    if (showPoll) {
+      var n = Math.min(c.crew.length + 1, Math.floor((c.t - 3.5) / 0.55) + 1);
+      if (poll.childElementCount !== n) {
+        var nogo = c.crew.filter(function (a) { return a.vote === 'nogo'; }).length;
+        poll.innerHTML = c.crew.slice(0, n).map(function (a) {
+          var go = a.vote !== 'nogo';
+          return '<li class="r-' + a.key + '"><span>' + (MS.ui.h.character ? MS.ui.h.character(a.key, 22) : '') + esc(a.name) + '</span><b class="' + (go ? 'go' : 'nogo') + '">' + esc(t(go ? 'ck.go' : 'ck.nogo')) + '</b></li>';
+        }).join('') + (n > c.crew.length ? '<li class="vc-dir"><span>' + esc(nogo ? t('cine.dirNoGo', { n: nogo }) : t('cine.dirGo')) + '</span></li>' : '');
+      }
+    }
+    el.querySelector('.vc-fade').style.opacity = String(Math.max(0, Math.min(1, (c.t - (MS.launchScene.END - 0.6)) / 0.6)));
   }
 
   viz.debug = function () { return V; };
+  // Pula a cena de lançamento até o instante s (para depurar e para as capturas).
+  viz.cineSeek = function (s) {
+    if (!V || !V.cine) return null;
+    var dt = 1 / 30;
+    while (V.cine && V.cine.t < s) { V.cine.t += dt; var r = V.cine.obj.update(V.cine.t, dt, V.camera); cineHud(r); }
+    if (V.cine) V.renderer.render(V.cine.obj.scene, V.camera);
+    return V.cine ? V.cine.t : null;
+  };
 
   // Avança a animação até o instante s (segundos), quadro a quadro. Útil para
   // depurar: MS.viz.seek(40) pula para 40 s com as imagens já acumuladas.

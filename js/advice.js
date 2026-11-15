@@ -113,6 +113,7 @@
   // ------------------------------------------- Prever antes de lançar
   // Palpite = faixa de quanto dos dados chega à Terra (state.prediction).
   function dataFraction(result) {
+    if (MS.sim.neverFlew(result.mission)) return 0;   // nem chegou à órbita: nenhum dado
     var life = result.life;
     return life && !life.pending && life.totals ? life.totals.dataFraction : null;
   }
@@ -166,6 +167,139 @@
     return CARDS.map(function (id) { return { id: id, unlocked: !!out[id], why: out[id] || '' }; });
   }
 
-  MS.advice = { crew: crew, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE,
+  // ------------------------------------------- Comparação das órbitas (fase Conceito)
+  // Para cada órbita do cenário, roda o motor com aquela órbita no lugar e lê os
+  // 4 efeitos que ela muda: cobertura (revisita da região), detalhe (pixel no
+  // chão), contato com a Terra e tempo de vida. A câmera e a estação ainda podem
+  // não estar escolhidas: usa as do jogador ou, se faltarem, as de referência
+  // (câmera do meio da lista, primeira estação). stars: 1–3, relativo às outras.
+  var EFFECTS = [
+    { id: 'cover', metric: 'revisit_days', better: 'low' },
+    { id: 'detail', metric: 'gsd_m', better: 'low' },
+    { id: 'contact', metric: 'contactMinPerDay', better: 'high' },
+    { id: 'life', metric: 'lifetime_years', better: 'high' }
+  ];
+  function orbitCompare(state) {
+    var sc = MS.data.scenarios[state.scenarioId];
+    var slot = function (id) { return sc.slots.filter(function (s) { return s.id === id; })[0]; };
+    var pay = slot('payload'), gs = slot('groundStation');
+    var ref = {
+      payload: state.design.payload || (pay ? pay.options[Math.floor(pay.options.length / 2)] : null),
+      groundStation: state.design.groundStation || (gs ? gs.options[0] : null)
+    };
+    var rows = slot('orbit').options.map(function (id) {
+      var design = Object.assign({}, state.design, { orbit: id });
+      if (ref.payload) design.payload = ref.payload;
+      if (ref.groundStation) design.groundStation = ref.groundStation;
+      var r = MS.sim.run(Object.assign({}, state, { design: design }));
+      var vals = {};
+      EFFECTS.forEach(function (e) { var m = r.metrics[e.metric]; vals[e.id] = m && m.value != null ? m.value : null; });
+      return { id: id, chosen: state.design.orbit === id, values: vals, stars: {} };
+    });
+    // Estrelas: 3 para a melhor, 1 para a pior; "nunca vê a região" = 0.
+    EFFECTS.forEach(function (e) {
+      var ok = rows.map(function (x) { return x.values[e.id]; }).filter(function (v) { return v != null && isFinite(v); });
+      var lo = Math.min.apply(null, ok), hi = Math.max.apply(null, ok);
+      rows.forEach(function (x) {
+        var v = x.values[e.id];
+        if (v == null) { x.stars[e.id] = null; return; }
+        if (!isFinite(v)) { x.stars[e.id] = 0; return; }
+        var f = hi === lo ? 1 : (v - lo) / (hi - lo);
+        if (e.better === 'low') f = 1 - f;
+        x.stars[e.id] = 1 + Math.round(f * 2);
+      });
+    });
+    return { effects: EFFECTS, rows: rows, refPayload: !state.design.payload && ref.payload, refStation: !state.design.groundStation && ref.groundStation };
+  }
+
+  // ------------------------------------------------ Cliente (personagem)
+  // Uma fala por fase, reagindo ao resultado do motor: o primeiro requisito
+  // que falha, o voto da equipe, o alerta da missão, a nota final.
+  // → { name, role, look, mood: happy|neutral|worried|sad, key, text }
+  function client(state, result) {
+    var sc = MS.data.scenarios[state.scenarioId], who = sc.contact || {};
+    var reqs = result.requirements || [], goals = {};
+    (sc.goals || []).forEach(function (g) { goals[g.id] = MS.i18n.L(g.text); });
+    var fail = reqs.filter(function (r) { return r.status === 'fail'; })[0];
+    var allOk = reqs.length && reqs.every(function (r) { return r.status === 'ok'; });
+    var m = result.mission || {}, key, mood = 'neutral', p = { region: MS.i18n.L(sc.aoi && sc.aoi.name) || '' };
+    var u = U(), val = function (r) { return u.withUnit(r.value, r.unit, Math.abs(r.value) < 10 ? 1 : 0); };
+    var failLine = function () {
+      key = 'cl.fail'; mood = 'worried';
+      var g = String(goals[fail.goal] || fail.text);
+      p.title = fail.title; p.v = val(fail); p.goal = g.charAt(0).toLowerCase() + g.slice(1);
+    };
+    var ph = state.phase;
+    if (ph === 'need') key = 'cl.need';
+    else if (ph === 'concept') {
+      var cc = chk(result, 'contact'), life = reqs.filter(function (r) { return r.metric === 'lifetime_years'; })[0];
+      var done = sc.slots.filter(function (s) { return s.phase === 'concept'; }).every(function (s) { return state.design[s.id]; });
+      if (cc && cc.status === 'fail') { key = 'cl.noContact'; mood = 'worried'; }
+      else if (life && life.status === 'fail') { fail = life; failLine(); }
+      else if (done) { key = 'cl.conceptOk'; mood = 'happy'; }
+      else key = 'cl.concept';
+    } else if (ph === 'requirements') key = 'cl.requirements';
+    else if (ph === 'design') {
+      if (fail) failLine();
+      else if (allOk) { key = 'cl.designOk'; mood = 'happy'; }
+      else key = 'cl.design';
+    } else if (ph === 'build') {
+      var tl = tally(crew(state, result));
+      if (fail) failLine();
+      else if (tl.nogo) { key = 'cl.buildNoGo'; mood = 'worried'; p.n = tl.nogo; }
+      else { key = 'cl.buildGo'; mood = 'happy'; }
+    } else if (ph === 'implement') {
+      if (!state.period) key = 'cl.date';
+      else if (m.status === 'decide') { key = 'cl.alert'; mood = 'worried'; }
+      else if (MS.sim.neverFlew(m)) { key = 'cl.lost'; mood = 'sad'; }
+      else if (m.status === 'fail') { key = 'cl.lostOrbit'; mood = 'sad'; }
+      else { key = 'cl.flying'; mood = 'happy'; }
+    } else {
+      var sco = result.score && result.score.total;
+      if (sco == null) key = 'cl.date';
+      else if (sco >= 80) { key = 'cl.great'; mood = 'happy'; }
+      else if (sco >= 50) { key = 'cl.okish'; mood = 'neutral'; }
+      else { key = 'cl.bad'; mood = 'sad'; }
+      p.score = sco;
+    }
+    return { name: who.name || '', role: MS.i18n.L(who.role) || '', look: who, mood: mood, key: key, text: t(key, p) };
+  }
+
+  // ------------------------------------------- Valor científico dos instrumentos
+  // Quanto cada instrumento cumpre os objetivos CIENTÍFICOS do cliente: os
+  // requisitos que dependem do instrumento e não do envio de dados (resolução,
+  // revisita...), na órbita escolhida (ou na de referência, a 1ª da lista).
+  // Crédito parcial: meta ≤ x vale x/valor; meta ≥ x vale valor/x (até 1).
+  // → { orbitRef, reqs: [id], options: { id: { value 0–100, parts: [...] } } }
+  var DELIVERY = ['groundStation', 'comms', 'obc'];
+  function credit(r) {
+    if (r.value == null || r.threshold == null) return null;
+    if (!isFinite(r.value)) return r.op.charAt(0) === '<' ? 0 : 1;
+    if (r.op.charAt(0) === '<') return r.value <= r.threshold ? 1 : Math.max(0, r.threshold / r.value);
+    return r.value >= r.threshold ? 1 : Math.max(0, r.value / r.threshold);
+  }
+  function scienceValue(state) {
+    var sc = MS.data.scenarios[state.scenarioId];
+    var pay = sc.slots.filter(function (s) { return s.id === 'payload'; })[0];
+    var orb = sc.slots.filter(function (s) { return s.id === 'orbit'; })[0];
+    if (!pay) return null;
+    var orbit = state.design.orbit || (orb ? orb.options[0] : null);
+    var out = { orbitRef: !state.design.orbit && orbit, reqs: [], options: {} };
+    pay.options.forEach(function (id) {
+      var design = Object.assign({}, state.design, { payload: id });
+      if (orbit) design.orbit = orbit;
+      var r = MS.sim.run(Object.assign({}, state, { design: design }));
+      var sci = r.requirements.filter(function (q) {
+        return (q.drivers || []).indexOf('payload') >= 0 && !(q.drivers || []).some(function (d) { return DELIVERY.indexOf(d) >= 0; });
+      });
+      if (!out.reqs.length) out.reqs = sci.map(function (q) { return q.id; });
+      var parts = sci.map(function (q) { return { id: q.id, title: q.title, value: q.value, unit: q.unit, op: q.op, threshold: q.threshold, credit: credit(q), ok: q.status === 'ok' }; });
+      var c = parts.map(function (x) { return x.credit; }).filter(function (x) { return x != null; });
+      out.options[id] = { value: c.length ? Math.round(100 * c.reduce(function (a, b) { return a + b; }, 0) / c.length) : null, parts: parts };
+    });
+    return out;
+  }
+
+  MS.advice = { crew: crew, client: client, scienceValue: scienceValue, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE, orbitCompare: orbitCompare,
                 dataFraction: dataFraction, bucket: bucket, previous: previous, changes: changes, cards: cards, CARDS: CARDS };
 })(globalThis);

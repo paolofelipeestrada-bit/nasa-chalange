@@ -99,4 +99,77 @@
     assert.equal(small.unlocked, r.score.total - prev.result.score.total >= 15);
     cards.forEach(function (c) { assert(!c.unlocked || c.why, 'carta sem explicação: ' + c.id); });
   });
+
+  T.group('Comparação das órbitas (Conceito)');
+
+  test('uma coluna por órbita, 4 efeitos, mesmo sem câmera escolhida', function () {
+    var c = MS.advice.orbitCompare(stateWith({}));
+    assert.equal(c.rows.length, 3);
+    assert.equal(c.effects.length, 4);
+    assert(c.refPayload, 'usa câmera de referência');
+    c.rows.forEach(function (r) { c.effects.forEach(function (e) { assert(r.values[e.id] != null, r.id + ' sem ' + e.id); }); });
+  });
+
+  test('mais alta: menos detalhe e vida mais longa; ISS cai antes', function () {
+    var c = MS.advice.orbitCompare(stateWith({}));
+    var by = {}; c.rows.forEach(function (r) { by[r.id] = r; });
+    assert(by.sso600.values.detail > by.sso500.values.detail, 'pixel maior a 600 km');
+    assert(by.sso600.values.life > by.sso500.values.life);
+    assert.equal(by.iss400.stars.life, 1);
+    assert.equal(by.sso600.stars.life, 3);
+  });
+
+  test('marca a órbita escolhida e usa a câmera do jogador', function () {
+    var c = MS.advice.orbitCompare(stateWith({ orbit: 'sso600', payload: 'cam_hr' }));
+    assert.equal(c.rows.filter(function (r) { return r.chosen; })[0].id, 'sso600');
+    assert(!c.refPayload);
+  });
+
+  T.group('Missão perdida no lançamento');
+
+  test('sem ano em órbita, 0% dos dados e o palpite ainda é comparado', function () {
+    var s = stateWith(Object.assign({}, GOOD, { payload: 'cam_hr' }), { period: 'y2019', decisions: {} });
+    var r = MS.sim.run(s);
+    assert(r.mission.aborted, 'telescópio pesado demais deveria falhar no lançamento');
+    assert.equal(r.life, null, 'não há diário de um satélite que não chegou à órbita');
+    assert.equal(MS.advice.dataFraction(r), 0);
+    assert.equal(MS.advice.bucket(0), 'lt50');
+  });
+
+  T.group('Cliente (personagem)');
+
+  test('fala em toda fase, nos 3 cenários, sem marcador sobrando', function () {
+    ['eo_cubesat', 'fire_watch', 'city_map'].forEach(function (sc) {
+      ['need', 'concept', 'requirements', 'design', 'build', 'implement', 'report'].forEach(function (ph) {
+        [{}, GOOD].forEach(function (d) {
+          var st = stateWith(d, { scenarioId: sc, phase: ph, period: d === GOOD ? 'y2019' : null });
+          var c = MS.advice.client(st, MS.sim.run(st));
+          assert(c.name && c.text, sc + '/' + ph + ' sem fala');
+          assert(c.text.indexOf('{') < 0, sc + '/' + ph + ': ' + c.text);
+        });
+      });
+    });
+  });
+
+  test('reage ao projeto: feliz com tudo certo, preocupada quando um requisito falha', function () {
+    var ok = stateWith(GOOD, { phase: 'design' });
+    assert.equal(MS.advice.client(ok, MS.sim.run(ok)).mood, 'happy');
+    var bad = stateWith(Object.assign({}, GOOD, { payload: 'cam_wide' }), { phase: 'design' });
+    var c = MS.advice.client(bad, MS.sim.run(bad));
+    assert.equal(c.mood, 'worried'); assert.equal(c.key, 'cl.fail');
+  });
+
+  T.group('Valor científico');
+
+  test('o melhor instrumento depende do cliente', function () {
+    function best(sc) {
+      var v = MS.advice.scienceValue(stateWith({ orbit: 'sso500' }, { scenarioId: sc })).options;
+      return Object.keys(v).sort(function (a, b) { return v[b].value - v[a].value; })[0];
+    }
+    assert.equal(best('eo_cubesat'), 'cam_mid', 'Amazônia: a câmera média cobre a área todo mês');
+    assert.equal(best('city_map'), 'cam_hr', 'cidade: precisa do telescópio');
+    var amazon = MS.advice.scienceValue(stateWith({ orbit: 'sso500' })).options;
+    assert(amazon.cam_hr.value < amazon.cam_mid.value, 'o maior instrumento nem sempre é o melhor');
+    Object.keys(amazon).forEach(function (k) { assert(amazon[k].value >= 0 && amazon[k].value <= 100); });
+  });
 })(globalThis);

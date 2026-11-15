@@ -28,10 +28,12 @@
     concept: [
       { at: '.slot', key: 'coach.concept.1' },
       { at: '.option', key: 'coach.concept.2' },
-      { at: '.hangar-card', key: 'coach.concept.3' }
+      { at: '.hangar-card', key: 'coach.concept.3' },
+      { at: '.orb-panel', key: 'coach.concept.4' }
     ],
     requirements: [
-      { at: 'main .card', key: 'coach.requirements.1' }
+      { at: '.req-panel', key: 'coach.requirements.1' },
+      { at: '.req-chain', key: 'coach.requirements.2' }
     ],
     design: [
       { at: '.ck-tabs', key: 'coach.design.1' },
