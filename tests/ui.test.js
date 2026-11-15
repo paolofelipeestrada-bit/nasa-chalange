@@ -169,6 +169,27 @@
     } finally { MS.net = net; }
   });
 
+  test('modo cena na Construção: checar → palpite → data → botão vermelho de lançar', function () {
+    var local = MS.ui.local;
+    var st = Object.assign(MS.store.createState(), { phase: 'build', reached: 'build', design: Object.assign({}, MS.store.createState().design, GOOD) });
+    local.sceneMode = true; local.buildStep = null;
+    try {
+      var html = MS.ui.renderHTML(st);
+      T.assert.includes(html, 'sc-build');
+      assert.equal((html.match(/data-action="build-step" data-step="/g) || []).length >= 4, true, 'trilha com as etapas');
+      local.buildStep = 'launch';
+      html = MS.ui.renderHTML(st);
+      assert(/class="sc-press sc-big" data-action="next"/.test(html), 'a última cena tem o botão grande de lançar');
+    } finally { local.sceneMode = false; local.buildStep = null; }
+  });
+
+  test('relatório: 0 a 3 estrelas pela nota', function () {
+    var st = Object.assign(MS.store.createState(), { phase: 'report', reached: 'report', period: 'y2019', decisions: { storm: 'safe', memory: 'compress', power: 'reduce' },
+      design: Object.assign({}, MS.store.createState().design, GOOD) });
+    var html = MS.ui.renderHTML(st);
+    assert(/rep-stars n-[0-3]/.test(html), 'mostra as estrelas');
+  });
+
   test('textos dos dados são escapados (sem injetar HTML)', function () {
     assert.equal(MS.ui.h.esc('<b>"x"</b>'), '&lt;b&gt;&quot;x&quot;&lt;/b&gt;');
   });

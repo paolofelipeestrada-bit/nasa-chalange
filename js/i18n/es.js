@@ -818,6 +818,21 @@
     "cine.ch.scrub": "Escena 4 · Lanzamiento cancelado",
     "cine.cap.scrub": "¡ABORTAR! El cohete no puede llevar este satélite. El director de lanzamiento detiene la cuenta y el cohete se queda en la plataforma.",
     "cine.abort": "ABORTAR",
+    "sc.build.check": "Verificación",
+    "sc.build.predict": "Tu apuesta",
+    "sc.build.window": "Fecha de lanzamiento",
+    "sc.build.launch": "¡Lanzar!",
+    "sc.build.go.predict": "Hacer tu apuesta",
+    "sc.build.go.window": "Elegir la fecha",
+    "sc.build.go.launch": "Ir a la plataforma",
+    "sc.launch": "Lanzar",
+    "sc.launchQ": "Todo revisado. ¡Pulsa el botón para lanzar!",
+    "sc.launchRisky": "Algunas verificaciones fallaron. Puedes lanzar igual, pero la misión puede salir mal.",
+    "rep.stars": "{n} de 3 estrellas",
+    "rep.starsLine.0": "Misión perdida. Mira por qué abajo, ajusta e inténtalo de nuevo.",
+    "rep.starsLine.1": "Funcionó en parte. ¡Un ajuste más y lo logras!",
+    "rep.starsLine.2": "¡Gran misión! El cliente está feliz.",
+    "rep.starsLine.3": "¡Misión perfecta! Trabajo de nivel NASA.",
     "go.needAll": "Todos deben decir GO antes del lanzamiento."
   };
 })(globalThis);

@@ -102,13 +102,22 @@
       }).join('');
       var lock = ui.phaseLock ? ui.phaseLock(state) : null;
       var hasLife = !!(MS.life && MS.data.spaceWeather);
-      return goPanel(state) + '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + predictPanel(state, !!lock) +
-        (hasLife ? '<div class="launch-window">' + ui.life.periodPicker(state, !!lock) + '</div>' : '') + '</div></div>' +
-        alert + '<details class="fold"' + (fails ? ' open' : '') + '><summary>' + h.esc(t('build.seeChecks', { n: v.length, f: fails })) + '</summary>' +
+      var checks = alert + '<details class="fold"' + (fails ? ' open' : '') + '><summary>' + h.esc(t('build.seeChecks', { n: v.length, f: fails })) + '</summary>' +
         '<div class="verif-grid">' + rows + '</div></details>' +
         (result.risks.length ? '<details class="fold"><summary>' + h.esc(t('build.seeRisks', { n: count(result.risks, 'warn') })) + '</summary>' + riskCard(result) + '</details>' : '');
+      var parts = {
+        check: '<div class="sc-check">' + checks + goNoGo(state, result) + '</div>',
+        predict: predictPanel(state, !!lock),
+        window: hasLife ? '<div class="launch-window">' + ui.life.periodPicker(state, !!lock) + '</div>' : '',
+        go: goPanel(state), fails: fails
+      };
+      if (this && this.parts) return parts; // modo cena (js/ui/scene.js) monta uma parte por cena
+      return parts.go + '<div class="launch-deck">' + goNoGo(state, result) + '<div>' + parts.predict + parts.window + '</div></div>' + checks;
     }
   });
+  // As partes da Construção, para o modo cena (checar → palpite → data → lançar).
+  var buildRender = ui.screens.build.render; // o original (scene.js embrulha o render da tela)
+  ui.buildParts = function (state, result) { return buildRender.call({ parts: true }, state, result); };
 
   // ----------------------------------------------------------- Implement
   ui.register('implement', {
@@ -249,10 +258,21 @@
           }).join('') + '</ul>'
         : '<p>' + h.esc(t('rep.noRandom')) + '</p>') + '</div>';
       var ringColor = s.total >= 70 ? 'var(--ok)' : s.total >= 40 ? 'var(--warn)' : 'var(--fail)';
+      // Estrelas: 1 a partir de 40%, 2 a partir de 70%, 3 a partir de 90% da nota.
+      var pct = s.total / s.max * 100, nStars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0;
+      var confetti = '';
+      if (nStars >= 2) for (var ci = 0; ci < 28; ci++) {
+        confetti += '<i style="left:' + ((ci * 37) % 100) + '%;animation-delay:' + ((ci % 7) * 0.12).toFixed(2) + 's;background:' +
+          ['#ffd23f', '#4ade80', '#7fb2ff', '#ff7ac6', '#ff9a3c'][ci % 5] + '"></i>';
+      }
+      var stars = '<div class="rep-stars n-' + nStars + '" aria-label="' + h.esc(t('rep.stars', { n: nStars })) + '">' +
+        (confetti ? '<div class="rep-confetti" aria-hidden="true">' + confetti + '</div>' : '') +
+        '<div class="rs-row">' + [1, 2, 3].map(function (k) { return '<span class="rs-star' + (k <= nStars ? ' on' : '') + '" style="animation-delay:' + (0.25 + k * 0.3).toFixed(2) + 's">★</span>'; }).join('') + '</div>' +
+        '<p class="rs-line">' + h.esc(t('rep.starsLine.' + nStars)) + '</p></div>';
       // Ordem pensada para ler de cima para baixo: nota → por quê → o que
       // tentar agora. O resto (contas, requisitos, sorte, diário) fica em
       // "Ver todos os detalhes", aberto só por quem quiser.
-      return '<div class="card"><div class="score"><div class="score-ring" style="--p:' + Math.round(s.total / s.max * 100) + ';--ring:' + ringColor + '">' +
+      return stars + '<div class="card"><div class="score"><div class="score-ring" style="--p:' + Math.round(s.total / s.max * 100) + ';--ring:' + ringColor + '">' +
         '<span>' + s.total + '</span></div><div><div class="small muted">' + h.esc(t('rep.of', { max: s.max })) + '</div><h2 style="margin:2px 0 0">' + h.esc(s.grade || '') + '</h2></div></div>' +
         '<p class="small muted">' + h.esc(t('rep.line', { n: state.attempt, cost: h.value(cost), sched: h.value(result.metrics.schedule_months) })) + '</p>' +
         h.explain(result.mission.explanation, t('ui.seeMath')) + sciLine(state) + '</div>' +

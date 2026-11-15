@@ -838,6 +838,21 @@
     "cine.ch.scrub": "Scene 4 · Launch cancelled",
     "cine.cap.scrub": "ABORT! The rocket cannot take this satellite. The launch director stops the count and the rocket stays on the pad.",
     "cine.abort": "ABORT",
+    "sc.build.check": "Checks",
+    "sc.build.predict": "Your guess",
+    "sc.build.window": "Launch date",
+    "sc.build.launch": "Launch!",
+    "sc.build.go.predict": "Make your guess",
+    "sc.build.go.window": "Pick the launch date",
+    "sc.build.go.launch": "To the launch pad",
+    "sc.launch": "Launch",
+    "sc.launchQ": "Everything checked. Press the button to launch!",
+    "sc.launchRisky": "Some checks failed. You can launch anyway, but the mission may go wrong.",
+    "rep.stars": "{n} of 3 stars",
+    "rep.starsLine.0": "Mission lost. See why below, adjust and try again!",
+    "rep.starsLine.1": "It worked in part. One more adjustment and you get there!",
+    "rep.starsLine.2": "Great mission! The customer is happy.",
+    "rep.starsLine.3": "Perfect mission! NASA-level work.",
     "go.needAll": "Everyone must say Go before the launch."
   };
 })(globalThis);

@@ -719,6 +719,7 @@
     if (MS.coach) MS.coach.attach(rootEl, state);   // balões de ensino
     if (ui.sceneAfter) ui.sceneAfter(rootEl, state); // modo cena: prévia da opção em foco (js/ui/scene.js)
     if (state.phase !== lastPhase) {
+      if (lastPhase && ui.phaseIntro) ui.phaseIntro(state); // cartão de abertura da fase (js/ui/scene.js)
       root.scrollTo(0, 0);
       lastPhase = state.phase;
       var nav = rootEl.querySelector('.steps'), cur = rootEl.querySelector('.steps .current');
