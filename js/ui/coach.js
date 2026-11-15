@@ -26,6 +26,11 @@
       { at: '[data-action="glossary"]', key: 'coach.need.4' }
     ],
     concept: [
+      // Modo cena (js/ui/scene.js): só aparecem se a cena estiver na tela.
+      { at: '.sc-crew', key: 'coach.scene.1' },
+      { at: '.sc-ctrl', key: 'coach.scene.2' },
+      { at: '.sc-press', key: 'coach.scene.3' },
+      { at: '.sc-rail', key: 'coach.scene.4' },
       { at: '.slot', key: 'coach.concept.1' },
       { at: '.option', key: 'coach.concept.2' },
       { at: '.hangar-card', key: 'coach.concept.3' },
@@ -36,6 +41,10 @@
       { at: '.req-chain', key: 'coach.requirements.2' }
     ],
     design: [
+      { at: '.sc-crew', key: 'coach.scene.1' },
+      { at: '.sc-ctrl', key: 'coach.scene.2' },
+      { at: '.sc-press', key: 'coach.scene.3' },
+      { at: '.sc-rail', key: 'coach.scene.4' },
       { at: '.ck-tabs', key: 'coach.design.1' },
       { at: '.ck-ripple', key: 'coach.design.2' },
       { at: '.ck-checks', key: 'coach.design.3' },
