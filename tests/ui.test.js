@@ -183,6 +183,27 @@
     } finally { local.sceneMode = false; local.buildStep = null; }
   });
 
+  test('modo cena nos Requisitos: uma carta por requisito; virar libera a próxima', function () {
+    var local = MS.ui.local, el = document.createElement('div');
+    MS.ui.mount(el);
+    MS.store.init({ storage: null, render: MS.ui.render });
+    local.sceneMode = true; local.reqIdx = 0; local.reqFlip = {};
+    try {
+      MS.store.nextPhase();
+      ['orbit', 'launcher', 'groundStation'].forEach(function (k) { MS.store.select(k, GOOD[k]); });
+      MS.store.nextPhase();
+      assert.equal(MS.store.state.phase, 'requirements');
+      var card = el.querySelector('.rc-card');
+      assert(card && !card.classList.contains('flipped'), 'começa pela frente');
+      var next = el.querySelector('[data-action="req-go"][data-i="1"].big-go');
+      assert(next && next.disabled, 'a próxima carta só depois de virar');
+      card.click();
+      assert(el.querySelector('.rc-card').classList.contains('flipped'), 'clique vira a carta');
+      el.querySelector('[data-action="req-go"][data-i="1"].big-go').click();
+      assert.equal(local.reqIdx, 1);
+    } finally { local.sceneMode = false; local.reqIdx = 0; local.reqFlip = {}; }
+  });
+
   test('relatório: 0 a 3 estrelas pela nota', function () {
     var st = Object.assign(MS.store.createState(), { phase: 'report', reached: 'report', period: 'y2019', decisions: { storm: 'safe', memory: 'compress', power: 'reduce' },
       design: Object.assign({}, MS.store.createState().design, GOOD) });

@@ -256,6 +256,78 @@
     return '<div class="sc-back"><button type="button" class="btn small" data-action="scene-mode">' + h.icon('rocket', { size: 16 }) + h.esc(t('sc.toScene')) + '</button></div>';
   }
 
+  // ---------------------------------------- Requisitos em cartas que viram
+  // Uma carta por requisito. Frente: o que o cliente quer. Verso: o número
+  // que prova isso, as escolhas que mexem nele, como será conferido e o
+  // valor agora. Clique vira a carta; "Próxima carta" segue.
+  var OPS_REQ = { '<=': '≤', '>=': '≥', '<': '<', '>': '>' };
+  function reqScene(state, result) {
+    var sc = h.scenario(state), reqs = result.requirements, U = MS.sim.util;
+    if (!reqs.length) return null;
+    var goals = {};
+    sc.goals.forEach(function (g) { goals[g.id] = g.text; });
+    var verif = {};
+    result.verification.forEach(function (v) { v.items.forEach(function (it) { if (it.kind === 'requirement') verif[it.id] = v; }); });
+    var i = Math.max(0, Math.min(reqs.length - 1, local.reqIdx || 0)), r = reqs[i];
+    local.reqFlip = local.reqFlip || {};
+    var flipped = !!local.reqFlip[r.id];
+    var key = 'req|' + r.id, enter = local.sceneLastKey !== key;
+    local.sceneLastKey = key;
+    var railH = '<ol class="sc-rail">' + reqs.map(function (x, k) {
+      var seen = !!local.reqFlip[x.id];
+      return '<li class="' + (k === i ? 'on' : seen ? 'done' : '') + '"><button type="button" data-action="req-go" data-i="' + k + '"' + (k === i ? ' aria-current="step"' : '') + '>' +
+        '<span class="sc-dot">' + (seen && k !== i ? h.icon('ok', { size: 14, stroke: 3 }) : h.esc(x.id)) + '</span><span class="sc-rl">' + h.esc(x.title) + '</span></button></li>';
+    }).join('') + '</ol>';
+    var metric = result.metrics[r.metric];
+    var target = r.ref ? t('req3.refTarget', { m: L((MS.sim.metricInfo()[r.ref] || {}).label) || r.ref })
+      : (OPS_REQ[r.op] || r.op) + ' ' + U.withUnit(r.threshold, r.unit, r.threshold === Math.round(r.threshold) ? 0 : 1);
+    var drivers = (r.drivers || []).map(function (id) {
+      var slot = sc.slots.filter(function (x) { return x.id === id; })[0];
+      if (!slot) return '';
+      var cur = state.design[id], cat = MS.data.catalog[slot.source] || {};
+      return '<li class="' + (cur ? 'set' : '') + '"><b>' + h.esc(plain(slot.label)) + '</b><span>' + h.esc(cur && cat[cur] ? L(cat[cur].name) : t(slot.phase === 'design' ? 'req3.inDesign' : 'req3.notYet')) + '</span></li>';
+    }).join('');
+    var v = verif[r.id];
+    var now = r.status === 'pending' ? '<span class="muted">' + h.esc(t('req3.waiting')) + '</span>'
+      : h.stateTag(r.status) + ' <span>' + h.esc(t('req3.now', { v: U.withUnit(r.value, r.unit, metric ? metric.decimals : 1) })) + '</span>';
+    var c = MS.advice && MS.advice.client ? MS.advice.client(state, result) : null;
+    var front = '<div class="rc-face rc-front"><span class="rc-tag pixel">' + h.esc(r.id) + '</span>' +
+      '<span class="eyebrow">' + h.icon('team', { size: 14 }) + h.esc(t('req3.goal')) + (c && c.name ? ' · ' + h.esc(c.name) : '') + '</span>' +
+      '<p class="rc-goal">“' + h.rich(r.goal ? goals[r.goal] : r.title) + '”</p><span class="rc-hint">' + h.esc(t('sc.req.flip')) + ' ↻</span></div>';
+    var back = '<div class="rc-face rc-back s-' + r.status + '"><span class="rc-tag pixel">' + h.esc(r.id) + '</span>' +
+      '<b class="rc-title">' + h.esc(r.title) + '</b><span class="rc-target' + (r.ref ? '' : ' pixel') + '">' + h.esc(target) + '</span>' +
+      '<span class="eyebrow">' + h.icon('eng', { size: 14 }) + h.esc(t('req3.drivers')) + '</span><ul class="rc-drivers">' + drivers + '</ul>' +
+      (v ? '<span class="eyebrow">' + h.icon('ok', { size: 14 }) + h.esc(t('req3.verify')) + '</span><p class="rc-verif"><b>' + h.esc(v.method) + '</b> · ' + h.esc(v.title) + '</p>' : '') +
+      '<div class="rc-now">' + now + '</div></div>';
+    var nav = '<div class="rc-nav">' +
+      (i > 0 ? '<button type="button" class="btn" data-action="req-go" data-i="' + (i - 1) + '">← ' + h.esc(t('sc.req.prev')) + '</button>' : '<span></span>') +
+      (i < reqs.length - 1 ? '<button type="button" class="btn primary big-go" data-action="req-go" data-i="' + (i + 1) + '"' + (flipped ? '' : ' disabled') + '>' + h.esc(t('sc.req.next')) + ' →</button>'
+        : '<span class="rc-done">' + h.esc(t(flipped ? 'sc.req.allSeen' : 'sc.req.flipLast')) + '</span>') + '</div>';
+    return '<div class="scene sc-req' + (enter ? ' sc-enter' : '') + '"><div class="sc-top">' + railH +
+      '<button type="button" class="btn small sc-mode" data-action="scene-mode">' + h.icon('eye', { size: 16 }) + h.esc(t('sc.full')) + '</button></div>' +
+      '<div class="rc-stage"><div role="button" tabindex="0" class="rc-card' + (flipped ? ' flipped' : '') + '" data-action="req-flip" data-id="' + h.esc(r.id) + '" aria-pressed="' + flipped + '">' +
+      '<span class="rc-inner">' + front + back + '</span></div>' + nav + '</div></div>';
+  }
+  ui.actions['req-flip'] = function (d) {
+    local.reqFlip = local.reqFlip || {};
+    local.reqFlip[d.id] = !local.reqFlip[d.id];
+    click(local.reqFlip[d.id] ? 620 : 420, 0.07);
+    rerender();
+  };
+  ui.actions['req-go'] = function (d) { local.reqIdx = Number(d.i); rerender(); };
+  (function () {
+    var scr = ui.screens.requirements;
+    if (!scr) return;
+    var orig = scr.render;
+    scr.render = function (state, result) {
+      if (local.sceneMode && !(MS.tutorial && MS.tutorial.active)) {
+        var html = reqScene(state, result);
+        if (html) return html;
+      }
+      return (local.sceneMode === false && !(MS.tutorial && MS.tutorial.active) ? modeBar() : '') + orig(state, result);
+    };
+  })();
+
   // ------------------------------------- Construir: checklist de lançamento
   // checar → palpite → data → lançar (o botão vermelho é o mesmo "next" do
   // rodapé, então o GO da equipe e o lançamento seguem as mesmas regras).
@@ -490,6 +562,8 @@
       if (slot && setIdx(slot, idxFromPointer(el, e))) rerender();
     });
     root.document.addEventListener('keydown', function (e) {
+      // Carta de requisito: Enter ou espaço vira.
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('rc-card')) { e.preventDefault(); e.target.click(); return; }
       var el = e.target.closest && e.target.closest('[data-dial]');
       if (!el) return;
       var step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
