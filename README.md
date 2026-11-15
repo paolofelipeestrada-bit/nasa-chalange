@@ -4,7 +4,7 @@ An educational game for the **NASA Space Apps Challenge 2026 — "Space Mission 
 Players design a small satellite (a CubeSat) for a real customer need, on Earth or at the Moon, and
 learn that every choice costs something somewhere else: mass, power, budget, data, comms and time.
 
-**▶ Play now: [nasa-chalange-game.vercel.app](https://nasa-chalange-game.vercel.app)**
+**▶ Play now: [spacetinkers.earth](https://spacetinkers.earth)**
 
 ![Space Tinkers in 25 seconds: pick a customer, pull the orbit lever, flip the requirement cards, build the satellite, launch it through real NASA space weather and earn stars](docs/demo.gif)
 
@@ -142,7 +142,7 @@ No generated content uses NASA logos, flags or mission insignia.
   Without internet the game still works, with a timeline instead of the 3D view.
 - [PeerJS](https://peerjs.com/) 1.5 (MIT) — team rooms (uses the free PeerJS broker to connect players).
 - [Google Fonts](https://fonts.google.com/): Barlow and Pixelify Sans (SIL Open Font License).
-- Hosted on [Vercel](https://vercel.com/).
+- Hosted on [Vercel](https://vercel.com/), at [spacetinkers.earth](https://spacetinkers.earth).
 
 ## For developers
 
