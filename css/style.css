@@ -965,3 +965,47 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .sv-why { font-size: .72rem; line-height: 1.3; color: var(--muted); }
 .rep-sci { display: flex; align-items: flex-start; gap: 6px; margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); font-size: .9rem; }
 .rep-sci svg { color: var(--sci); flex: none; margin-top: 2px; }
+
+/* ---------- Próximas missões (em breve) ---------- */
+.scen.soon { cursor: default; opacity: .62; border-style: dashed; box-shadow: none; }
+.scen.soon:hover { transform: none; border-color: var(--line); }
+.scen-soon { margin-top: auto; align-self: flex-start; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 99px; padding: 2px 10px; }
+
+/* ---------- Personagens da tripulação ---------- */
+.char { display: block; flex: none; }
+.crew-av:has(.char) { width: auto; height: auto; background: none; border: 0; padding: 0; }
+.roster { margin: 0 0 18px; }
+.roster-h { font-size: 1rem; margin: 0 0 2px; }
+.roster-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.ro { --rc: var(--dir); display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); background: var(--surface);
+  border: 1.5px solid var(--line); border-top: 3px solid var(--rc); }
+.ro.r-sci { --rc: var(--sci); } .ro.r-eng { --rc: var(--eng); } .ro.r-mgr { --rc: var(--mgr); } .ro.r-com { --rc: var(--com); }
+.ro b { display: block; font-size: .9rem; line-height: 1.2; }
+.ro-cares { display: flex; align-items: flex-start; gap: 4px; margin-top: 3px; font-size: .76rem; line-height: 1.3; color: var(--muted); }
+.ro-cares svg { color: var(--rc); flex: none; margin-top: 1px; }
+.ro-who { display: inline-block; margin-top: 5px; font-size: .7rem; padding: 1px 8px; border-radius: 99px; border: 1px dashed var(--line); color: var(--faint); }
+.ro-who.taken { border-style: solid; border-color: var(--rc); color: var(--text); }
+.role-name { display: inline-flex; align-items: center; gap: 8px; }
+.vc-poll li span { display: inline-flex; align-items: center; gap: 6px; }
+
+.scen-soon-row { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr 1fr; gap: 10px; align-items: stretch; }
+.scen-soon-row > .eyebrow { align-self: center; }
+.scen-soon-row .scen.soon { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 12px; }
+.scen-soon-row .scen-pitch { flex-basis: 100%; font-size: .8rem; }
+.scen-soon-row .scen-soon { margin-top: 0; margin-left: auto; }
+.scen-soon-row .scen-ic { font-size: 20px; }
+@media (max-width: 700px) { .scen-soon-row { grid-template-columns: 1fr; } }
+.lb-av:has(.char), .lb-role:has(.char) { background: none; border: 0; padding: 0; width: auto !important; height: auto !important; }
+.lb-roles:has(.char) { display: flex; gap: 0; }
+.lb-roles .lb-role:has(.char) + .lb-role { margin-left: -8px; }
+
+.roster-list { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.ro { flex-direction: column; text-align: center; padding: 14px 10px 12px; gap: 8px; }
+.ro .char { width: 76px; height: 76px; }
+.ro > div { min-width: 0; }
+.ro-cares { justify-content: center; text-align: center; }
+.ro-cares svg { display: none; }
+.scen-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.scen-grid:has(.scen-soon-row) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 820px) { .scen-grid:has(.scen-soon-row) { grid-template-columns: 1fr; } }

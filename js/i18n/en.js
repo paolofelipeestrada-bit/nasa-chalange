@@ -657,6 +657,22 @@
     'sv.title': "Science value",
     'sv.goal': "goal",
     'sv.report': "{name}: science value {v}/100 for this customer.",
-    'sv.better': "With {name} it would be {v}/100: the best instrument is the one that fits what the customer needs, not the most powerful one."
+    'sv.better': "With {name} it would be {v}/100: the best instrument is the one that fits what the customer needs, not the most powerful one.",
+    'soon.tag': "Coming soon",
+    'soon.mars.title': "Mission to Mars",
+    'soon.mars.pitch': "Longer trip, weaker sunlight and minutes of delay to talk with Earth.",
+    'soon.telescope.title': "Space telescope",
+    'soon.telescope.pitch': "Look away from Earth: very steady pointing, cold optics and lots of data.",
+    'crew.roster': "Your mission crew",
+    'crew.rosterSolo': "Playing alone you are the Mission Director: you decide, and each crew member speaks up for what they care about.",
+    'crew.rosterTeam': "In the team room each person takes a role and looks after their own parts.",
+    'crew.you': "you",
+    'crew.dir.title': "Mission Director",
+    'crew.dir.cares': "The final call: listens to everyone and says Go or No-Go.",
+    'crew.sci.cares': "The science: image detail, revisit and the customer's goals.",
+    'crew.eng.cares': "The spacecraft: mass, power, volume and pointing.",
+    'crew.com.cares': "The data: radio, ground station and memory on board.",
+    'crew.mgr.cares': "Money and time: budget, schedule and the rocket.",
+    'soon.next': "Next missions"
   };
 })(globalThis);

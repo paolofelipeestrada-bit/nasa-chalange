@@ -113,7 +113,7 @@
     opts = opts || {};
     return '<ul class="crew">' + list.map(function (a) {
       var vote = opts.votes && a.vote ? '<span class="vote v-' + a.vote + '">' + h.icon(a.vote === 'go' ? 'ok' : 'fail', { size: 14, stroke: 2.6 }) + h.esc(t(a.vote === 'go' ? 'ck.go' : 'ck.nogo')) + '</span>' : '';
-      return '<li class="crew-item r-' + a.key + ' s-' + a.status + '"><span class="crew-av">' + h.icon(a.key, { size: 20 }) + '</span>' +
+      return '<li class="crew-item r-' + a.key + ' s-' + a.status + '"><span class="crew-av">' + (h.character ? h.character(a.key, 40) : h.icon(a.key, { size: 20 })) + '</span>' +
         '<div class="crew-body"><div class="crew-top"><b>' + h.esc(a.name) + '</b>' + (vote || h.stateTag(a.status)) + '</div>' +
         '<p>' + h.esc(a.text) + '</p><span class="crew-goal">' + h.esc(t('ck.goal')) + ': ' + h.esc(a.goal) + '</span></div></li>';
     }).join('') + '</ul>';

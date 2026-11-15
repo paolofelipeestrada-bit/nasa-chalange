@@ -1075,7 +1075,7 @@
         var nogo = c.crew.filter(function (a) { return a.vote === 'nogo'; }).length;
         poll.innerHTML = c.crew.slice(0, n).map(function (a) {
           var go = a.vote !== 'nogo';
-          return '<li class="r-' + a.key + '"><span>' + esc(a.name) + '</span><b class="' + (go ? 'go' : 'nogo') + '">' + esc(t(go ? 'ck.go' : 'ck.nogo')) + '</b></li>';
+          return '<li class="r-' + a.key + '"><span>' + (MS.ui.h.character ? MS.ui.h.character(a.key, 22) : '') + esc(a.name) + '</span><b class="' + (go ? 'go' : 'nogo') + '">' + esc(t(go ? 'ck.go' : 'ck.nogo')) + '</b></li>';
         }).join('') + (n > c.crew.length ? '<li class="vc-dir"><span>' + esc(nogo ? t('cine.dirNoGo', { n: nogo }) : t('cine.dirGo')) + '</span></li>' : '');
       }
     }

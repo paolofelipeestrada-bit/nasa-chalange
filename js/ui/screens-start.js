@@ -35,6 +35,7 @@
   };
 
   // Cartões de cliente: escolher o cenário é escolher o objetivo da missão.
+  var SOON = ['mars', 'telescope'], SOON_IC = { mars: '🔴', telescope: '🔭' };
   function scenarioCards(state) {
     var scs = MS.data.scenarios;
     var lock = ui.roomInfo() && !MS.team.can(h.scenario(state), ui.roomInfo().members, ui.roomInfo().me, 'setScenario', []).ok;
@@ -47,7 +48,13 @@
         '<span class="scen-pitch">' + h.esc(L(c.pitch)) + '</span>' +
         '<span class="scen-meta">' + h.esc(t('scr.budget')) + ' ' + h.esc(U.fmt(sc.budget_k, 0)) + ' k$ · ' + h.esc(L(c.challenge)) + '</span>' +
         (on ? '<span class="scen-on">✓ ' + h.esc(t('scr.thisMission')) + '</span>' : '') + '</button>';
-    }).join('') + '</div>';
+    }).join('') + '<div class="scen-soon-row"><span class="eyebrow">' + h.esc(t('soon.next')) + '</span>' + SOON.map(function (k) {
+      // Próximas missões: só mostram para onde o jogo cresce (sem data).
+      return '<div class="scen soon" aria-disabled="true"><span class="scen-ic" aria-hidden="true">' + SOON_IC[k] + '</span>' +
+        '<span class="scen-title">' + h.esc(t('soon.' + k + '.title')) + '</span>' +
+        '<span class="scen-pitch">' + h.esc(t('soon.' + k + '.pitch')) + '</span>' +
+        '<span class="scen-soon pixel">🔒 ' + h.esc(t('soon.tag')) + '</span></div>';
+    }).join('') + '</div></div>';
   }
 
   // Abertura: como vai jogar (sozinho com conselheiros ou em equipe).
@@ -55,10 +62,10 @@
   function lobby() {
     var room = MS.net ? MS.net.info() : { inRoom: false };
     var roles = ['sci', 'eng', 'mgr', 'com'].map(function (k) {
-      return '<span class="lb-role r-' + k + '">' + h.icon(k, { size: 16 }) + '</span>';
+      return '<span class="lb-role r-' + k + '">' + (h.character ? h.character(k, 30) : h.icon(k, { size: 16 })) + '</span>';
     }).join('');
     return '<section class="lobby compact" aria-label="' + h.esc(t('lobby.title')) + '"><div class="lb-seats">' +
-      '<div class="lb-seat' + (room.inRoom ? '' : ' on') + '" title="' + h.esc(t('lobby.soloText')) + '"><span class="lb-av r-dir">' + h.icon('dir', { size: 20 }) + '</span>' +
+      '<div class="lb-seat' + (room.inRoom ? '' : ' on') + '" title="' + h.esc(t('lobby.soloText')) + '"><span class="lb-av r-dir">' + (h.character ? h.character('dir', 40) : h.icon('dir', { size: 20 })) + '</span>' +
         '<b>' + h.esc(t('lobby.solo')) + '</b>' + (room.inRoom ? '' : h.stateTag('ok', t('lobby.playing'))) + '</div>' +
       '<div class="lb-seat' + (room.inRoom ? ' on' : '') + '" title="' + h.esc(t('lobby.teamText')) + '"><span class="lb-roles">' + roles + '</span>' +
         '<b>' + h.esc(t('lobby.team')) + '</b>' +
@@ -80,7 +87,7 @@
       var limits = sc.constraints.map(function (c) { return '<li>' + h.rich(c) + '</li>'; }).join('') +
         '<li>' + h.esc(t('scr.need.aoi', { name: L(sc.aoi.name), area: U.withUnit(sc.aoi.area_km2, 'km²', 0), lat: U.fmt(Math.abs(lat), 0) + '° ' + (lat >= 0 ? 'N' : 'S') })) + '</li>';
       return '<div class="card"><h2>' + h.esc(t('scr.need.pick')) + '</h2>' + scenarioCards(state) + '</div>' +
-        lobby() +
+        lobby() + (h.crewRoster ? h.crewRoster(state) : '') +
         '<div class="card mission-brief"><h2>' + h.esc(t('scr.need.goals')) + '</h2>' +
         '<p class="brief-need">' + h.rich(sc.need) + '</p>' +
         '<ul class="goal-list">' + goals + '</ul>' +

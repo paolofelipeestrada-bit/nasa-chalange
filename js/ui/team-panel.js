@@ -64,7 +64,8 @@
       var btn = isMine ? '<button type="button" class="btn small" data-action="team-role" data-role="' + h.esc(r.id) + '">' + h.esc(t('team.drop')) + '</button>'
         : who ? '<span class="small muted">' + h.esc(t('team.with', { name: who.name })) + '</span>'
           : '<button type="button" class="btn small primary" data-action="team-role" data-role="' + h.esc(r.id) + '">' + h.esc(t('team.take')) + '</button>';
-      return '<div class="role' + (isMine ? ' mine' : '') + '"><div class="row-head"><strong>' + h.esc(L(r.name)) + '</strong>' + btn + '</div>' +
+      var ck = { manager: 'mgr', payload: 'sci', bus: 'eng', ground: 'com' }[r.id];
+      return '<div class="role' + (isMine ? ' mine' : '') + '"><div class="row-head"><strong class="role-name">' + (h.character && ck ? h.character(ck, 36) : '') + h.esc(L(r.name)) + '</strong>' + btn + '</div>' +
         '<div class="small">' + h.esc(L(r.description) || '') + '</div>' +
         '<div class="small muted">' + h.esc(t('team.handles', { list: slots })) + (r.canAdvance ? ' · ' + h.esc(t('team.leads')) : '') + '</div></div>';
     }).join('');

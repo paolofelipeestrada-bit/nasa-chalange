@@ -638,6 +638,22 @@
     'sv.title': "Valor científico",
     'sv.goal': "meta",
     'sv.report': "{name}: valor científico {v}/100 para este cliente.",
-    'sv.better': "Com {name} seria {v}/100: o melhor instrumento é o que atende o que o cliente precisa, não o mais potente."
+    'sv.better': "Com {name} seria {v}/100: o melhor instrumento é o que atende o que o cliente precisa, não o mais potente.",
+    'soon.tag': "Em breve",
+    'soon.mars.title': "Missão a Marte",
+    'soon.mars.pitch': "Viagem mais longa, Sol mais fraco e minutos de atraso para falar com a Terra.",
+    'soon.telescope.title': "Telescópio espacial",
+    'soon.telescope.pitch': "Olhar para longe da Terra: apontamento muito estável, óptica fria e muitos dados.",
+    'crew.roster': "Sua tripulação da missão",
+    'crew.rosterSolo': "Jogando sozinho você é o Mission Director: você decide, e cada pessoa da equipe defende o que é dela.",
+    'crew.rosterTeam': "Na sala de equipe cada pessoa assume um papel e cuida das suas peças.",
+    'crew.you': "você",
+    'crew.dir.title': "Mission Director",
+    'crew.dir.cares': "A palavra final: ouve todos e diz Go ou No-Go.",
+    'crew.sci.cares': "A ciência: detalhe da imagem, revisita e as metas do cliente.",
+    'crew.eng.cares': "A nave: massa, energia, volume e apontamento.",
+    'crew.com.cares': "Os dados: rádio, estação em solo e memória a bordo.",
+    'crew.mgr.cares': "Dinheiro e tempo: orçamento, prazo e o foguete.",
+    'soon.next': "Próximas missões"
   };
 })(globalThis);
