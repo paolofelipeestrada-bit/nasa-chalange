@@ -863,6 +863,8 @@
     "sc.req.next": "Next card",
     "sc.req.flipLast": "Flip the last card!",
     "sc.req.allSeen": "All requirements seen. Now design the satellite at the bottom!",
+    "sfx.on": "Turn sound on",
+    "sfx.off": "Turn sound off",
     "go.needAll": "Everyone must say Go before the launch."
   };
 })(globalThis);

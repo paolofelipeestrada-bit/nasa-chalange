@@ -1034,21 +1034,7 @@
   // está). Sem contagem com "menos movimento" ou quando a vez é de outro na
   // equipe. Os botões usam data-action="decide", igual ao cartão da página.
   var ALERT_SECONDS = 10;
-  var sfx = null;
-  function alertBeep(f) {
-    if (MS.ui.local.shoutMute) return;
-    try {
-      var AC = root.AudioContext || root.webkitAudioContext;
-      if (!AC) return;
-      sfx = sfx || new AC();
-      if (sfx.state === 'suspended') sfx.resume();
-      var o = sfx.createOscillator(), g = sfx.createGain(), t0 = sfx.currentTime;
-      o.type = 'square'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
-      o.connect(g); g.connect(sfx.destination); o.start(t0); o.stop(t0 + 0.15);
-    } catch (e) { /* sem som */ }
-  }
+  function alertBeep(f) { if (MS.sfx) MS.sfx.play('beep', f); }
   function hideAlert() {
     if (!V || !V.alert) return;
     V.alert = null;
@@ -1130,7 +1116,11 @@
       el.querySelector('.vc-count').classList.toggle('on', !!res.count || abort);
       el.querySelector('.vc-count').classList.toggle('abort', abort);
       el.classList.toggle('vc-scrub', abort);
-      if (abort) { alertBeep(330); setTimeout(function () { alertBeep(330); }, 260); setTimeout(function () { alertBeep(330); }, 520); }
+      if (MS.sfx) {
+        if (abort) MS.sfx.play('abort');
+        else if (res.count) MS.sfx.play('count');
+        else if (res.chapter === 'liftoff') { MS.sfx.play('count', true); MS.sfx.play('liftoff'); }
+      }
       if (res.count) { var cn = el.querySelector('.vc-count'); cn.classList.remove('pop'); void cn.offsetWidth; cn.classList.add('pop'); }
     }
     // Votação: os conselheiros respondem um a um (mesmos votos da verificação).
