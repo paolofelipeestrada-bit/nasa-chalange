@@ -823,6 +823,18 @@
     "sc.need.play": "How to play",
     "sc.need.go.brief": "See the mission",
     "sc.need.go.play": "Choose how to play",
+    "about.nasa8.name": "VIIRS instrument (NASA Earthdata)",
+    "about.nasa8.use": "Model for the wide-swath weather imager in the floods mission: a very wide strip seen almost every day.",
+    "about.nasa8.url": "https://www.earthdata.nasa.gov/data/instruments/viirs",
+    "about.nasa9.name": "Lunar Reconnaissance Orbiter (NASA)",
+    "about.nasa9.use": "Model for the polar lunar mapping orbits in the Moon missions.",
+    "about.nasa9.url": "https://science.nasa.gov/mission/lro/",
+    "about.nasa10.name": "Deep Space Network (NASA)",
+    "about.nasa10.use": "The big antennas that talk to spacecraft at the Moon: the ground-station option of the Moon missions.",
+    "about.nasa10.url": "https://www.nasa.gov/communicating-with-missions/dsn/",
+    "about.nasa11.name": "Artemis I (NASA)",
+    "about.nasa11.use": "Artemis I carried 10 CubeSats toward the Moon: the model for the Artemis ride in the Moon missions.",
+    "about.nasa11.url": "https://www.nasa.gov/mission/artemis-i/",
     "go.needAll": "Everyone must say Go before the launch."
   };
 })(globalThis);

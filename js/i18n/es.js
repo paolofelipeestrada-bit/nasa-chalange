@@ -803,6 +803,18 @@
     "sc.need.play": "Cómo jugar",
     "sc.need.go.brief": "Ver la misión",
     "sc.need.go.play": "Elegir cómo jugar",
+    "about.nasa8.name": "Instrumento VIIRS (NASA Earthdata)",
+    "about.nasa8.use": "Modelo del generador de imágenes meteorológico de franja ancha de la misión de inundaciones: una franja muy ancha vista casi todos los días.",
+    "about.nasa8.url": "https://www.earthdata.nasa.gov/data/instruments/viirs",
+    "about.nasa9.name": "Lunar Reconnaissance Orbiter (NASA)",
+    "about.nasa9.use": "Modelo de las órbitas polares de mapeo en las misiones a la Luna.",
+    "about.nasa9.url": "https://science.nasa.gov/mission/lro/",
+    "about.nasa10.name": "Red de Espacio Profundo — DSN (NASA)",
+    "about.nasa10.use": "Las grandes antenas que hablan con naves en la Luna: la opción de estación terrena de las misiones a la Luna.",
+    "about.nasa10.url": "https://www.nasa.gov/communicating-with-missions/dsn/",
+    "about.nasa11.name": "Artemis I (NASA)",
+    "about.nasa11.use": "Artemis I llevó 10 CubeSats hacia la Luna: el modelo del viaje en Artemis de las misiones a la Luna.",
+    "about.nasa11.url": "https://www.nasa.gov/mission/artemis-i/",
     "go.needAll": "Todos deben decir GO antes del lanzamiento."
   };
 })(globalThis);
