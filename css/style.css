@@ -473,7 +473,7 @@ tfoot td { font-weight: 700; border-bottom: 0; }
 @media (max-width: 560px) { .viz-tele { width: auto; right: 14px; bottom: 92px; grid-template-columns: 1fr 1fr; column-gap: 12px; } .tl-status, .tl-fuel { grid-column: 1 / -1; } }
 
 /* Encontro e acoplamento com a ISS */
-.tl-status.st-dock { background: rgba(90, 160, 255, .2); color: #9cc4ff; }
+.tl-status.st-dock, .tl-status.st-park, .tl-status.st-tli, .tl-status.st-coast, .tl-status.st-loi, .tl-status.st-descent, .tl-status.st-landed { background: rgba(90, 160, 255, .2); color: #9cc4ff; }
 .lg-iss::before { background: #dfe6ff; }
 
 /* ------------------------------------------------ Cockpit (fase Design) */

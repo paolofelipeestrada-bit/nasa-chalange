@@ -46,6 +46,11 @@
   var SEP1 = 0.42, FAIRING = 0.58;   // frações da subida: separação do 1º estágio e da carenagem
   var STATUS_HEX = { orbit: 0x4cc26f, sub: 0xe3b341, decay: 0xe3b341, risk: 0xff6b6b, reentry: 0xff6b6b, fail: 0xff6b6b, dock: 0x5aa0ff };
   var ISS_SCALE = 0.06;
+  // Viagem Terra → Lua (missões lunares). Na cena a Lua tem raio 1 e fica no centro; a Terra
+  // aparece no tamanho certo em relação à Lua (3,67×), mas bem mais perto (34 em vez de 221 raios lunares).
+  var EARTH_R = 6371 / 1737.4, EARTH_POS = new THREE.Vector3(-26, 3, -21.8);
+  // Frações do lançamento lunar: subida até a órbita de espera · injeção translunar · cruzeiro · freada/pouso.
+  var TL = { ascent: 0.2, tli: 0.32, coast: 0.86 }, LANDED_R = 0.955;
   // Frações do passo de acoplamento: deriva, transferência de Hohmann, aproximação, acoplada, CubeSat liberado.
   var DK = { hohmann: 0.12, arrive: 0.6, docked: 0.72, deploy: 0.82 };
   var V = null;                      // a "vista" persistente (criada uma vez)
@@ -230,6 +235,11 @@
     // Lua (missões 5 e 6): esfera cinza low-poly com "crateras" (ruído); filha da Terra
     // para herdar a rotação e o que fica preso no chão. Só aparece quando body = 'moon'.
     var moonSkin = moonMesh(); moonSkin.visible = false; earth.add(moonSkin);
+    // Terra ao longe (só nas missões lunares): de onde o foguete sai.
+    var farEarth = P && P.lowPolyEarth ? P.lowPolyEarth(1, 5) : plainEarth();
+    farEarth.scale.setScalar(EARTH_R); farEarth.position.copy(EARTH_POS); farEarth.visible = false;
+    var farGlow = atmosphere(); farGlow.scale.multiplyScalar(EARTH_R); farGlow.position.copy(EARTH_POS); farGlow.visible = false;
+    scene.add(farEarth); scene.add(farGlow);
 
     // Partículas reaproveitáveis (fumaça, explosões, tempestade, reentrada)
     var N = 900, pPos = new Float32Array(N * 3), pCol = new Float32Array(N * 3);
@@ -242,7 +252,7 @@
 
     V = {
       wrap: wrap, renderer: renderer, scene: scene, camera: camera, controls: controls,
-      sunDir: sunDir, earth: earth, cloud: cloud, atmo: atmo, moonSkin: moonSkin,
+      sunDir: sunDir, earth: earth, cloud: cloud, atmo: atmo, moonSkin: moonSkin, farEarth: farEarth, farGlow: farGlow,
       particles: particles, pData: Array.from({ length: N }, function () { return { life: 0, v: new THREE.Vector3() }; }), pNext: 0,
       mission: null, key: null, t: 0, playing: true, speed: 1, camMode: 'auto', raf: null, last: 0
     };
@@ -280,8 +290,12 @@
     var lunar = sc.body === 'moon';
     if (V.earth.material) V.earth.material.visible = !lunar;
     V.moonSkin.visible = lunar; V.cloud.visible = !lunar; V.atmo.visible = !lunar;
+    V.farEarth.visible = lunar; V.farGlow.visible = lunar;
+    V.controls.maxDistance = lunar ? 60 : 9;
     var rOrb = orbit.surface ? 1.012 : 1 + orbit.altitude_km * (lunar ? 3 / 1737.4 : ALT_SCALE);
-    var el = MS.orbit.circular(orbit.altitude_km, orbit.inclination_deg, 0); // propagador (viz/orbit.js)
+    // Pouso no polo sul: o ponto de pouso fica a −89° (plano polar, ângulo −90°).
+    var pole = !!orbit.surface && orbit.earthView != null && orbit.earthView < 1;
+    var el = MS.orbit.circular(orbit.altitude_km, pole ? 89 : orbit.inclination_deg, 0); // propagador (viz/orbit.js)
 
     // Órbita prevista, desenhada pelo propagador; a cor muda com o estado.
     var ring = [];
@@ -291,7 +305,7 @@
     }
     var orbitLine = line(ring, STATUS_HEX.orbit, 0.25);
     group.add(orbitLine);
-    var ascentLine = dynLine(90, STATUS_HEX.sub, 0.9); group.add(ascentLine);
+    var ascentLine = dynLine(lunar ? 260 : 90, STATUS_HEX.sub, 0.9); group.add(ascentLine);
     var trail = dynLine(140, STATUS_HEX.orbit, 0.7); group.add(trail);
 
     // Área de interesse e estação em solo (giram com a Terra)
@@ -345,12 +359,14 @@
     rocket.scale.setScalar(ROCKET_SCALE);
     group.add(rocket);
     var ud = rocket.userData || {};
+    var beacon = sunSprite(); beacon.material = beacon.material.clone(); beacon.material.color.setHex(0xffd36a);
+    beacon.scale.set(1.1, 1.1, 1); beacon.visible = false; group.add(beacon);
 
     // Detrito (imprevisto)
     var debris = new THREE.Mesh(new THREE.DodecahedronGeometry(0.012), phong(0x8a8a8a));
     debris.visible = false; group.add(debris);
 
-    var u0 = 0.3;
+    var u0 = pole ? -Math.PI / 2 + 0.03 : 0.3;
     var schedule = MS.vizSchedule.build(result);
     var life = result.life && result.life.series && result.life.series.length ? result.life : null;
 
@@ -366,7 +382,7 @@
       var q = MS.orbit.position(issEl, j / 120 * Math.PI * 2);
       issRing.push(new THREE.Vector3(q.x, q.y, q.z).multiplyScalar(rISS / q.r));
     }
-    group.add(line(issRing, 0xdfe6ff, 0.16));
+    var issLine = line(issRing, 0xdfe6ff, 0.16); issLine.visible = !lunar; group.add(issLine);
     var issObj = P && P.build ? P.build({ kind: 'iss' }) : new THREE.Group();
     if (lunar) issObj.visible = false; // a ISS fica na Terra
     issObj.scale.setScalar(ISS_SCALE);
@@ -399,7 +415,7 @@
       orbitLine: orbitLine, ascentLine: ascentLine, trail: trail, trailTimer: 0,
       contact: contact, station: station, stLocal: stLocal, aoiCenter: aoiCenter, aoiRad: (aoi.radius_deg || 10) * DEG,
       coverage: coverage, covCount: 0, covMax: COV, covTimer: 0,
-      rocket: rocket, stages: ud, loose: [], sep1: false, fairingOff: false, exploded: false,
+      rocket: rocket, beacon: beacon, stages: ud, loose: [], sep1: false, fairingOff: false, exploded: false,
       debris: debris, siteName: L.site ? Lx(L.site.name) : Lx(L.name),
       minEl: (gs.minElevation_deg || 10) * DEG, flash: null, fl: {}
     };
@@ -419,6 +435,7 @@
       mm.earthOffset = best.lon - (aoi.longitude_deg || 0) * DEG - (best.t - schedule.orbitStart) * EARTH_RATE;
     }
     V.earth.rotation.y = mm.earthOffset;
+    if (lunar) mm.tl = transferPlan(mm);
     V.t = 0; V.playing = true;
     if (V.camMode !== 'free') V.camMode = 'auto';
   }
@@ -458,6 +475,84 @@
     var e = s * s * (3 - 2 * s);
     return orbitPoint(a, 1 + (m.rAscent - 1) * e + 0.006);
   }
+  // ---- Viagem Terra → Lua (simplificada, mas na ordem real das manobras)
+  // Plano: eixo ex vai da Terra para a Lua; a órbita de espera gira no plano (ex, ez).
+  function transferPlan(m) {
+    var E = EARTH_POS.clone(), ex = E.clone().negate().normalize();
+    var ez = ex.clone().cross(new THREE.Vector3(0, 1, 0)).normalize(), ey = ez.clone().cross(ex).normalize();
+    var rPark = EARTH_R * 1.09;
+    // No pouso, o 1º estágio já caiu: o estágio de cima começa ~0,06 acima da origem do modelo,
+    // então a origem fica um pouco abaixo do chão para a nave encostar no solo.
+    var uEnd = m.surface ? m.satU0 : m.u0, rEnd = m.surface ? LANDED_R : m.rAscent;
+    var rArr = m.surface ? 1.55 : m.rAscent + 0.55;
+    // Chega à Lua num ponto em que a órbita "continua" o rumo vindo da Terra (encaixe suave).
+    var uA = uEnd - 1.6, best = -9;
+    for (var u = uEnd - 2.8; u <= uEnd - 0.9; u += 0.05) {
+      var a = orbitPoint(u, rArr), tg = orbitPoint(u + 0.01, rArr).sub(a).normalize();
+      var sc = tg.dot(ex) - 0.3 * Math.max(0, a.clone().normalize().dot(ex)); // vindo da Terra, sem cruzar atrás da Lua
+      if (sc > best) { best = sc; uA = u; }
+    }
+    var P3 = orbitPoint(uA, rArr), tA = orbitPoint(uA + 0.01, rArr).sub(P3).normalize();
+    var P0 = E.clone().add(ex.clone().multiplyScalar(-rPark));
+    return {
+      E: E, ex: ex, ey: ey, ez: ez, rPark: rPark, uA: uA, rArr: rArr, uEnd: uEnd, rEnd: rEnd,
+      P0: P0, P1: P0.clone().add(ez.clone().multiplyScalar(-16)).add(ex.clone().multiplyScalar(2)),
+      P2: P3.clone().sub(tA.clone().multiplyScalar(8)), P3: P3
+    };
+  }
+  function aroundEarth(tl, th, r) {
+    return tl.E.clone().add(tl.ex.clone().multiplyScalar(Math.cos(th) * r)).add(tl.ez.clone().multiplyScalar(Math.sin(th) * r));
+  }
+  function bezier(tl, f) {
+    var a = 1 - f;
+    return tl.P0.clone().multiplyScalar(a * a * a).add(tl.P1.clone().multiplyScalar(3 * a * a * f))
+      .add(tl.P2.clone().multiplyScalar(3 * a * f * f)).add(tl.P3.clone().multiplyScalar(f * f * f));
+  }
+  function smooth(x) { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); }
+  function lunarPoint(s) {
+    var tl = V.mission.tl;
+    if (s < TL.ascent) { // subida: do chão até a órbita de espera, fazendo a curva
+      var a = s / TL.ascent;
+      return aroundEarth(tl, Math.PI - 2.3 + 1.1 * Math.pow(a, 1.3), EARTH_R * 1.004 + (tl.rPark - EARTH_R * 1.004) * smooth(a));
+    }
+    if (s < TL.tli) return aroundEarth(tl, Math.PI - 1.2 + 1.2 * (s - TL.ascent) / (TL.tli - TL.ascent), tl.rPark);
+    if (s < TL.coast) { var f = (s - TL.tli) / (TL.coast - TL.tli); return bezier(tl, 0.5 * f + 0.5 * smooth(f)); }
+    var g = (s - TL.coast) / (1 - TL.coast);
+    return orbitPoint(tl.uA + (tl.uEnd - tl.uA) * g, tl.rArr + (tl.rEnd - tl.rArr) * smooth(g));
+  }
+  // Telemetria aproximada da viagem (km e km/s reais, com vis-viva).
+  function lunarTele(s, tele) {
+    var u8 = MS.sim.util, MU_E = 398600.4418, MU_M = 4902.8, D = 384400;
+    var met, alt, vel, st, fuel = null, stage = t('viz.stage.2');
+    if (s < TL.ascent) {
+      var a = s / TL.ascent, e = smooth(a);
+      met = Math.round(a * 540); tele.met = 'T+ ' + pad2(Math.floor(met / 60)) + ':' + pad2(met % 60);
+      alt = u8.withUnit(185 * e, 'km', 0); vel = 0.41 + (7.79 - 0.41) * Math.pow(a, 1.6);
+      st = 'sub'; stage = a < SEP1 ? t('viz.stage.1') : t('viz.stage.2');
+      fuel = a < SEP1 ? 1 - a / SEP1 : 1 - (a - SEP1) / (1 - SEP1) * 0.5;
+    } else if (s < TL.tli) {
+      var b = (s - TL.ascent) / (TL.tli - TL.ascent), burn = Math.max(0, (b - 0.55) / 0.45);
+      tele.met = 'T+ ' + Math.round(10 + b * 70) + ' min';
+      alt = u8.withUnit(185, 'km', 0); vel = 7.79 + (10.9 - 7.79) * burn;
+      st = burn > 0 ? 'tli' : 'park'; fuel = 0.5 - 0.45 * burn;
+    } else if (s < TL.coast) {
+      var f = (s - TL.tli) / (TL.coast - TL.tli), rE = 6556 + (D - 6556 - 8000) * (0.5 * f + 0.5 * smooth(f)), rM = D - rE;
+      var vE2 = 10.9 * 10.9 - 2 * MU_E * (1 / 6556 - 1 / rE);
+      vel = Math.sqrt(Math.max(0.64, vE2) + (rM < 66000 ? 2 * MU_M * (1 / rM - 1 / 66000) : 0));
+      var h = f * 4 * 24; tele.met = 'T+ ' + Math.floor(h / 24) + ' d ' + Math.floor(h % 24) + ' h';
+      alt = u8.withUnit(rE - 6371, 'km', 0) + ' ' + t('viz.fromEarth');
+      st = 'coast'; stage = t('viz.stage.sat'); fuel = 1;
+    } else {
+      var g = (s - TL.coast) / (1 - TL.coast), tl = V.mission.tl, m = V.mission;
+      var hNow = m.surface ? 100 * (1 - smooth(g)) : (m.result.metrics.altitude_km.value || 100) + 400 * (1 - smooth(g));
+      tele.met = 'T+ 4 d ' + Math.round(g * 12) + ' h';
+      alt = u8.withUnit(hNow, 'km', 0) + ' ' + t('viz.fromMoon');
+      vel = m.surface ? 1.7 * (1 - smooth(g)) : Math.sqrt(MU_M / (1737.4 + hNow)) + 0.6 * (1 - g);
+      st = m.surface ? 'descent' : 'loi'; stage = t('viz.stage.sat'); fuel = 1 - 0.6 * g;
+      void tl;
+    }
+    tele.alt = alt; tele.vel = u8.withUnit(vel, 'km/s', 2); tele.stage = stage; tele.fuel = fuel; tele.status = st;
+  }
   function setLine(l, pts) {
     var pa = l.geometry.attributes.position, n = Math.min(pts.length, l.userData.n);
     for (var i = 0; i < n; i++) pa.setXYZ(i, pts[i].x, pts[i].y, pts[i].z);
@@ -491,14 +586,23 @@
   function updateLoose(dt, T) {
     V.mission.loose.forEach(function (l) {
       if (!l.obj.visible) return;
-      var down = l.obj.position.clone().normalize().multiplyScalar(-0.01 * dt); // puxada de volta para a Terra
+      var c = V.mission.lunar ? EARTH_POS : new THREE.Vector3(), rel = l.obj.position.clone().sub(c);
+      var down = rel.clone().normalize().multiplyScalar(-0.01 * dt); // puxada de volta para a Terra
       l.v.add(down);
       l.obj.position.add(l.v.clone().multiplyScalar(dt));
       l.obj.rotation.x += l.spin.x * dt; l.obj.rotation.z += l.spin.z * dt;
-      if (T > l.until || l.obj.position.length() < 1.0) l.obj.visible = false;
+      if (T > l.until || rel.length() < (V.mission.lunar ? EARTH_R : 1.0)) l.obj.visible = false;
     });
   }
 
+  function lunarFlashes(s, T) {
+    var m = V.mission, fl = m.fl;
+    if (s >= TL.ascent && !fl.park) { fl.park = true; flash(t('viz.ev.park'), T); }
+    if (s >= TL.ascent + (TL.tli - TL.ascent) * 0.55 && !fl.tli) { fl.tli = true; flash(t('viz.ev.tli'), T); }
+    if (s >= TL.tli + 0.04 && !fl.coast) { fl.coast = true; flash(t('viz.ev.coast'), T); }
+    if (s >= TL.coast && !fl.loi) { fl.loi = true; flash(t(m.surface ? 'viz.ev.descent' : 'viz.ev.loi'), T); }
+    if (m.surface && s >= 0.985 && !fl.landed) { fl.landed = true; flash(t('viz.ev.landed'), T); }
+  }
   // Altitude real do dia, da missão dia a dia (clima espacial da NASA).
   function lifeAltitude(life, day) {
     var s = life.series;
@@ -523,23 +627,34 @@
     var tele = {};
 
     // ---- Foguete: subida, separação do 1º estágio, carenagem, chegada à órbita
+    var lp = m.lunar ? lunarPoint : launchPoint, failAt = m.lunar ? TL.ascent * 0.55 : 0.5;
+    // Na viagem lunar, separação e carenagem acontecem durante a subida (primeiros 20%).
+    var sA = m.lunar ? Math.min(1, s / TL.ascent) : s;
+    m.tlS = s;
     if (T < S.orbitStart || S.launchFailed) {
-      if (S.launchFailed && s >= 0.5) {
+      if (S.launchFailed && s >= failAt) {
         if (!m.exploded) {
           m.exploded = true; m.rocket.visible = false;
-          spawn(launchPoint(0.5), 0xff7a1a, 320, 0.25); spawn(launchPoint(0.5), 0xffe08a, 160, 0.15);
+          spawn(lp(failAt), 0xff7a1a, 320, 0.25); spawn(lp(failAt), 0xffe08a, 160, 0.15);
         }
         flags.push(t('viz.launchFail'));
       } else {
-        var p = launchPoint(s), q = launchPoint(Math.min(1, s + 0.01)), dir = q.clone().sub(p).normalize();
+        var p = lp(s), q = lp(Math.min(1, s + 0.004)), dir = q.clone().sub(p).normalize();
+        if (s >= 1) dir = p.clone().sub(lp(0.996)).normalize();
+        var retro = m.lunar && s >= TL.coast; // freada: motor virado para a frente
+        if (retro) dir.negate();
+        if (m.surface && s > TL.coast + (1 - TL.coast) * 0.55) dir = p.clone().normalize(); // pouso: de pé, motor para baixo
+        if (m.lunar) lunarFlashes(s, T);
+        m.beacon.visible = m.lunar && s > TL.tli + 0.01 && s < TL.coast - 0.02;
+        if (m.beacon.visible) { m.beacon.position.copy(p); m.beacon.scale.setScalar(Math.max(0.05, V.camera.position.distanceTo(p) * 0.045)); }
         m.rocket.visible = true;
         m.rocket.position.copy(p);
         if (dir.lengthSq() > 0) m.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-        if (s >= SEP1 && !m.sep1) {
+        if (sA >= SEP1 && !m.sep1) {
           m.sep1 = true; flash(t('viz.ev.sep1'), T);
           loosen(ud.s1, dir.clone().multiplyScalar(-0.01).add(p.clone().normalize().multiplyScalar(-0.004)), new THREE.Vector3(0.8, 0, 1.1), T);
         }
-        if (s >= FAIRING && !m.fairingOff && ud.fairing && ud.fairing.length) {
+        if (sA >= FAIRING && !m.fairingOff && ud.fairing && ud.fairing.length) {
           m.fairingOff = true; flash(t('viz.ev.fairing'), T);
           ud.fairing.forEach(function (half, i) {
             var side = new THREE.Vector3(1, 0, 0).applyQuaternion(m.rocket.quaternion).multiplyScalar(i ? 0.03 : -0.03);
@@ -547,12 +662,14 @@
           });
         }
         var burning = s > 0 && s < 1;
+        if (m.lunar) burning = s > 0 && (s < TL.ascent || (s > TL.ascent + (TL.tli - TL.ascent) * 0.55 && s < TL.tli) || (s > TL.coast && s < 0.985));
         if (ud.flame1) { ud.flame1.visible = burning && !m.sep1; ud.flame1.scale.set(1, 0.8 + Math.random() * 0.5, 1); }
-        if (ud.flame2) { ud.flame2.visible = burning && m.sep1 && s > SEP1 + 0.03; ud.flame2.scale.set(1, 0.8 + Math.random() * 0.5, 1); }
+        if (ud.flame2) { ud.flame2.visible = burning && m.sep1 && sA > SEP1 + 0.03; ud.flame2.scale.set(1, 0.8 + Math.random() * 0.5, 1); }
         if (burning && Math.random() < (m.sep1 ? 0.35 : 0.8)) spawn(p.clone().sub(dir.clone().multiplyScalar(0.05)), m.sep1 ? 0x9aa6c0 : 0xbbbbbb, 1, 0.012);
         // trajetória percorrida até aqui
         var pts = [];
-        for (var k = 0; k < 90; k++) pts.push(launchPoint(k / 89 * s));
+        var nPts = m.ascentLine.userData.n;
+        for (var k = 0; k < nPts; k++) pts.push(lp(k / (nPts - 1) * s));
         setLine(m.ascentLine, pts);
       }
       m.ascentLine.material.color.setHex(S.launchFailed ? STATUS_HEX.fail : STATUS_HEX.sub);
@@ -564,14 +681,27 @@
       tele.stage = m.sep1 ? t('viz.stage.2') : t('viz.stage.1');
       tele.fuel = m.sep1 ? 1 - (s - SEP1) / (1 - SEP1) * 0.88 : 1 - s / SEP1;
       tele.status = S.launchFailed && m.exploded ? 'fail' : 'sub';
+      if (m.lunar && !(S.launchFailed && m.exploded)) lunarTele(s, tele);
     } else {
       // Em órbita: o estágio gasto se afasta durante a separação e some.
       if (fx === 'separation') {
         if (local < 0.1 && !m.inserted) { m.inserted = true; flash(t('viz.ev.orbit'), T); }
         if (local > 0.35 && !m.deployed && !m.dock) { m.deployed = true; flash(t('viz.ev.deploy'), T); }
-        var uB = m.u0 - 0.004 - 0.03 * local + (m.dock ? (T - S.orbitStart) * ORBIT_RATE : 0);
+        var uB = m.u0 - 0.004 - 0.03 * local + (m.dock || m.lunar ? (T - S.orbitStart) * ORBIT_RATE : 0);
         m.rocket.visible = !m.dock || local < DK.hohmann * 1.5;
         m.rocket.position.copy(orbitPoint(uB, m.rAscent));
+        if (m.surface) { // pouso: o estágio de cruzeiro sobe e vai embora; o módulo fica no chão
+          if (local < 0.1 && !m.fl.landed) { m.fl.landed = true; flash(t('viz.ev.landed'), T); }
+          m.rocket.position.copy(orbitPoint(m.satU0 - 0.02 * local, LANDED_R + 0.5 * local * local));
+          m.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), m.rocket.position.clone().normalize());
+          m.rocket.visible = local < 0.7;
+        }
+        if (ud.flame2) ud.flame2.visible = false;
+      } else if (m.lunar && sepStep && T < sepStep.t0) {
+        // Chegou à Lua: a nave espera inteira (em órbita ou já no chão) até a separação.
+        m.rocket.visible = true;
+        m.rocket.position.copy(m.surface ? orbitPoint(m.satU0, LANDED_R) : orbitPoint(m.u0 + (T - S.orbitStart) * ORBIT_RATE, m.rAscent));
+        if (m.surface) m.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), m.rocket.position.clone().normalize());
         if (ud.flame2) ud.flame2.visible = false;
       } else {
         m.rocket.visible = false;
@@ -579,6 +709,7 @@
       m.ascentLine.material.color.setHex(STATUS_HEX.orbit);
       m.ascentLine.material.opacity = 0.35;
     }
+    if (T >= S.orbitStart || S.launchFailed) m.beacon.visible = false;
     updateLoose(dt, T);
 
     // ---- Estação Espacial: sempre girando em volta da Terra
@@ -654,6 +785,7 @@
     V.earth.rotation.y = m.earthOffset + Math.max(0, T - S.orbitStart) * EARTH_RATE;
     V.earth.updateMatrixWorld();
     V.cloud.rotation.y = V.earth.rotation.y * 1.15 + T * 0.004;
+    if (m.lunar) V.farEarth.rotation.y = 0.8 + T * 0.03;
 
     // ---- Satélite
     var u = m.surface ? m.satU0 : m.satU0 + Math.max(0, T - S.orbitStart) * ORBIT_RATE, r = m.rOrb, satScale = SAT_SCALE;
@@ -758,6 +890,10 @@
       tele.fuel = null;
       var decaying = lifeEnd ? lifeEnd === 'reentry' : (m.result.metrics.lifetime_years.value || 0) < plannedYears;
       tele.status = reentry || gone ? 'reentry' : fx === 'debris' ? 'risk' : decaying ? 'decay' : 'orbit';
+      if (m.surface) { // no chão da Lua: sem altitude nem velocidade orbital
+        tele.alt = u8.withUnit(0, 'km', 0); tele.vel = u8.withUnit(0, 'km/s', 2);
+        tele.status = gone ? 'reentry' : 'landed'; tele.stage = t('viz.stage.sat');
+      }
       // Tempestades reais registradas pela NASA (DONKI) perto deste dia.
       if (m.life && m.life.log.some(function (e) { return (e.type === 'storm' || e.type === 'reset') && Math.abs(e.day - day) <= 4; })) flags.push(t('viz.realStorm'));
       // Rastro do satélite
@@ -788,14 +924,44 @@
     if (V.camMode === 'free') { V.controls.update(); return; }
     var target, want;
     var launching = V.t < S.orbitStart + (S.launchFailed ? 3 : 0);
-    var focus = launching ? (m.rocket.visible ? m.rocket.position.clone() : launchPoint(0.5)) : (m.dockFocus || satPos).clone();
+    if (m.lunar && m.tl && launching && !S.launchFailed && (m.tlS || 0) < 1) {
+      // Perto da Terra e no cruzeiro: câmera mais longe, para ver a Terra, a Lua e o caminho.
+      var ls = m.tlS || 0, fp = m.rocket.visible ? m.rocket.position.clone() : lunarPoint(TL.ascent * 0.55), want2;
+      if (ls < TL.tli) {
+        var ue = fp.clone().sub(EARTH_POS).normalize(), se = ue.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
+        var cl = 0.45 + 2.2 * smooth(ls / TL.tli);
+        want2 = fp.clone().add(ue.multiplyScalar(cl * 0.5)).add(se.multiplyScalar(cl)).add(m.tl.ey.clone().multiplyScalar(cl * 0.5));
+      } else {
+        // Perto da Lua a câmera fica sempre do lado de fora (direção radial), para não atravessar o chão.
+        var um = fp.clone().normalize(), sm = um.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
+        var offNear = um.clone().multiplyScalar(0.45).add(sm).normalize();
+        if (ls < TL.coast) {
+          // Vista de cima do caminho: o meio entre a Terra e a Lua no centro, as duas no quadro.
+          var mid = EARTH_POS.clone().multiplyScalar(0.5).add(m.tl.ez.clone().multiplyScalar(-5));
+          var cf = (ls - TL.tli) / (TL.coast - TL.tli), wide = Math.min(1, cf * 5, (1 - cf) * 6);
+          var aim = fp.clone().lerp(mid, wide);
+          var fit = Math.max(1, 1.9 / (cam.aspect || 2)); // tela em pé (celular): afasta mais para caber a Terra e a Lua
+          var offW = m.tl.ey.clone().multiplyScalar(4 + 26 * wide * fit).add(m.tl.ez.clone().multiplyScalar(2 + 6 * wide * fit));
+          want2 = aim.clone().add(offW.lerp(offNear.clone().multiplyScalar(2.5), cf > 0.5 ? 1 - wide : 0));
+          fp = aim;
+        } else {
+          var gD = (ls - TL.coast) / (1 - TL.coast);
+          want2 = fp.clone().add(offNear.multiplyScalar(2.5 - 2.25 * smooth(gD)));
+        }
+      }
+      cam.position.lerp(want2, k);
+      V.controls.target.lerp(fp, k);
+      cam.lookAt(V.controls.target);
+      return;
+    }
+    var focus = launching ? (m.rocket.visible ? m.rocket.position.clone() : (m.lunar ? lunarPoint(TL.ascent * 0.55) : launchPoint(0.5))) : (m.dockFocus || satPos).clone();
     var up = focus.clone().normalize();
     var side = up.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
     var sepStepC = S.steps.filter(function (x) { return x.event.fx === 'separation'; })[0];
     var sepEnd = sepStepC ? sepStepC.t1 : S.orbitStart;
     if (V.camMode === 'follow' || launching || V.t < sepEnd) {
       target = focus;
-      var close = launching ? 0.3 : m.dockFocus ? 0.26 : 0.2;
+      var close = launching ? (m.lunar ? 0.5 : 0.3) : m.dockFocus ? 0.26 : 0.2;
       want = focus.clone().add(up.multiplyScalar(close * 0.45)).add(side.multiplyScalar(close));
     } else {
       target = new THREE.Vector3(0, 0, 0);
@@ -1004,7 +1170,7 @@
     V.wrap.classList.remove('cine-on');
     if (silent || !V.mission) return;
     var S = V.mission.schedule;
-    V.t = Math.max(V.t, 1.2 + 0.3 * Math.max(0, S.orbitStart - 1.2));
+    V.t = Math.max(V.t, 1.2 + (S.lunar ? TL.ascent * 0.35 : 0.3) * Math.max(0, S.orbitStart - 1.2));
     V.snapCam = true;
     update(0);
   }
@@ -1135,6 +1301,7 @@
     return V.cine ? V.cine.t : null;
   };
 
+  viz._view = function () { return V; }; // só para depurar no console
   // Avança a animação até o instante s (segundos), quadro a quadro. Útil para
   // depurar: MS.viz.seek(40) pula para 40 s com as imagens já acumuladas.
   viz.seek = function (s) {

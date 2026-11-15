@@ -13,7 +13,7 @@
   var MS = root.MS = root.MS || {};
 
   // Segundos de animação a 1× (o botão de tempo acelera para 5× ou 20×).
-  var DURATIONS = { launch: 20, separation: 6, docking: 16, default: 7 };
+  var DURATIONS = { launch: 20, separation: 6, docking: 16, default: 7, lunarLaunch: 40 };
   // Efeitos visuais que o 3D sabe desenhar (campo "fx" dos eventos nos dados).
   var FX = ['launch', 'separation', 'power', 'contact', 'image', 'coverage', 'end',
             'delay', 'storm', 'glitch', 'wobble', 'debris', 'stationDown'];
@@ -25,9 +25,11 @@
     // Lançador de carga para a estação: a separação vira encontro + acoplamento com a ISS.
     var L = result.selection && result.selection.launcher;
     var docking = !!(L && MS.looks && MS.looks.resolve('launchers', L).upper === 'capsule');
+    // Missões lunares: o "lançamento" inclui a viagem Terra → Lua (subida, injeção translunar, cruzeiro, freada).
+    var O = result.selection && result.selection.orbit, lunar = !!(O && O.body === 'moon');
     var t = 0, steps = [];
     events.forEach(function (e) {
-      var d = (docking && e.fx === 'separation') ? DURATIONS.docking : (DURATIONS[e.fx] || DURATIONS.default);
+      var d = (docking && e.fx === 'separation') ? DURATIONS.docking : (lunar && e.fx === 'launch') ? DURATIONS.lunarLaunch : (DURATIONS[e.fx] || DURATIONS.default);
       steps.push({ event: e, t0: t, t1: t + d });
       t += d;
     });
@@ -38,7 +40,8 @@
       orbitStart: launch ? launch.t1 : 0,
       aborted: result.mission.aborted || null,
       launchFailed: !!(launch && launch.event.status === 'fail'),
-      docking: docking
+      docking: docking,
+      lunar: lunar
     };
   }
 

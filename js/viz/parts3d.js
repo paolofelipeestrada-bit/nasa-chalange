@@ -339,7 +339,50 @@
   }
 
   // ---------------------------------------------------------------- Órbita
+  // Lua low-poly: cinza com mares escuros (ruído simples por face).
+  function moonBall(r) {
+    var geo = new THREE.IcosahedronGeometry(r, 3), pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+    var n = new THREE.Vector3(), c = new THREE.Color();
+    for (var i = 0; i < pos.count; i += 3) {
+      n.set(0, 0, 0);
+      for (var j = 0; j < 3; j++) n.x += pos.getX(i + j), n.y += pos.getY(i + j), n.z += pos.getZ(i + j);
+      n.normalize();
+      var k = Math.sin(n.x * 4.1 + 1.3) * Math.sin(n.y * 3.7 + n.z * 2.3) + 0.35 * Math.sin(n.z * 9.1 + n.x * 5.3);
+      var gr = k > 0.45 ? 0.36 : 0.6 + 0.08 * Math.sin(n.y * 17 + n.x * 11);
+      c.setRGB(gr, gr, gr * 0.97).convertSRGBToLinear();
+      for (j = 0; j < 3; j++) { col[(i + j) * 3] = c.r; col[(i + j) * 3 + 1] = c.g; col[(i + j) * 3 + 2] = c.b; }
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 }));
+  }
+  function moonOrbit(L) {
+    var m = materials(), g = new THREE.Group(), R = 0.8;
+    g.add(moonBall(R));
+    var far = lowPolyEarth(0.2, 2); far.position.set(-1.7, 0.85, -1.4); g.add(far); // a Terra lá longe
+    if (L.surface) { // pouso: módulo com pernas em cima da Lua
+      var lander = new THREE.Group(), lat = L.pole ? -1.05 : 0.2; // polo sul ou equador
+      lander.add(box(0.12, 0.08, 0.12, m.gold, 0, 0.07, 0));
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (q) {
+        var leg = cyl(0.008, 0.008, 0.11, m.white, 5, q[0] * 0.07, 0.03, q[1] * 0.07);
+        leg.rotation.z = -q[0] * 0.5; leg.rotation.x = q[1] * 0.5; lander.add(leg);
+      });
+      var up = new THREE.Vector3(Math.cos(lat) * 0.6, Math.sin(lat), Math.cos(lat) * 0.8).normalize();
+      lander.position.copy(up.clone().multiplyScalar(R));
+      lander.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+      g.add(lander);
+      return g;
+    }
+    var rr = R * (1 + L.altitude_km / 1737.4 * 3); // altitude exagerada 3×
+    var tilt = new THREE.Group(), yaw = new THREE.Group();
+    var ring = mesh(new THREE.TorusGeometry(rr, 0.018, 6, 120), m.ring);
+    ring.rotation.x = Math.PI / 2; tilt.add(ring);
+    var sat = box(0.07, 0.07, 0.07, m.gold); sat.position.set(Math.cos(0.75) * rr, 0, Math.sin(0.75) * rr); tilt.add(sat);
+    tilt.rotation.z = L.inclination_deg * DEG; yaw.add(tilt); yaw.rotation.y = -0.6;
+    g.add(yaw);
+    return g;
+  }
   function orbit(L) {
+    if (L.moon) return moonOrbit(L);
     var m = materials(), g = new THREE.Group(), R = 0.8;
     var earth = lowPolyEarth(R, 3);
     earth.rotation.set(-0.25, -0.5, 0); // América do Sul de frente para a câmera

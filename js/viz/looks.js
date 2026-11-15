@@ -38,8 +38,9 @@
       var alt = num(it.altitude_km, 500), inc = num(it.inclination_deg, 0);
       return {
         kind: 'orbit', altitude_km: alt, inclination_deg: inc,
+        moon: it.body === 'moon', surface: !!it.surface, pole: !!it.surface && num(it.earthView, 1) < 1,
         // Órbita da estação espacial (~400 km, 51,6°): o modelo mostra a ISS no anel.
-        station: alt <= 430 && Math.abs(inc - 51.6) < 1.5
+        station: it.body !== 'moon' && alt <= 430 && Math.abs(inc - 51.6) < 1.5
       };
     },
     launchers: function () {
