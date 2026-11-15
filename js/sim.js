@@ -697,6 +697,13 @@
     });
   }
 
+  // A missão terminou antes de o satélite chegar à órbita?
+  function neverFlew(mission) {
+    if (!mission || !mission.aborted) return false;
+    var ev = (mission.events || []).filter(function (e) { return e.id === mission.aborted; })[0];
+    return !!ev && (ev.fx === 'launch' || ev.fx === 'delay');
+  }
+
   function runMission(ctx, env, risks) {
     var sc = ctx.scenario, p = sc.params || {}, metrics = env.metrics;
     var events = sc.events || [];
@@ -912,7 +919,9 @@
       mel: mel, metrics: metrics, resources: resources, checks: checks,
       requirements: requirements, verification: verification,
       risks: risks.map(function (x) { var o = Object.assign({}, x); delete o.def; delete o.mitigationResults; return o; }),
-      mission: mission, score: score, life: life, period: state && state.period || null,
+      mission: mission, score: score,
+      // Missão perdida antes de chegar à órbita (lançamento ou atraso): o ano em órbita não aconteceu.
+      life: neverFlew(mission) ? null : life, period: state && state.period || null,
       lessons: collectLessons(requirements, checks, risks, life)
     };
   }
@@ -1099,6 +1108,7 @@
   // ----------------------------------------------------------- Exportação
   MS.sim = {
     run: run,
+    neverFlew: neverFlew,     // missão terminou antes da órbita (lançamento ou atraso)
     validate: validate,
     metricDefs: METRICS,      // métricas disponíveis para requisitos/eventos
     metricInfo: metricDefs,   // idem, com rótulo e unidade no idioma atual

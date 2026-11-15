@@ -848,7 +848,13 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .vc-fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
 .viz3d.cine-on .vc-poll li.r-sci { --rc: var(--sci); } .viz3d.cine-on .vc-poll li.r-eng { --rc: var(--eng); }
 .viz3d.cine-on .vc-poll li.r-mgr { --rc: var(--mgr); } .viz3d.cine-on .vc-poll li.r-com { --rc: var(--com); }
-@media (max-width: 560px) { .vc-count { font-size: 96px; } .vc-caption { font-size: 14px; bottom: 96px; } .vc-skip { bottom: 140px; } .vc-poll { width: calc(100% - 32px); } }
+/* Durante a cena só vale "Pular": a barra de controles volta na vista orbital. */
+.viz3d.cine-on .viz-bar { display: none; }
+.viz3d.cine-on .vc-caption { bottom: 64px; }
+.viz3d.cine-on .vc-skip { bottom: 16px; }
+@media (max-width: 560px) { .vc-count { font-size: 96px; } .viz3d.cine-on .vc-caption { font-size: 14px; bottom: 58px; }
+  .viz3d.cine-on .vc-skip { bottom: 12px; } .vc-chapter { font-size: 12px; } .vc-poll { top: 40px; left: 16px; right: 16px; width: auto; }
+  .vc-poll li { font-size: 13px; } }
 
 /* ---------- Conceito: comparação das órbitas ---------- */
 .orb-cmp, .orb-cmp ul { list-style: none; margin: 0; padding: 0; }

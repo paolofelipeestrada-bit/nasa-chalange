@@ -124,4 +124,15 @@
     assert.equal(c.rows.filter(function (r) { return r.chosen; })[0].id, 'sso600');
     assert(!c.refPayload);
   });
+
+  T.group('Missão perdida no lançamento');
+
+  test('sem ano em órbita, 0% dos dados e o palpite ainda é comparado', function () {
+    var s = stateWith(Object.assign({}, GOOD, { payload: 'cam_hr' }), { period: 'y2019', decisions: {} });
+    var r = MS.sim.run(s);
+    assert(r.mission.aborted, 'telescópio pesado demais deveria falhar no lançamento');
+    assert.equal(r.life, null, 'não há diário de um satélite que não chegou à órbita');
+    assert.equal(MS.advice.dataFraction(r), 0);
+    assert.equal(MS.advice.bucket(0), 'lt50');
+  });
 })(globalThis);

@@ -113,6 +113,7 @@
   // ------------------------------------------- Prever antes de lançar
   // Palpite = faixa de quanto dos dados chega à Terra (state.prediction).
   function dataFraction(result) {
+    if (MS.sim.neverFlew(result.mission)) return 0;   // nem chegou à órbita: nenhum dado
     var life = result.life;
     return life && !life.pending && life.totals ? life.totals.dataFraction : null;
   }
