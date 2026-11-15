@@ -853,6 +853,11 @@
     "rep.starsLine.1": "It worked in part. One more adjustment and you get there!",
     "rep.starsLine.2": "Great mission! The customer is happy.",
     "rep.starsLine.3": "Perfect mission! NASA-level work.",
+    "sc.more": "Know more",
+    "sc.tower.title": "Control tower",
+    "sc.tower.note": "Your teammates are choosing these parts now. Watch the 3D view and the goals; talk or shout if something looks wrong.",
+    "sc.tower.choosing": "choosing…",
+    "sc.tower.see": "See",
     "go.needAll": "Everyone must say Go before the launch."
   };
 })(globalThis);

@@ -140,6 +140,18 @@
       (slots.every(function (s) { return state.design[s.id]; }) ? '' : ' disabled') + '><span class="sc-dot">★</span><span class="sc-rl">' + h.esc(t('sc.review')) + '</span></button></li></ol>';
   }
 
+  // Fala curta: a 1ª frase à vista; o resto (e o conselho, se está tudo bem)
+  // em "saber mais". Conselho com alerta (amarelo/vermelho) fica sempre à vista.
+  function bubbleText(help, adv) {
+    var txt = String(L(help) || ''), m = txt.match(/^(.+?[.!?])\s+(.+)$/);
+    var first = m ? m[1] : txt, rest = m ? m[2] : '';
+    var warn = adv && adv.status !== 'ok';
+    var more = (rest ? '<p>' + h.rich(rest) + '</p>' : '') + (adv && !warn ? '<p class="sc-adv s-ok">' + h.esc(adv.text) + '</p>' : '');
+    return (first ? '<p>' + h.rich(first) + '</p>' : '') +
+      (warn ? '<p class="sc-adv s-' + adv.status + '">' + h.esc(adv.text) + '</p>' : '') +
+      (more ? '<details class="sc-more"><summary>' + h.esc(t('sc.more')) + '</summary>' + more + '</details>' : '');
+  }
+
   function crewLine(state, result, key) {
     if (!MS.advice || !MS.advice.crew) return null;
     return MS.advice.crew(state, result).filter(function (a) { return a.key === key; })[0] || null;
@@ -165,9 +177,7 @@
     return '<div class="sc-grid">' +
       '<aside class="sc-crew r-' + ck + '">' + h.character(ck, 132, { anim: true }) +
         '<span class="sc-who"><b>' + h.esc(who) + '</b></span>' +
-        '<div class="sc-bubble"><p class="sc-q">' + h.rich(slot.label) + '</p>' +
-          (slot.help ? '<p>' + h.rich(slot.help) + '</p>' : '') +
-          (adv ? '<p class="sc-adv s-' + adv.status + '">' + h.esc(adv.text) + '</p>' : '') +
+        '<div class="sc-bubble"><p class="sc-q">' + h.rich(slot.label) + '</p>' + bubbleText(slot.help, adv) +
           (rec && !(local.hints && local.hints[slot.id]) ? '<button type="button" class="btn small hint-btn" data-action="hint" data-slot="' + h.esc(slot.id) + '">💡 ' + h.esc(t('ui.hintAsk')) + '</button>' : '') +
         '</div></aside>' +
       '<section class="sc-view"><div class="card hangar-card sc-hangar"><div data-viz="hangar"></div></div></section>' +
@@ -198,8 +208,41 @@
         '<ul class="sc-chosen">' + items + '</ul><div class="ck-panel"><div class="ck-head"><h2>' + h.icon('ok', { size: 16 }) + h.esc(t('ck.check')) + '</h2></div>' + check + '</div></section></div>';
   }
 
+  // Torre de controle: em equipe, quem não tem escolha nesta fase (ex.: o
+  // gerente no Projeto) vê ao vivo quem está escolhendo o quê.
+  function tower(state, result, slots) {
+    var sc = h.scenario(state), cat = MS.data.catalog, room = ui.roomInfo();
+    var rows = slots.map(function (s) {
+      var role = roleOf(sc, s), own = room && role ? MS.team.slotOwner(sc, room.members, s.id) : null;
+      var id = state.design[s.id], it = id ? (cat[s.source] || {})[id] : null;
+      return '<li class="r-' + charKey(role) + (it ? ' done' : '') + '">' + h.character(charKey(role), 48, { anim: !it }) +
+        '<div><b>' + h.esc(own && own.member ? own.member.name : t('ui.free')) + '</b><span class="small muted">' + h.esc(plain(s.label)) + '</span></div>' +
+        '<span class="tw-st">' + (it ? h.icon('ok', { size: 14, stroke: 3 }) + h.esc(L(it.name)) : '<span class="tw-dots">' + h.esc(t('sc.tower.choosing')) + '</span>') + '</span>' +
+        '<button type="button" class="btn small" data-action="scene-go" data-slot="' + h.esc(s.id) + '">' + h.esc(t('sc.tower.see')) + '</button></li>';
+    }).join('');
+    var n = slots.filter(function (s) { return state.design[s.id]; }).length;
+    var check = state.phase === 'design' && h.missionCheck ? h.missionCheck(result)
+      : h.statusRows(result.checks.filter(function (c) { return c.id === 'launch' || c.id === 'contact'; }));
+    return '<div class="sc-grid sc-sum">' +
+      '<section class="sc-view"><div class="card hangar-card sc-hangar"><div data-viz="hangar"></div></div></section>' +
+      '<section class="sc-console"><h2>' + h.icon('team', { size: 18 }) + h.esc(t('sc.tower.title')) + ' <span class="tw-n pixel">' + n + '/' + slots.length + '</span></h2>' +
+        '<p class="section-note">' + h.esc(t('sc.tower.note')) + '</p><ul class="sc-tower">' + rows + '</ul>' +
+        '<div class="ck-panel"><div class="ck-head"><h2>' + h.icon('ok', { size: 16 }) + h.esc(t('ck.check')) + '</h2></div>' + check + '</div></section></div>';
+  }
+  function towerFor(state, slots) {
+    if (!ui.roomInfo() || local.sceneSlot[state.phase]) return false;
+    return slots.length && slots.every(function (s) { return !!editLock(state, s); }) && slots.some(function (s) { return !state.design[s.id]; });
+  }
+
   function sceneHTML(state, result) {
     var slots = slotsOf(state), open = openSlot(state, slots);
+    if (towerFor(state, slots)) {
+      var tk = state.phase + '|tower', te = local.sceneLastKey !== tk;
+      local.sceneLastKey = tk; local.sceneOpen = null;
+      return '<div class="scene' + (te ? ' sc-enter' : '') + '"><div class="sc-top">' + rail(state, slots, null) +
+        '<button type="button" class="btn small sc-mode" data-action="scene-mode">' + h.icon('eye', { size: 16 }) + h.esc(t('sc.full')) + '</button></div>' +
+        tower(state, result, slots) + '</div>';
+    }
     var key = state.phase + '|' + (open ? open.id : DONE);
     var enter = local.sceneLastKey !== key;
     local.sceneLastKey = key;
