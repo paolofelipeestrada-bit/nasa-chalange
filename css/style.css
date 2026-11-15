@@ -1538,3 +1538,14 @@ main { overflow-x: clip; }
   .ct-panel { width: 100%; height: 50vh; }
 }
 @media (prefers-reduced-motion: reduce) { .ct-panel, .ct-badge { animation: none; } }
+
+/* Marca visível nas ilustrações geradas por IA (assets/img), exigida pelo guia
+   de envio do Space Apps: "Images and videos must include a visible watermark". */
+.phase-head.has-art::after, .scen-art::after, .menu::before {
+  content: var(--ai-tag, "✦ AI image"); position: absolute; z-index: 2; pointer-events: none;
+  font: 700 10.5px/1 var(--font-ui); letter-spacing: .04em; color: rgba(255, 255, 255, .92);
+  background: rgba(6, 12, 34, .62); border: 1px solid rgba(255, 255, 255, .28); border-radius: 6px; padding: 3px 6px; }
+.phase-head.has-art::after { top: 8px; right: 10px; }
+.scen-art { position: relative; }
+.scen-art::after { top: 6px; left: 6px; }
+.menu::before { left: 12px; bottom: 10px; }
