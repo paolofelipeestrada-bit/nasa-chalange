@@ -204,6 +204,19 @@
     } finally { local.sceneMode = false; local.reqIdx = 0; local.reqFlip = {}; }
   });
 
+  test('sons: um botão de som no topo liga e desliga tudo (e fica lembrado)', function () {
+    assert(MS.sfx && typeof MS.sfx.play === 'function', 'módulo de sons carregado');
+    var was = MS.sfx.muted();
+    try {
+      var html = MS.ui.renderHTML(MS.store.createState());
+      assert(/data-action="sfx-mute"/.test(html), 'botão de som no topo');
+      MS.sfx.toggle();
+      assert.equal(MS.sfx.muted(), !was);
+      assert.equal(MS.ui.local.shoutMute, !was, 'mesmo mudo dos gritos da equipe');
+      MS.sfx.play('nao-existe'); MS.sfx.play('fanfare'); // não quebra
+    } finally { if (MS.sfx.muted() !== was) MS.sfx.toggle(); }
+  });
+
   test('relatório: 0 a 3 estrelas pela nota', function () {
     var st = Object.assign(MS.store.createState(), { phase: 'report', reached: 'report', period: 'y2019', decisions: { storm: 'safe', memory: 'compress', power: 'reduce' },
       design: Object.assign({}, MS.store.createState().design, GOOD) });

@@ -1495,3 +1495,10 @@ main:has(.scene) .guide-only { display: none; }
 @media (max-width: 420px) { .flag span { display: none; } .flag { padding: 4px 7px; } }
 /* A entrada das cenas desliza de lado: sem rolagem horizontal no celular */
 main { overflow-x: clip; }
+
+/* Botão de som (um só para o jogo todo) */
+.sfx-btn { width: 40px; padding: 0; justify-content: center; font-size: 17px; }
+@media (max-width: 420px) {
+  .top-actions { gap: 2px; }
+  .top-actions .btn.small[data-action="team-toggle"], .top-actions .btn.small[data-action="glossary"], .top-actions .btn.small[data-action="coach"], .top-actions .sfx-btn { width: 38px; }
+}

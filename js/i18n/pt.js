@@ -844,6 +844,8 @@
     "sc.req.next": "Próxima carta",
     "sc.req.flipLast": "Vire a última carta!",
     "sc.req.allSeen": "Todos os requisitos vistos. Agora projete o satélite lá embaixo!",
+    "sfx.on": "Ligar o som",
+    "sfx.off": "Desligar o som",
     "go.needAll": "Todos precisam dizer GO antes do lançamento."
   };
 })(globalThis);

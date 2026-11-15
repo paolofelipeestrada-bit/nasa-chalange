@@ -843,6 +843,8 @@
     "sc.req.next": "Siguiente carta",
     "sc.req.flipLast": "¡Da vuelta la última carta!",
     "sc.req.allSeen": "Todos los requisitos vistos. ¡Ahora diseña el satélite abajo!",
+    "sfx.on": "Activar el sonido",
+    "sfx.off": "Silenciar",
     "go.needAll": "Todos deben decir GO antes del lanzamiento."
   };
 })(globalThis);

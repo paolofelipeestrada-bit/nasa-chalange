@@ -479,6 +479,8 @@
         (room.inRoom ? esc(t('ui.team')) + ' · ' + esc(room.code) : esc(t('ui.playTeam'))) + '</button>' +
       '<button type="button" class="btn small" data-action="glossary">' + icon('book', { size: 16 }) + esc(t('ui.glossary')) + '</button>' +
       '<button type="button" class="btn small" data-action="coach">' + icon('info', { size: 16 }) + esc(t('coach.tips')) + '</button>' +
+      (MS.sfx ? '<button type="button" class="btn small sfx-btn" data-action="sfx-mute" aria-pressed="' + !MS.sfx.muted() + '" title="' + esc(t(MS.sfx.muted() ? 'sfx.on' : 'sfx.off')) + '" aria-label="' + esc(t(MS.sfx.muted() ? 'sfx.on' : 'sfx.off')) + '">' +
+        '<span aria-hidden="true">' + (MS.sfx.muted() ? '🔇' : '🔊') + '</span></button>' : '') +
       '</div></div>' +
       '<nav class="steps" aria-label="' + esc(t('ui.stepsLabel')) + '"><ol>' + steps + '</ol></nav>' +
       hud(state, result) + '</header>';
@@ -662,6 +664,7 @@
     predict: function (d) { dispatch('setPrediction', [MS.store.state && MS.store.state.prediction === d.id ? null : d.id]); },
     lang: function (d) { MS.i18n.setLang(d.lang); ui.local.cascade = null; rerender(); },
     hud: function (d) { ui.local.hudOpen = ui.local.hudOpen === d.hud ? null : d.hud; rerender(); },
+    'sfx-mute': function () { if (MS.sfx) MS.sfx.toggle(); rerender(); },
     glossary: function () { ui.local.glossaryOpen = !ui.local.glossaryOpen; rerender(); if (ui.local.glossaryOpen) root.scrollTo(0, 0); },
     sources: function () { ui.local.sourcesOpen = !ui.local.sourcesOpen; rerender(); if (ui.local.sourcesOpen) root.scrollTo(0, 0); },
     about: function () { ui.local.aboutOpen = !ui.local.aboutOpen; rerender(); if (ui.local.aboutOpen) root.scrollTo(0, 0); },
@@ -718,6 +721,7 @@
     if (ui.menuAttach) ui.menuAttach(rootEl, state); // Terra 3D do menu inicial
     if (MS.coach) MS.coach.attach(rootEl, state);   // balões de ensino
     if (ui.sceneAfter) ui.sceneAfter(rootEl, state); // modo cena: prévia da opção em foco (js/ui/scene.js)
+    if (MS.sfx) MS.sfx.after(rootEl, state);         // sons: alerta no vermelho e estrelas (js/ui/sfx.js)
     if (state.phase !== lastPhase) {
       if (lastPhase && ui.phaseIntro) ui.phaseIntro(state); // cartão de abertura da fase (js/ui/scene.js)
       root.scrollTo(0, 0);

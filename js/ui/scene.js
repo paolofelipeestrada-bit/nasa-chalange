@@ -311,7 +311,7 @@
   ui.actions['req-flip'] = function (d) {
     local.reqFlip = local.reqFlip || {};
     var on = local.reqFlip[d.id] = !local.reqFlip[d.id];
-    click(on ? 620 : 420, 0.07);
+    sound('flip');
     // Vira a carta que já está na tela (sem redesenhar), para a animação 3D
     // acontecer de verdade; só redesenha se a carta não estiver no documento.
     var card = root.document && root.document.querySelector('.rc-card[data-id="' + String(d.id).replace(/"/g, '') + '"]');
@@ -390,6 +390,7 @@
   var PHASE_CHAR = { need: 'dir', concept: 'mgr', requirements: 'sci', design: 'eng', build: 'eng', implement: 'com', report: 'dir' };
   ui.phaseIntro = function (state) {
     if (!root.document || (MS.tutorial && MS.tutorial.active) || local.menuOpen) return;
+    sound('phase');
     var reduce = false;
     try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
     if (reduce) return;
@@ -404,7 +405,6 @@
       '<h2 class="pi-title pixel">' + h.esc(L(ph.title)) + '</h2><p class="pi-sub">' + h.esc(L(ph.subtitle) || '') + '</p></div>';
     el.addEventListener('click', function () { el.remove(); });
     root.document.body.appendChild(el);
-    click(440, 0.08); setTimeout(function () { click(660, 0.12); }, 110);
     setTimeout(function () { el.classList.add('out'); }, 1500);
     setTimeout(function () { if (el.parentNode) el.remove(); }, 1900);
   };
@@ -469,21 +469,7 @@
   });
 
   // ---------------------------------------------------------------- Som
-  var ac = null;
-  function click(f, len) {
-    if (local.shoutMute) return;
-    try {
-      var AC = root.AudioContext || root.webkitAudioContext;
-      if (!AC) return;
-      ac = ac || new AC();
-      if (ac.state === 'suspended') ac.resume();
-      var o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime;
-      o.type = 'triangle'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.06, t0 + 0.005);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + (len || 0.06));
-      o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + (len || 0.06) + 0.02);
-    } catch (e) { /* sem som */ }
-  }
+  function sound(n, a) { if (MS.sfx) MS.sfx.play(n, a); }
 
   // --------------------------------------------------------------- Ações
   function openNow() {
@@ -496,7 +482,7 @@
     i = Math.max(0, Math.min(n - 1, i));
     if (local.sceneIdx[slot.id] === i) return false;
     local.sceneIdx[slot.id] = i;
-    click(520 + i * 40);
+    sound('tick', i);
     return true;
   }
   Object.assign(ui.actions, {
@@ -518,7 +504,7 @@
     },
     'scene-confirm': function (d) {
       var st = MS.store.state; if (!st) return;
-      click(180, 0.18);
+      sound('confirm');
       // Próxima cena: a próxima escolha ainda vazia (ou o resumo).
       var rest = slotsOf(st).filter(function (s) { return s.id !== d.slot && !st.design[s.id]; });
       var after = rest.filter(function (s) { return !editLock(st, s); })[0] || rest[0];
