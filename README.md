@@ -4,6 +4,10 @@ An educational game for the **NASA Space Apps Challenge 2026 — "Space Mission 
 Players design a small Earth-observation satellite (a CubeSat) for a real customer need and
 learn that every choice costs something somewhere else: mass, power, budget, data, comms and time.
 
+**▶ Play now: [nasa-chalange-game.vercel.app](https://nasa-chalange-game.vercel.app)**
+
+![Space Tinkers in 25 seconds: pick a customer, pull the orbit lever, flip the requirement cards, build the satellite, launch it through real NASA space weather and earn stars](docs/demo.gif)
+
 - For anyone aged 10 and up. No prior space knowledge needed: every number has a plain-language
   sentence, a "See the math" box, and glossary tips on the technical words.
 - In **English** by default, also in **Português** and **Español** (flag buttons at the top).
