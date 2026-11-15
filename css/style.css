@@ -1025,3 +1025,7 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 .src-math p { margin: 4px 0 0; font-size: .84rem; line-height: 1.4; }
 .sf-live { color: var(--muted); }
 .sf-live span { color: var(--ok); font-weight: 600; }
+
+/* "Ver o lançamento" quando o navegador pede menos movimento */
+.viz-replay { position: absolute; right: 12px; top: 12px; z-index: 5; background: rgba(10, 18, 48, .85) !important; }
+.viz3d.cine-on .viz-replay { display: none; }

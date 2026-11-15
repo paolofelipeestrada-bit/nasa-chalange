@@ -839,6 +839,7 @@
     if (act === 'play') V.playing = !V.playing;
     if (act === 'restart') { buildMission(V.mission.state, V.mission.result); V.hudKey = null; startCine(); }
     if (act === 'skip') endCine(false);
+    if (act === 'replay') { buildMission(V.mission.state, V.mission.result); V.hudKey = null; startCine(true); }
     if (act === 'end') { endCine(false); V.t = V.mission.schedule.duration; V.playing = true; }
     if (act === 'warp' && data) V.speed = +data.x || 1;
     if (act === 'cam') { V.camMode = V.camMode === 'auto' ? 'follow' : V.camMode === 'follow' ? 'free' : 'auto'; }
@@ -886,6 +887,8 @@
   viz.attachAll = function (rootEl, state) {
     var host = rootEl.querySelector('[data-viz="mission"]');
     if (!host) {
+      // Fora da Missão: guarda a fase para saber se a volta é um novo lançamento.
+      if (V) V.awayPhase = state && state.phase;
       if (V && V.raf) { root.cancelAnimationFrame(V.raf); V.raf = null; }
       if (V && V.wrap.parentNode) V.wrap.parentNode.removeChild(V.wrap);
       return;
@@ -914,6 +917,12 @@
     }
     var base = JSON.stringify([state.scenarioId, state.design, state.seed, state.attempt, state.period || null, MS.i18n.lang]);
     var key = base + JSON.stringify(state.decisions || {});
+    // Lançar de novo a partir da Construção, mesmo sem mudar o projeto, é um
+    // novo lançamento: refaz a missão e toca a cena (antes só tocava se o
+    // projeto tivesse mudado e o jogador via a órbita direto).
+    var relaunch = V.awayPhase === 'build';
+    V.awayPhase = null;
+    if (relaunch) { V.key = null; V.baseKey = null; }
     if (key !== V.key) {
       var same = V.baseKey === base, keepT = V.t;
       V.key = key; V.baseKey = base; V.hudKey = null; V.flagKey = null;
@@ -936,11 +945,23 @@
   // plataforma, votação Go/No-Go, contagem, decolagem e subida. Depois corta
   // para a órbita com o foguete já subindo. Pulada com "menos movimento".
   function countdown() { startCine(); }
-  function startCine() {
+  function startCine(force) {
     endCine(true);
     var reduce = false;
     try { reduce = root.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* sem matchMedia */ }
-    if (reduce || !MS.launchScene || !V.mission) return;
+    var offer = V.wrap.querySelector('.viz-replay');
+    if (offer) offer.remove();
+    if (!MS.launchScene || !V.mission) return;
+    if (reduce && !force) {
+      // "Menos movimento": a cena não toca sozinha, mas o jogador pode pedir.
+      offer = document.createElement('button');
+      offer.type = 'button';
+      offer.className = 'btn small viz-replay';
+      offer.setAttribute('data-viz-act', 'replay');
+      offer.textContent = '▶ ' + t('cine.replay');
+      V.wrap.appendChild(offer);
+      return;
+    }
     var look = MS.looks.resolve('launchers', V.mission.result.selection.launcher);
     var crew = MS.advice ? MS.advice.crew(V.mission.state, V.mission.result) : [];
     V.cine = { t: 0, obj: MS.launchScene.create(look), crew: crew, key: '' };

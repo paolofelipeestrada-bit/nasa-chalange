@@ -719,6 +719,7 @@
     'src.f.cost.plain': "Everything the customer pays. CubeSat 101 advises keeping at least 10% of the budget in reserve.",
     'src.f.science.name': "Science value",
     'src.f.science.formula': "value = mean(min(1, goal ÷ value)) × 100",
-    'src.f.science.plain': "How well an instrument meets the customer’s science goals (detail, revisit) in the chosen orbit. A score made for the game, explained on each instrument card."
+    'src.f.science.plain': "How well an instrument meets the customer’s science goals (detail, revisit) in the chosen orbit. A score made for the game, explained on each instrument card.",
+    'cine.replay': "Watch the launch"
   };
 })(globalThis);
