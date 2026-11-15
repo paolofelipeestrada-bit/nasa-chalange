@@ -135,4 +135,27 @@
     assert.equal(MS.advice.dataFraction(r), 0);
     assert.equal(MS.advice.bucket(0), 'lt50');
   });
+
+  T.group('Cliente (personagem)');
+
+  test('fala em toda fase, nos 3 cenários, sem marcador sobrando', function () {
+    ['eo_cubesat', 'fire_watch', 'city_map'].forEach(function (sc) {
+      ['need', 'concept', 'requirements', 'design', 'build', 'implement', 'report'].forEach(function (ph) {
+        [{}, GOOD].forEach(function (d) {
+          var st = stateWith(d, { scenarioId: sc, phase: ph, period: d === GOOD ? 'y2019' : null });
+          var c = MS.advice.client(st, MS.sim.run(st));
+          assert(c.name && c.text, sc + '/' + ph + ' sem fala');
+          assert(c.text.indexOf('{') < 0, sc + '/' + ph + ': ' + c.text);
+        });
+      });
+    });
+  });
+
+  test('reage ao projeto: feliz com tudo certo, preocupada quando um requisito falha', function () {
+    var ok = stateWith(GOOD, { phase: 'design' });
+    assert.equal(MS.advice.client(ok, MS.sim.run(ok)).mood, 'happy');
+    var bad = stateWith(Object.assign({}, GOOD, { payload: 'cam_wide' }), { phase: 'design' });
+    var c = MS.advice.client(bad, MS.sim.run(bad));
+    assert.equal(c.mood, 'worried'); assert.equal(c.key, 'cl.fail');
+  });
 })(globalThis);

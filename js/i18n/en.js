@@ -635,6 +635,24 @@
     'alert.call': "Mission control · day {day}",
     'alert.noAnswer': "No answer in time = \"{opt}\".",
     'alert.timeout': "No answer in time: \"{opt}\". Not deciding is also a decision.",
-    'alert.waitTitle': "Waiting for your answer"
+    'alert.waitTitle': "Waiting for your answer",
+    'cl.need': "Hi! I'm your customer. I need a satellite that watches {region} for me. Pick our mission and let's build it together.",
+    'cl.concept': "First the big decision: where will it fly? The orbit changes everything I get.",
+    'cl.conceptOk': "That orbit works for me: a full year of watching {region}. Now let's turn my wishes into numbers.",
+    'cl.noContact': "Wait… if the station never sees the satellite, how will my photos reach me?",
+    'cl.requirements': "These numbers are our contract. Meet all of them and I'll be a very happy customer.",
+    'cl.design': "I can't wait to see it built. Every part you pick changes what I'll get.",
+    'cl.designOk': "Yes! That's exactly what I asked for. Now let's see if it really works.",
+    'cl.fail': "Hmm… {title} is at {v}. Like this I can't “{goal}”",
+    'cl.buildNoGo': "{n} of your crew said No-Go. If they aren't sure, I'm not sure either…",
+    'cl.buildGo': "The whole crew says Go! My heart is racing. Ready when you are.",
+    'cl.date': "When do we launch? Each year has a different Sun: some are calm, some are stormy.",
+    'cl.alert': "An alert from mission control?! Decide quickly… but please don't lose my images!",
+    'cl.lost': "The rocket couldn't take it… The satellite never reached space. Can we try again?",
+    'cl.lostOrbit': "We lost the mission up there. I got almost nothing… What went wrong?",
+    'cl.flying': "It's up there working! The first images are arriving. Thank you!",
+    'cl.great': "{score} points! You gave me exactly what I needed. Best team ever!",
+    'cl.okish': "{score} points. It helped, but it's not everything I asked for. One more try?",
+    'cl.bad': "{score} points… This doesn't solve my problem yet. Let's look at what happened and try again."
   };
 })(globalThis);

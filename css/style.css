@@ -937,3 +937,17 @@ body.sh-shake #app { animation: sh-shake .45s ease-in-out; }
 @media (prefers-reduced-motion: reduce) { .viz3d.alert-on, .va-tag, .viz-alert { animation: none; } }
 @media (max-width: 560px) { .viz-alert { top: auto; bottom: 8px; transform: translateX(-50%); padding: 12px; } .viz-alert p { font-size: .8rem; }
   @keyframes va-in { from { opacity: 0; } } }
+
+/* ---------- Cliente (personagem) ---------- */
+.client-line { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 14px; }
+.cl-face { flex: none; border-radius: 50%; border: 2px solid var(--line); background: var(--surface-2); }
+.client-line.m-happy .cl-face { border-color: var(--ok); }
+.client-line.m-worried .cl-face { border-color: var(--warn); }
+.client-line.m-sad .cl-face { border-color: var(--fail); }
+.cl-bubble { position: relative; flex: 1; min-width: 0; background: var(--surface); border: 1.5px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 8px 14px; }
+.client-line.m-happy .cl-bubble { border-color: rgba(74, 222, 128, .45); }
+.client-line.m-worried .cl-bubble { border-color: rgba(255, 194, 71, .5); }
+.client-line.m-sad .cl-bubble { border-color: rgba(255, 107, 107, .5); }
+.cl-who { display: block; font-size: .76rem; color: var(--muted); }
+.cl-who b { color: var(--text); }
+.cl-bubble p { margin: 2px 0 0; font-size: .95rem; line-height: 1.4; }

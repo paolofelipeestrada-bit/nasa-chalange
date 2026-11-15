@@ -212,6 +212,59 @@
     return { effects: EFFECTS, rows: rows, refPayload: !state.design.payload && ref.payload, refStation: !state.design.groundStation && ref.groundStation };
   }
 
-  MS.advice = { crew: crew, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE, orbitCompare: orbitCompare,
+  // ------------------------------------------------ Cliente (personagem)
+  // Uma fala por fase, reagindo ao resultado do motor: o primeiro requisito
+  // que falha, o voto da equipe, o alerta da missão, a nota final.
+  // → { name, role, look, mood: happy|neutral|worried|sad, key, text }
+  function client(state, result) {
+    var sc = MS.data.scenarios[state.scenarioId], who = sc.contact || {};
+    var reqs = result.requirements || [], goals = {};
+    (sc.goals || []).forEach(function (g) { goals[g.id] = MS.i18n.L(g.text); });
+    var fail = reqs.filter(function (r) { return r.status === 'fail'; })[0];
+    var allOk = reqs.length && reqs.every(function (r) { return r.status === 'ok'; });
+    var m = result.mission || {}, key, mood = 'neutral', p = { region: MS.i18n.L(sc.aoi && sc.aoi.name) || '' };
+    var u = U(), val = function (r) { return u.withUnit(r.value, r.unit, Math.abs(r.value) < 10 ? 1 : 0); };
+    var failLine = function () {
+      key = 'cl.fail'; mood = 'worried';
+      var g = String(goals[fail.goal] || fail.text);
+      p.title = fail.title; p.v = val(fail); p.goal = g.charAt(0).toLowerCase() + g.slice(1);
+    };
+    var ph = state.phase;
+    if (ph === 'need') key = 'cl.need';
+    else if (ph === 'concept') {
+      var cc = chk(result, 'contact'), life = reqs.filter(function (r) { return r.metric === 'lifetime_years'; })[0];
+      var done = sc.slots.filter(function (s) { return s.phase === 'concept'; }).every(function (s) { return state.design[s.id]; });
+      if (cc && cc.status === 'fail') { key = 'cl.noContact'; mood = 'worried'; }
+      else if (life && life.status === 'fail') { fail = life; failLine(); }
+      else if (done) { key = 'cl.conceptOk'; mood = 'happy'; }
+      else key = 'cl.concept';
+    } else if (ph === 'requirements') key = 'cl.requirements';
+    else if (ph === 'design') {
+      if (fail) failLine();
+      else if (allOk) { key = 'cl.designOk'; mood = 'happy'; }
+      else key = 'cl.design';
+    } else if (ph === 'build') {
+      var tl = tally(crew(state, result));
+      if (fail) failLine();
+      else if (tl.nogo) { key = 'cl.buildNoGo'; mood = 'worried'; p.n = tl.nogo; }
+      else { key = 'cl.buildGo'; mood = 'happy'; }
+    } else if (ph === 'implement') {
+      if (!state.period) key = 'cl.date';
+      else if (m.status === 'decide') { key = 'cl.alert'; mood = 'worried'; }
+      else if (MS.sim.neverFlew(m)) { key = 'cl.lost'; mood = 'sad'; }
+      else if (m.status === 'fail') { key = 'cl.lostOrbit'; mood = 'sad'; }
+      else { key = 'cl.flying'; mood = 'happy'; }
+    } else {
+      var sco = result.score && result.score.total;
+      if (sco == null) key = 'cl.date';
+      else if (sco >= 80) { key = 'cl.great'; mood = 'happy'; }
+      else if (sco >= 50) { key = 'cl.okish'; mood = 'neutral'; }
+      else { key = 'cl.bad'; mood = 'sad'; }
+      p.score = sco;
+    }
+    return { name: who.name || '', role: MS.i18n.L(who.role) || '', look: who, mood: mood, key: key, text: t(key, p) };
+  }
+
+  MS.advice = { crew: crew, client: client, tally: tally, KEY: KEY, BUDGET_RESERVE: BUDGET_RESERVE, orbitCompare: orbitCompare,
                 dataFraction: dataFraction, bucket: bucket, previous: previous, changes: changes, cards: cards, CARDS: CARDS };
 })(globalThis);

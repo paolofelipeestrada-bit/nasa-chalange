@@ -616,6 +616,24 @@
     'alert.call': "Controle da missão · dia {day}",
     'alert.noAnswer': "Sem resposta a tempo = \"{opt}\".",
     'alert.timeout': "Sem resposta a tempo: \"{opt}\". Não decidir também é uma decisão.",
-    'alert.waitTitle': "Esperando sua resposta"
+    'alert.waitTitle': "Esperando sua resposta",
+    'cl.need': "Olá! Eu falo pelo cliente desta missão. Preciso de um satélite que vigie {region} para mim. Escolha nossa missão e vamos construir juntos.",
+    'cl.concept': "Primeiro a grande decisão: onde ele vai voar? A órbita muda tudo o que eu recebo.",
+    'cl.conceptOk': "Essa órbita me serve: um ano inteiro de olho em {region}. Agora vamos transformar meus desejos em números.",
+    'cl.noContact': "Espera… se a estação nunca vê o satélite, como minhas fotos vão chegar até mim?",
+    'cl.requirements': "Esses números são o nosso contrato. Cumpra todos e você me deixa muito feliz.",
+    'cl.design': "Mal posso esperar para ver ele montado. Cada peça que você escolhe muda o que eu vou receber.",
+    'cl.designOk': "Isso! É exatamente o que eu pedi. Agora vamos ver se funciona de verdade.",
+    'cl.fail': "Hmm… {title} está em {v}. Assim eu não consigo “{goal}”",
+    'cl.buildNoGo': "{n} da sua equipe disseram No-Go. Se eles não estão seguros, eu também não…",
+    'cl.buildGo': "A equipe toda diz Go! Meu coração está acelerado. Quando quiser, lançamos.",
+    'cl.date': "Quando lançamos? Cada ano tem um Sol diferente: uns calmos, outros cheios de tempestades.",
+    'cl.alert': "Um alerta do controle da missão?! Decida rápido… mas, por favor, não perca minhas imagens!",
+    'cl.lost': "O foguete não aguentou… O satélite nem chegou ao espaço. Podemos tentar de novo?",
+    'cl.lostOrbit': "Perdemos a missão lá em cima. Quase nada chegou… O que deu errado?",
+    'cl.flying': "Ele está lá em cima trabalhando! As primeiras imagens estão chegando. Que alegria!",
+    'cl.great': "{score} pontos! Você me deu exatamente o que eu precisava. Melhor equipe!",
+    'cl.okish': "{score} pontos. Ajudou, mas não é tudo o que eu pedi. Mais uma tentativa?",
+    'cl.bad': "{score} pontos… Isso ainda não resolve meu problema. Vamos ver o que aconteceu e tentar de novo."
   };
 })(globalThis);

@@ -6,6 +6,34 @@
   var MS = root.MS, ui = MS.ui, h = ui.h, U = MS.sim.util;
   var t = MS.i18n.t, L = MS.i18n.L;
 
+  // ------------------------------------------------ Cliente (personagem)
+  // Retrato desenhado em SVG (cores nos dados do cenário) e a fala da fase,
+  // que vem de MS.advice.client (reage ao resultado do motor).
+  var MOUTH = { happy: 'M17 29 q5 5 10 0', neutral: 'M18 30 h8', worried: 'M17 31 q5 -4 10 0', sad: 'M16 32 q6 -6 12 0' };
+  var BROW = { happy: '', neutral: '', worried: '<path d="M14 18 l5 1.5 M30 18 l-5 1.5" stroke="#2a1a12" stroke-width="1.6" stroke-linecap="round"/>',
+    sad: '<path d="M14 19.5 l5 -1.5 M30 19.5 l-5 -1.5" stroke="#2a1a12" stroke-width="1.6" stroke-linecap="round"/>' };
+  function portrait(look, mood) {
+    look = look || {};
+    var skin = look.skin || '#c98e63', hair = look.hair || '#3b2418', shirt = look.shirt || '#3a6fd8';
+    return '<svg class="cl-face" viewBox="0 0 44 44" width="52" height="52" aria-hidden="true">' +
+      '<circle cx="22" cy="22" r="22" fill="#1b2b55"/>' +
+      (look.long ? '<path d="M8 26 q0 -18 14 -18 q14 0 14 18 v8 h-28z" fill="' + hair + '"/>' : '') +
+      '<path d="M6 44 q2 -10 16 -10 q14 0 16 10z" fill="' + shirt + '"/>' +
+      '<rect x="18.5" y="28" width="7" height="7" rx="2" fill="' + skin + '"/>' +
+      '<ellipse cx="22" cy="22" rx="10" ry="11.5" fill="' + skin + '"/>' +
+      '<path d="M11.5 20 q0 -11 10.5 -11 q10.5 0 10.5 11 q-4 -6 -10.5 -6 q-6.5 0 -10.5 6z" fill="' + hair + '"/>' +
+      '<circle cx="18" cy="22" r="1.4" fill="#2a1a12"/><circle cx="26" cy="22" r="1.4" fill="#2a1a12"/>' + (BROW[mood] || '') +
+      '<path d="' + (MOUTH[mood] || MOUTH.neutral) + '" stroke="#5a2a1a" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg>';
+  }
+  ui.clientLine = function (state, result) {
+    if (!MS.advice || !MS.advice.client || !result) return '';
+    var c = MS.advice.client(state, result);
+    if (!c.name) return '';
+    return '<div class="client-line m-' + c.mood + '" aria-live="polite">' + portrait(c.look, c.mood) +
+      '<div class="cl-bubble"><span class="cl-who"><b>' + h.esc(c.name) + '</b> · ' + h.esc(c.role) + ' · ' + h.esc(L(h.scenario(state).customer)) + '</span>' +
+      '<p>' + h.esc(c.text) + '</p></div></div>';
+  };
+
   // Cartões de cliente: escolher o cenário é escolher o objetivo da missão.
   function scenarioCards(state) {
     var scs = MS.data.scenarios;

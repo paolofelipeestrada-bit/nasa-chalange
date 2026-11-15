@@ -615,6 +615,24 @@
     'alert.call': "Control de misión · día {day}",
     'alert.noAnswer': "Sin respuesta a tiempo = \"{opt}\".",
     'alert.timeout': "Sin respuesta a tiempo: \"{opt}\". No decidir también es una decisión.",
-    'alert.waitTitle': "Esperando tu respuesta"
+    'alert.waitTitle': "Esperando tu respuesta",
+    'cl.need': "¡Hola! Soy tu cliente. Necesito un satélite que vigile {region} por mí. Elige nuestra misión y construyámoslo juntos.",
+    'cl.concept': "Primero la gran decisión: ¿dónde va a volar? La órbita cambia todo lo que recibo.",
+    'cl.conceptOk': "Esa órbita me sirve: un año entero vigilando {region}. Ahora convirtamos mis deseos en números.",
+    'cl.noContact': "Espera… si la estación nunca ve el satélite, ¿cómo me llegarán mis fotos?",
+    'cl.requirements': "Estos números son nuestro contrato. Cúmplelos todos y me harás muy feliz.",
+    'cl.design': "Tengo ganas de verlo armado. Cada pieza que eliges cambia lo que voy a recibir.",
+    'cl.designOk': "¡Eso! Es exactamente lo que pedí. Ahora veamos si funciona de verdad.",
+    'cl.fail': "Hmm… {title} está en {v}. Así no puedo “{goal}”",
+    'cl.buildNoGo': "{n} de tu equipo dijeron No-Go. Si ellos no están seguros, yo tampoco…",
+    'cl.buildGo': "¡Todo el equipo dice Go! El corazón me late fuerte. Cuando quieras, lanzamos.",
+    'cl.date': "¿Cuándo lanzamos? Cada año tiene un Sol distinto: unos tranquilos, otros con tormentas.",
+    'cl.alert': "¿¡Una alerta del control de misión!? Decide rápido… ¡pero no pierdas mis imágenes!",
+    'cl.lost': "El cohete no aguantó… El satélite ni llegó al espacio. ¿Lo intentamos de nuevo?",
+    'cl.lostOrbit': "Perdimos la misión allá arriba. Casi nada llegó… ¿Qué salió mal?",
+    'cl.flying': "¡Está allá arriba trabajando! Llegan las primeras imágenes. ¡Qué alegría!",
+    'cl.great': "¡{score} puntos! Me diste exactamente lo que necesitaba. ¡El mejor equipo!",
+    'cl.okish': "{score} puntos. Ayudó, pero no es todo lo que pedí. ¿Otro intento?",
+    'cl.bad': "{score} puntos… Esto todavía no resuelve mi problema. Veamos qué pasó e intentemos de nuevo."
   };
 })(globalThis);

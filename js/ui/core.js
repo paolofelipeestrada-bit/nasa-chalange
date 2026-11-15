@@ -513,7 +513,7 @@
       aboutPanel() + glossaryPanel() +
       '<div class="phase-head"><span class="eyebrow">' + esc(eyebrow) + '</span>' +
       '<h1>' + esc(L(ph.title)) + '</h1><p class="muted">' + esc(L(ph.subtitle) || '') + '</p></div>' +
-      guide(ph) + body + '</main>' + footer(state, info, screen) +
+      (ui.clientLine ? ui.clientLine(state, result) : '') + guide(ph) + body + '</main>' + footer(state, info, screen) +
       (ui.shoutDock && result ? ui.shoutDock(state, result) : ''); // gritos da equipe (js/ui/shouts-ui.js)
   }
 
